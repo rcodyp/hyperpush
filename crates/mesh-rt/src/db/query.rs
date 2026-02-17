@@ -679,6 +679,100 @@ pub extern "C" fn mesh_query_select_max(q: *mut u8, field: *mut u8) -> *mut u8 {
     }
 }
 
+/// Add a WHERE IN subquery clause.
+///
+/// `Query.where_sub(q, :field, sub_query)` -> new Query with WHERE field IN (SELECT ...)
+///
+/// The sub_query is another Query that gets serialized to a SELECT SQL string.
+/// Its parameters are appended to the outer query's where_params.
+#[no_mangle]
+pub extern "C" fn mesh_query_where_sub(
+    q: *mut u8,
+    field: *mut u8,
+    sub_query: *mut u8,
+) -> *mut u8 {
+    unsafe {
+        let new_q = clone_query(q);
+        let field_str = mesh_str_ref(field);
+
+        // Build subquery SQL from the sub_query's slots
+        let sub_source_ptr = query_get(sub_query, SLOT_SOURCE);
+        let sub_source = mesh_str_ref(sub_source_ptr);
+        let sub_select = list_to_sub_strings(query_get(sub_query, SLOT_SELECT));
+        let sub_where_clauses = list_to_sub_strings(query_get(sub_query, SLOT_WHERE_CLAUSES));
+        // Build the subquery SELECT SQL
+        let mut sub_sql = String::from("SELECT ");
+        if sub_select.is_empty() {
+            sub_sql.push('*');
+        } else {
+            let cols: Vec<String> = sub_select.iter().map(|f| {
+                if f.starts_with("RAW:") {
+                    f[4..].to_string()
+                } else {
+                    format!("\"{}\"", f.replace('"', "\"\""))
+                }
+            }).collect();
+            sub_sql.push_str(&cols.join(", "));
+        }
+        sub_sql.push_str(&format!(" FROM \"{}\"", sub_source.replace('"', "\"\"")));
+
+        // WHERE conditions: use ? placeholders (will be renumbered by outer query's SQL builder)
+        if !sub_where_clauses.is_empty() {
+            sub_sql.push_str(" WHERE ");
+            let mut conditions = Vec::new();
+            for clause in &sub_where_clauses {
+                if clause.starts_with("RAW:") {
+                    // Pass raw clauses through as-is
+                    conditions.push(clause[4..].to_string());
+                } else if let Some(space_pos) = clause.find(' ') {
+                    let col = &clause[..space_pos];
+                    let op = clause[space_pos + 1..].trim();
+                    if op == "IS NULL" || op == "IS NOT NULL" {
+                        conditions.push(format!("\"{}\" {}", col.replace('"', "\"\""), op));
+                    } else {
+                        conditions.push(format!("\"{}\" {} ?", col.replace('"', "\"\""), op));
+                    }
+                } else {
+                    conditions.push(format!("\"{}\" = ?", clause.replace('"', "\"\"")));
+                }
+            }
+            sub_sql.push_str(&conditions.join(" AND "));
+        }
+
+        // Store as RAW: clause in where_clauses
+        let raw_clause = format!("RAW:\"{}\" IN ({})",
+            field_str.replace('"', "\"\""),
+            sub_sql);
+        let clause_mesh = rust_str_to_mesh(&raw_clause);
+        let wc = query_get(new_q, SLOT_WHERE_CLAUSES);
+        query_set(new_q, SLOT_WHERE_CLAUSES, mesh_list_append(wc, clause_mesh as u64));
+
+        // Append subquery's where_params to outer query's where_params
+        let mut wp = query_get(new_q, SLOT_WHERE_PARAMS);
+        let sub_param_count = mesh_list_length(query_get(sub_query, SLOT_WHERE_PARAMS));
+        for i in 0..sub_param_count {
+            let elem = mesh_list_get(query_get(sub_query, SLOT_WHERE_PARAMS), i);
+            wp = mesh_list_append(wp, elem);
+        }
+        query_set(new_q, SLOT_WHERE_PARAMS, wp);
+
+        new_q
+    }
+}
+
+/// Helper: read a list of MeshStrings into a Vec<String>.
+unsafe fn list_to_sub_strings(list_ptr: *mut u8) -> Vec<String> {
+    let len = mesh_list_length(list_ptr);
+    let mut result = Vec::with_capacity(len as usize);
+    for i in 0..len {
+        let elem = mesh_list_get(list_ptr, i) as *mut u8;
+        if !elem.is_null() {
+            result.push(mesh_str_ref(elem).to_string());
+        }
+    }
+    result
+}
+
 /// Add a raw SQL fragment.
 ///
 /// `Query.fragment(q, "WHERE custom_fn($1)", params)` -> new Query with raw fragment

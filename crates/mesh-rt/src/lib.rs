@@ -63,6 +63,7 @@ pub use db::query::{
     mesh_query_select_count, mesh_query_select_count_field,
     mesh_query_select_sum, mesh_query_select_avg,
     mesh_query_select_min, mesh_query_select_max,
+    mesh_query_where_sub,
 };
 pub use db::changeset::{
     mesh_changeset_cast, mesh_changeset_cast_with_types,
@@ -88,6 +89,7 @@ pub use db::repo::{
     mesh_repo_insert_changeset, mesh_repo_update_changeset,
     mesh_repo_preload,
     mesh_repo_update_where, mesh_repo_delete_where,
+    mesh_repo_insert_or_update, mesh_repo_delete_where_returning,
     mesh_repo_query_raw, mesh_repo_execute_raw,
 };
 pub use db::pg::{

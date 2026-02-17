@@ -2063,6 +2063,93 @@ pub extern "C" fn mesh_repo_delete_where(
     }
 }
 
+/// Upsert: INSERT with ON CONFLICT DO UPDATE.
+///
+/// `Repo.insert_or_update(pool, table, fields_map, conflict_targets, update_fields)`
+///   -> `Result<Map<String,String>, String>`
+///
+/// - `fields_map`: Map<String,String> of column->value for the INSERT
+/// - `conflict_targets`: List<String> of conflict target column names
+/// - `update_fields`: List<String> of column names to update on conflict
+///
+/// Generated SQL:
+///   INSERT INTO "table" ("cols") VALUES ($1, ...)
+///   ON CONFLICT ("target1", "target2") DO UPDATE SET "col" = EXCLUDED."col", ...
+///   RETURNING *
+#[no_mangle]
+pub extern "C" fn mesh_repo_insert_or_update(
+    pool: u64,
+    table: *mut u8,
+    fields: *mut u8,
+    conflict_targets: *mut u8,
+    update_fields: *mut u8,
+) -> *mut u8 {
+    unsafe {
+        let table_str = mesh_str_ref(table);
+        let (columns, values) = map_to_columns_and_values(fields);
+        if columns.is_empty() {
+            return err_result("insert_or_update: no fields provided");
+        }
+        let targets = list_to_strings(conflict_targets);
+        let updates = list_to_strings(update_fields);
+        if targets.is_empty() {
+            return err_result("insert_or_update: no conflict targets provided");
+        }
+        if updates.is_empty() {
+            return err_result("insert_or_update: no update fields provided");
+        }
+
+        let returning = vec!["*".to_string()];
+        let sql = crate::db::orm::build_upsert_sql_pure(table_str, &columns, &targets, &updates, &returning);
+
+        let sql_ptr = rust_str_to_mesh(&sql) as *const MeshString;
+        let params_ptr = strings_to_mesh_list(&values);
+        let result = mesh_pool_query(pool, sql_ptr, params_ptr);
+
+        let r = &*(result as *const MeshResult);
+        if r.tag != 0 {
+            return result;
+        }
+
+        let list = r.value;
+        let list_len = mesh_list_length(list);
+        if list_len == 0 {
+            return err_result("insert_or_update: no row returned");
+        }
+
+        let first_row = mesh_list_get(list, 0) as *mut u8;
+        ok_result(first_row)
+    }
+}
+
+/// Delete rows matching a Query's WHERE conditions and return deleted rows.
+/// `Repo.delete_where_returning(pool, table, query)` -> `Result<List<Map<String,String>>, String>`
+#[no_mangle]
+pub extern "C" fn mesh_repo_delete_where_returning(
+    pool: u64,
+    table: *mut u8,
+    query: *mut u8,
+) -> *mut u8 {
+    unsafe {
+        let table_str = mesh_str_ref(table);
+        let where_clauses = list_to_strings(query_get(query, SLOT_WHERE_CLAUSES));
+        let where_params = list_to_strings(query_get(query, SLOT_WHERE_PARAMS));
+
+        if where_clauses.is_empty() {
+            return err_result("delete_where_returning: no WHERE conditions");
+        }
+
+        let mut sql = format!("DELETE FROM {}", quote_ident(table_str));
+        let (where_sql, where_param_values, _next_idx) =
+            build_where_from_query_parts(&where_clauses, &where_params, 1);
+        sql.push_str(&format!(" WHERE {} RETURNING *", where_sql));
+
+        let sql_ptr = rust_str_to_mesh(&sql) as *const MeshString;
+        let params_ptr = strings_to_mesh_list(&where_param_values);
+        mesh_pool_query(pool, sql_ptr, params_ptr)
+    }
+}
+
 /// Execute raw SQL and return rows.
 /// `Repo.query_raw(pool, sql, params)` -> `Result<List<Map<String,String>>, String>`
 #[no_mangle]
@@ -2881,5 +2968,55 @@ mod tests {
             "SELECT count(*) FROM \"issues\" GROUP BY \"project_id\" HAVING count(*) > $1"
         );
         assert_eq!(params, vec!["5"]);
+    }
+
+    // ── Phase 109 Plan 01: Upsert and subquery WHERE tests ──────────────
+
+    #[test]
+    fn test_upsert_sql() {
+        let sql = crate::db::orm::build_upsert_sql_pure(
+            "issues",
+            &["project_id".into(), "fingerprint".into(), "title".into()],
+            &["project_id".into(), "fingerprint".into()],
+            &["title".into()],
+            &["*".into()],
+        );
+        assert_eq!(
+            sql,
+            "INSERT INTO \"issues\" (\"project_id\", \"fingerprint\", \"title\") VALUES ($1, $2, $3) ON CONFLICT (\"project_id\", \"fingerprint\") DO UPDATE SET \"title\" = EXCLUDED.\"title\" RETURNING *"
+        );
+    }
+
+    #[test]
+    fn test_upsert_sql_multi_update() {
+        let sql = crate::db::orm::build_upsert_sql_pure(
+            "users",
+            &["email".into(), "name".into(), "role".into()],
+            &["email".into()],
+            &["name".into(), "role".into()],
+            &["*".into()],
+        );
+        assert_eq!(
+            sql,
+            "INSERT INTO \"users\" (\"email\", \"name\", \"role\") VALUES ($1, $2, $3) ON CONFLICT (\"email\") DO UPDATE SET \"name\" = EXCLUDED.\"name\", \"role\" = EXCLUDED.\"role\" RETURNING *"
+        );
+    }
+
+    #[test]
+    fn test_subquery_where_clause() {
+        let (sql, params) = build_select_sql_from_parts(
+            "issues", &[],
+            &[
+                "status =".into(),
+                "RAW:\"project_id\" IN (SELECT \"id\" FROM \"projects\" WHERE \"org_id\" = ?)".into(),
+            ],
+            &["open".into(), "org-123".into()],
+            &[], -1, -1, &[], &[], &[], &[], &[], &[],
+        );
+        assert_eq!(
+            sql,
+            "SELECT * FROM \"issues\" WHERE \"status\" = $1 AND \"project_id\" IN (SELECT \"id\" FROM \"projects\" WHERE \"org_id\" = $2)"
+        );
+        assert_eq!(params, vec!["open", "org-123"]);
     }
 }

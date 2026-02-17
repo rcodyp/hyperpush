@@ -279,6 +279,63 @@ fn build_delete_sql(table: &str, wheres: &[String], returning: &[String]) -> Str
     sql
 }
 
+/// Build an INSERT ... ON CONFLICT ... DO UPDATE SET SQL string from pure Rust types.
+/// Public within crate for use by repo.rs upsert operations.
+///
+/// Generated SQL pattern:
+/// ```sql
+/// INSERT INTO "table" ("col1", "col2") VALUES ($1, $2)
+/// ON CONFLICT ("unique_col") DO UPDATE SET "col1" = EXCLUDED."col1", "col2" = EXCLUDED."col2"
+/// RETURNING *
+/// ```
+pub(crate) fn build_upsert_sql_pure(
+    table: &str,
+    columns: &[String],
+    conflict_targets: &[String],
+    update_columns: &[String],
+    returning: &[String],
+) -> String {
+    let mut sql = String::new();
+
+    sql.push_str("INSERT INTO ");
+    sql.push_str(&quote_ident(table));
+
+    // Column list
+    sql.push_str(" (");
+    let quoted_cols: Vec<String> = columns.iter().map(|c| quote_ident(c)).collect();
+    sql.push_str(&quoted_cols.join(", "));
+    sql.push(')');
+
+    // VALUES clause with $N placeholders
+    sql.push_str(" VALUES (");
+    let params: Vec<String> = (1..=columns.len()).map(|i| format!("${}", i)).collect();
+    sql.push_str(&params.join(", "));
+    sql.push(')');
+
+    // ON CONFLICT clause
+    sql.push_str(" ON CONFLICT (");
+    let quoted_targets: Vec<String> = conflict_targets.iter().map(|c| quote_ident(c)).collect();
+    sql.push_str(&quoted_targets.join(", "));
+    sql.push(')');
+
+    // DO UPDATE SET clause using EXCLUDED references
+    sql.push_str(" DO UPDATE SET ");
+    let set_parts: Vec<String> = update_columns
+        .iter()
+        .map(|c| format!("{} = EXCLUDED.{}", quote_ident(c), quote_ident(c)))
+        .collect();
+    sql.push_str(&set_parts.join(", "));
+
+    // RETURNING clause
+    if !returning.is_empty() {
+        sql.push_str(" RETURNING ");
+        let quoted_ret: Vec<String> = returning.iter().map(|c| quote_ident_or_star(c)).collect();
+        sql.push_str(&quoted_ret.join(", "));
+    }
+
+    sql
+}
+
 // ── Extern C functions ───────────────────────────────────────────────
 
 /// Build a parameterized SELECT query.
@@ -586,5 +643,22 @@ mod tests {
     fn test_delete_no_where() {
         let sql = build_delete_sql("users", &[], &[]);
         assert_eq!(sql, "DELETE FROM \"users\"");
+    }
+
+    // ── build_upsert_sql tests ──────────────────────────────────────────
+
+    #[test]
+    fn test_build_upsert_sql() {
+        let sql = build_upsert_sql_pure(
+            "issues",
+            &["project_id".into(), "fingerprint".into(), "title".into(), "level".into(), "event_count".into()],
+            &["project_id".into(), "fingerprint".into()],
+            &["title".into(), "level".into(), "event_count".into()],
+            &["*".into()],
+        );
+        assert_eq!(
+            sql,
+            "INSERT INTO \"issues\" (\"project_id\", \"fingerprint\", \"title\", \"level\", \"event_count\") VALUES ($1, $2, $3, $4, $5) ON CONFLICT (\"project_id\", \"fingerprint\") DO UPDATE SET \"title\" = EXCLUDED.\"title\", \"level\" = EXCLUDED.\"level\", \"event_count\" = EXCLUDED.\"event_count\" RETURNING *"
+        );
     }
 }
