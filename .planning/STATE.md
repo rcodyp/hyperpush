@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 109 of 114 (v11.0 Query Builder)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-02-17 -- Completed 109-01 (Upsert, RETURNING, subquery runtime + pipeline)
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-02-17 -- Completed 109-02 (Runtime upsert/returning/subquery E2E verification)
 
 Progress: [███░░░░░░░] 30% (v11.0)
 
@@ -42,6 +42,7 @@ Progress: [███░░░░░░░] 30% (v11.0)
 | 108   | 01   | 4min     | 2     | 8     |
 | 108   | 02   | 1min     | 1     | 2     |
 | 109   | 01   | 10min    | 2     | 9     |
+| 109   | 02   | 20min    | 1     | 2     |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - [Phase 108]: Raw SQL strings in runtime E2E tests match query builder output -- Plan 01 verifies pipeline, Plan 02 verifies SQL semantics
 - [Phase 109]: Subquery WHERE uses inline SQL serialization at where_sub call time, stored as RAW: clause with ? placeholders
 - [Phase 109]: E2E tests verify compilation pipeline without runtime execution since Repo functions expect PoolHandle not SqliteConn
+- [Phase 109]: Runtime E2E uses raw SQL via Sqlite.query matching build_upsert_sql_pure output (Repo functions require PoolHandle, not SqliteConn)
+- [Phase 109]: Pre-existing type checker arity bug: let x = Sqlite.execute(db, sql, params)? followed by f(x) triggers spurious E0003
 
 ### Roadmap Evolution
 
@@ -81,6 +84,6 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-17
-Stopped at: Completed 109-01-PLAN.md (Upsert, RETURNING, subquery runtime + pipeline)
+Stopped at: Completed 109-02-PLAN.md (Runtime upsert/returning/subquery E2E verification)
 Resume file: None
-Next action: Execute 109-02-PLAN.md
+Next action: Phase 109 complete. Proceed to Phase 110.
