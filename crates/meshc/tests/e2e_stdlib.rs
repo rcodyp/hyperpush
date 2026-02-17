@@ -1596,6 +1596,32 @@ fn e2e_sqlite() {
     assert!(output.contains("done"), "Program should complete successfully");
 }
 
+// ── Phase 107 Gap Closure: SQLite JOIN Runtime Tests ────────────────────
+//
+// Verifies JOIN queries return correct row data at runtime against a real
+// SQLite database. Tests INNER JOIN (both tables' columns), LEFT JOIN (NULL
+// for unmatched rows), and multi-table JOIN (3+ tables).
+// Proves ROADMAP SC2 (NULL handling) and SC4 (multi-table field mapping).
+
+#[test]
+fn e2e_sqlite_join_runtime() {
+    let source = read_fixture("sqlite_join_runtime.mpl");
+    let output = compile_and_run(&source);
+    // INNER JOIN: 2 rows with fields from both tables
+    assert!(output.contains("inner_join"), "Should have inner_join section");
+    assert!(output.contains("Alice:Engineer"), "Inner join should return Alice with Engineer bio");
+    assert!(output.contains("Bob:Designer"), "Inner join should return Bob with Designer bio");
+    // LEFT JOIN: 3 rows, Charlie's bio is empty (NULL mapped to empty string)
+    assert!(output.contains("left_join"), "Should have left_join section");
+    assert!(output.contains("Charlie:"), "Left join should return Charlie with empty bio (NULL)");
+    // Multi-table JOIN: columns from users, profiles, and departments
+    assert!(output.contains("multi_join"), "Should have multi_join section");
+    assert!(output.contains("Alice:Engineer:Engineering"), "Multi-join should return Alice with bio and dept");
+    assert!(output.contains("Bob:Designer:Design"), "Multi-join should return Bob with bio and dept");
+    // Success
+    assert!(output.contains("done"), "Program should complete successfully");
+}
+
 // ── PostgreSQL E2E Tests (Phase 54 Plan 02) ─────────────────────────────
 //
 // Verifies the full PostgreSQL driver pipeline: Mesh source -> compiler ->

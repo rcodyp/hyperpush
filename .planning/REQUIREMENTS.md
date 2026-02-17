@@ -9,10 +9,10 @@ Requirements for Query Builder milestone. Expand ORM with comprehensive query ca
 
 ### JOINs
 
-- [ ] **JOIN-01**: Query builder supports inner join with on-clause expression
-- [ ] **JOIN-02**: Query builder supports left join with on-clause expression
-- [ ] **JOIN-03**: Query builder supports multiple joins in a single query
-- [ ] **JOIN-04**: JOIN results include columns from all joined tables
+- [x] **JOIN-01**: Query builder supports inner join with on-clause expression
+- [x] **JOIN-02**: Query builder supports left join with on-clause expression
+- [x] **JOIN-03**: Query builder supports multiple joins in a single query
+- [x] **JOIN-04**: JOIN results include columns from all joined tables
 
 ### Aggregations
 
@@ -98,10 +98,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FRAG-02 | Phase 106 | Pending |
 | FRAG-03 | Phase 106 | Pending |
 | FRAG-04 | Phase 106 | Pending |
-| JOIN-01 | Phase 107 | Pending |
-| JOIN-02 | Phase 107 | Pending |
-| JOIN-03 | Phase 107 | Pending |
-| JOIN-04 | Phase 107 | Pending |
+| JOIN-01 | Phase 107 | Complete |
+| JOIN-02 | Phase 107 | Complete |
+| JOIN-03 | Phase 107 | Complete |
+| JOIN-04 | Phase 107 | Complete |
 | AGG-01 | Phase 108 | Pending |
 | AGG-02 | Phase 108 | Pending |
 | AGG-03 | Phase 108 | Pending |

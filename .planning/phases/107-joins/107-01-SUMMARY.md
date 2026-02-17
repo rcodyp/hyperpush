@@ -40,7 +40,7 @@ key-decisions:
 patterns-established:
   - "ALIAS:TYPE:table:alias:on_clause encoding for aliased joins, consistent with existing TYPE:table:on_clause"
 
-requirements-completed: []
+requirements-completed: [JOIN-01, JOIN-02, JOIN-03, JOIN-04]
 
 # Metrics
 duration: 6min
