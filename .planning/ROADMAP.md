@@ -210,7 +210,10 @@ See milestones/v9.0-ROADMAP.md for full phase details.
   3. A Mesh program can combine WHERE conditions with `OR` and grouped parenthesized conditions (not just implicit AND chaining)
   4. A Mesh program can use `Query.fragment("crypt($1, gen_salt('bf'))", [password])` and the raw SQL is embedded verbatim with bound parameters in the generated query
   5. Fragments work in WHERE, SELECT, ORDER BY, and GROUP BY positions -- a program using `Query.select(fragment("count(*)"))` and `Query.where(fragment("metadata @> $1::jsonb", [json]))` generates correct SQL
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 106-01-PLAN.md -- Advanced WHERE operators (NOT IN, BETWEEN, ILIKE, OR) with runtime, codegen, and E2E tests
+- [ ] 106-02-PLAN.md -- Fragment $N renumbering fix and ORDER BY/GROUP BY raw support with E2E tests
 
 ### Phase 107: JOINs
 **Goal**: Mesh programs can query across related tables using inner and left joins with typed on-clause expressions, including multi-join queries that access columns from all joined tables
