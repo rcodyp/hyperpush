@@ -316,7 +316,9 @@ Plans:
   2. Storage calculation queries use `Query.select(count())` or aggregation fragments instead of raw SQL
   3. A search of queries.mpl for `Repo.query_raw` and `Repo.execute_raw` returns zero matches for data queries (DDL/partition queries excluded)
   4. All callers of the rewritten query functions across Mesher's 32 .mpl files compile without changes to their call signatures
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 113-01-PLAN.md -- Rewrite 4 retention/storage queries to ORM, document 2 ORM boundaries, audit zero remaining data query raw SQL
 
 ### Phase 114: Compile, Run, and End-to-End Verification
 **Goal**: Mesher compiles with zero errors using the fully rewritten ORM query layer, starts successfully, and all HTTP API and WebSocket endpoints return correct responses
