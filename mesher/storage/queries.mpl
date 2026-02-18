@@ -96,8 +96,14 @@ pub fn create_api_key(pool :: PoolHandle, project_id :: String, label :: String)
 end
 
 # Get the project associated with a valid (non-revoked) API key.
+# Uses ORM Query.join_as + Query.where_raw instead of raw SQL JOIN.
 pub fn get_project_by_api_key(pool :: PoolHandle, key_value :: String) -> Project!String do
-  let rows = Repo.query_raw(pool, "SELECT p.id::text, p.org_id::text, p.name, p.platform, p.created_at::text FROM projects p JOIN api_keys ak ON ak.project_id = p.id WHERE ak.key_value = $1 AND ak.revoked_at IS NULL", [key_value])?
+  let q = Query.from(Project.__table__())
+    |> Query.join_as(:inner, ApiKey.__table__(), "ak", "ak.project_id = projects.id")
+    |> Query.where_raw("ak.key_value = ?", [key_value])
+    |> Query.where_raw("ak.revoked_at IS NULL", [])
+    |> Query.select_raw(["projects.id::text", "projects.org_id::text", "projects.name", "projects.platform", "projects.created_at::text"])
+  let rows = Repo.all(pool, q)?
   if List.length(rows) > 0 do
     let row = List.head(rows)
     Ok(Project { id: Map.get(row, "id"), org_id: Map.get(row, "org_id"), name: Map.get(row, "name"), platform: Map.get(row, "platform"), created_at: Map.get(row, "created_at") })
@@ -109,8 +115,14 @@ end
 # Get the project ID associated with a valid (non-revoked) API key.
 # Returns just the project ID string to avoid struct-in-Result ABI issues.
 # Used by ingestion auth to avoid returning multi-field struct in Result.
+# Uses ORM Query.join_as + Query.where_raw instead of raw SQL JOIN.
 pub fn get_project_id_by_key(pool :: PoolHandle, key_value :: String) -> String!String do
-  let rows = Repo.query_raw(pool, "SELECT p.id::text FROM projects p JOIN api_keys ak ON ak.project_id = p.id WHERE ak.key_value = $1 AND ak.revoked_at IS NULL", [key_value])?
+  let q = Query.from(Project.__table__())
+    |> Query.join_as(:inner, ApiKey.__table__(), "ak", "ak.project_id = projects.id")
+    |> Query.where_raw("ak.key_value = ?", [key_value])
+    |> Query.where_raw("ak.revoked_at IS NULL", [])
+    |> Query.select_raw(["projects.id::text"])
+  let rows = Repo.all(pool, q)?
   if List.length(rows) > 0 do
     Ok(Map.get(List.head(rows), "id"))
   else
