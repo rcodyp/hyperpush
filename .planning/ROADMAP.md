@@ -288,7 +288,10 @@ Plans:
   2. Issue queries use `Query.join` for project lookups and `Query.where` with comparison operators instead of raw SQL JOINs and WHERE clauses
   3. Event extraction uses `Query.fragment("payload->>'$1'", [field])` for JSONB field access instead of raw SQL JSONB operators
   4. All 12 issue + event queries in queries.mpl are replaced with ORM calls
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 111-01-PLAN.md -- Rewrite 10 simple issue management queries (status transitions, CRUD, listing, counts) to ORM
+- [ ] 111-02-PLAN.md -- Document ORM boundaries for complex queries (upsert_issue, check_volume_spikes, insert_event, extract_event_fields)
 
 ### Phase 112: Mesher Rewrite -- Search, Dashboard, and Alerts
 **Goal**: All Mesher search/filtering, dashboard/analytics, and alert system queries use the ORM -- full-text search via fragments, dashboard stats via aggregations, alert rules via JSONB fragments
