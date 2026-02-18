@@ -255,6 +255,16 @@ Plans:
   - Plan 109-01 (Wave 1): Upsert, RETURNING, Subqueries -- full pipeline (runtime functions + compiler registration + E2E)
   - Plan 109-02 (Wave 2): Runtime SQLite E2E verification (upsert, delete verification, subquery WHERE)
 
+### Phase 109.1: Fix the issues encountered in 109 (INSERTED)
+
+**Goal:** Fix the type checker arity bug (spurious E0003 on try-operator result binding) and the latent service loop argument loading type mismatch (Bool/Float/Struct params)
+**Depends on:** Phase 109
+**Plans:** 2 plans
+
+Plans:
+- [ ] 109.1-01-PLAN.md -- Fix type checker spurious E0003 arity bug on try-operator result binding
+- [ ] 109.1-02-PLAN.md -- Fix service loop argument loading for Bool/Float/Struct handler parameters
+
 ### Phase 110: Mesher Rewrite -- Auth and Users
 **Goal**: All Mesher user, session, and API-key queries use the ORM instead of raw SQL -- authentication, session management, and API key validation flow through Query/Repo APIs
 **Depends on**: Phase 109 (needs WHERE operators, fragments for crypt/gen_random_bytes, RETURNING for inserts)
