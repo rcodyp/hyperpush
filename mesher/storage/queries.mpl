@@ -126,12 +126,18 @@ end
 # --- User queries ---
 
 # Create a new user with bcrypt password hashing via pgcrypto (cost factor 12).
+# Two-step pattern: Repo.query_raw for crypt() hash generation, then Repo.insert for data INSERT.
 pub fn create_user(pool :: PoolHandle, email :: String, password :: String, display_name :: String) -> String!String do
-  let rows = Repo.query_raw(pool, "INSERT INTO users (email, password_hash, display_name) VALUES ($1, crypt($2, gen_salt('bf', 12)), $3) RETURNING id::text", [email, password, display_name])?
-  if List.length(rows) > 0 do
-    Ok(Map.get(List.head(rows), "id"))
+  # Step 1: Hash password via pgcrypto
+  let hash_rows = Repo.query_raw(pool, "SELECT crypt($1, gen_salt('bf', 12)) AS hash", [password])?
+  if List.length(hash_rows) > 0 do
+    let password_hash = Map.get(List.head(hash_rows), "hash")
+    # Step 2: Insert user with ORM
+    let fields = %{"email" => email, "password_hash" => password_hash, "display_name" => display_name}
+    let row = Repo.insert(pool, User.__table__(), fields)?
+    Ok(Map.get(row, "id"))
   else
-    Err("create_user: no id returned")
+    Err("create_user: password hashing failed")
   end
 end
 
@@ -162,12 +168,18 @@ end
 
 # Create a new session with a cryptographically random token.
 # Returns the 64-char hex token.
+# Two-step pattern: Repo.query_raw for gen_random_bytes token, then Repo.insert for data INSERT.
 pub fn create_session(pool :: PoolHandle, user_id :: String) -> String!String do
-  let rows = Repo.query_raw(pool, "INSERT INTO sessions (token, user_id) VALUES (encode(gen_random_bytes(32), 'hex'), $1::uuid) RETURNING token", [user_id])?
-  if List.length(rows) > 0 do
-    Ok(Map.get(List.head(rows), "token"))
+  # Step 1: Generate cryptographically random token via PG
+  let token_rows = Repo.query_raw(pool, "SELECT encode(gen_random_bytes(32), 'hex') AS token", [])?
+  if List.length(token_rows) > 0 do
+    let token = Map.get(List.head(token_rows), "token")
+    # Step 2: Insert session with ORM
+    let fields = %{"token" => token, "user_id" => user_id}
+    let _ = Repo.insert(pool, Session.__table__(), fields)?
+    Ok(token)
   else
-    Err("create_session: no token returned")
+    Err("create_session: token generation failed")
   end
 end
 
@@ -188,8 +200,11 @@ pub fn validate_session(pool :: PoolHandle, token :: String) -> Session!String d
 end
 
 # Delete a session by token (logout).
+# Uses ORM Repo.delete_where -- zero raw SQL.
 pub fn delete_session(pool :: PoolHandle, token :: String) -> Int!String do
-  Repo.execute_raw(pool, "DELETE FROM sessions WHERE token = $1", [token])
+  let q = Query.from(Session.__table__())
+    |> Query.where(:token, token)
+  Repo.delete_where(pool, Session.__table__(), q)
 end
 
 # --- Org membership queries ---

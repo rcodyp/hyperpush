@@ -1263,10 +1263,10 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
             vec![pool_t.clone(), Ty::string(), ptr_t.clone(), ptr_t.clone()],
             ptr_t.clone(),
         )));
-        // Repo.delete_where(PoolHandle, String, Ptr) -> Ptr  (pool, table, query -> Result<Int, String>)
+        // Repo.delete_where(PoolHandle, String, Ptr) -> Result<Int, String>  (pool, table, query)
         repo_mod.insert("delete_where".to_string(), Scheme::mono(Ty::fun(
             vec![pool_t.clone(), Ty::string(), ptr_t.clone()],
-            ptr_t.clone(),
+            Ty::result(Ty::int(), Ty::string()),
         )));
         // Repo.query_raw(PoolHandle, String, List<String>) -> Result<List<Map<String,String>>, String>
         repo_mod.insert("query_raw".to_string(), Scheme::mono(Ty::fun(
