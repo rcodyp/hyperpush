@@ -274,7 +274,10 @@ Plans:
   2. Password verification uses `Query.fragment("crypt($1, password_hash)", [password])` in a WHERE clause instead of raw SQL with crypt()
   3. Session creation and API key generation use `Repo.insert` with `Query.fragment("gen_random_bytes(32)")` for token generation instead of raw SQL
   4. All 8 auth/user/session/API-key queries in queries.mpl are replaced with ORM calls -- zero raw SQL remains for this domain
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 110-01-PLAN.md -- Rewrite user auth + session queries (authenticate_user, validate_session, delete_session, create_user, create_session)
+- [ ] 110-02-PLAN.md -- Rewrite API key queries (get_project_by_api_key, get_project_id_by_key, create_api_key, revoke_api_key)
 
 ### Phase 111: Mesher Rewrite -- Issues and Events
 **Goal**: All Mesher issue management queries use the ORM with upserts, and event writer/extraction queries use fragments for JSONB operations
