@@ -137,8 +137,13 @@ end
 
 # Authenticate a user by email and password.
 # Returns the User if credentials match, Err("not found") otherwise.
+# Uses ORM Query.where + Query.where_raw for crypt() password verification.
 pub fn authenticate_user(pool :: PoolHandle, email :: String, password :: String) -> User!String do
-  let rows = Repo.query_raw(pool, "SELECT id::text, email, display_name, created_at::text FROM users WHERE email = $1 AND password_hash = crypt($2, password_hash)", [email, password])?
+  let q = Query.from(User.__table__())
+    |> Query.where(:email, email)
+    |> Query.where_raw("password_hash = crypt(?, password_hash)", [password])
+    |> Query.select_raw(["id::text", "email", "display_name", "created_at::text"])
+  let rows = Repo.all(pool, q)?
   if List.length(rows) > 0 do
     let row = List.head(rows)
     Ok(User { id: Map.get(row, "id"), email: Map.get(row, "email"), display_name: Map.get(row, "display_name"), created_at: Map.get(row, "created_at") })
@@ -167,8 +172,13 @@ pub fn create_session(pool :: PoolHandle, user_id :: String) -> String!String do
 end
 
 # Validate a session token. Returns the Session if valid and not expired.
+# Uses ORM Query.where + Query.where_raw for expiry check.
 pub fn validate_session(pool :: PoolHandle, token :: String) -> Session!String do
-  let rows = Repo.query_raw(pool, "SELECT token, user_id::text, created_at::text, expires_at::text FROM sessions WHERE token = $1 AND expires_at > now()", [token])?
+  let q = Query.from(Session.__table__())
+    |> Query.where(:token, token)
+    |> Query.where_raw("expires_at > now()", [])
+    |> Query.select_raw(["token", "user_id::text", "created_at::text", "expires_at::text"])
+  let rows = Repo.all(pool, q)?
   if List.length(rows) > 0 do
     let row = List.head(rows)
     Ok(Session { token: Map.get(row, "token"), user_id: Map.get(row, "user_id"), created_at: Map.get(row, "created_at"), expires_at: Map.get(row, "expires_at") })
