@@ -196,7 +196,7 @@ See milestones/v9.0-ROADMAP.md for full phase details.
 - [x] **Phase 111: Mesher Rewrite -- Issues and Events** - Issue management (upserts) and event writer/extraction (JSONB fragments) (completed 2026-02-18)
 - [x] **Phase 112: Mesher Rewrite -- Search, Dashboard, and Alerts** - FTS search, aggregation dashboards, alert system with JSONB (completed 2026-02-18)
 - [x] **Phase 113: Mesher Rewrite -- Retention and Final Cleanup** - Retention/storage queries, zero remaining raw SQL data queries (completed 2026-02-25)
-- [ ] **Phase 114: Compile, Run, and End-to-End Verification** - Zero-error build, all HTTP/WS endpoints verified (Plan 01 complete: compile + startup verified)
+- [x] **Phase 114: Compile, Run, and End-to-End Verification** - Zero-error build, all HTTP/WS endpoints verified (Plan 01 complete: compile + startup verified) (completed 2026-02-25)
 - [ ] **Phase 115: Tracking Corrections and API Acceptance** - Close 13 requirement tracking gaps, accept Phase 109 positional API, remove dead code
 
 ## Phase Details
@@ -384,7 +384,7 @@ Phases execute in numeric order: 106 -> 107 -> 108 -> 109 -> 110 -> 111 -> 112 -
 | 111. Rewrite: Issues & Events | 2/2 | Complete    | 2026-02-18 | - |
 | 112. Rewrite: Search/Dashboard/Alerts | 2/2 | Complete    | 2026-02-18 | - |
 | 113. Rewrite: Retention & Cleanup | 1/1 | Complete    | 2026-02-25 | - |
-| 114. Verification | v11.0 | 1/2 | In progress | - |
+| 114. Verification | 2/2 | Complete   | 2026-02-25 | - |
 | 115. Tracking Corrections & API Acceptance | v11.0 | 0/TBD | Not started | - |
 
 **Total: 106 phases shipped across 20 milestones. 313 plans completed. 9 phases remaining for v11.0.**

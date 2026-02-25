@@ -57,8 +57,8 @@ Requirements for Query Builder milestone. Expand ORM with comprehensive query ca
 ### Verification
 
 - [x] **VER-01**: Mesher compiles with zero errors
-- [ ] **VER-02**: All HTTP API endpoints return correct responses
-- [ ] **VER-03**: WebSocket endpoints function correctly
+- [x] **VER-02**: All HTTP API endpoints return correct responses
+- [x] **VER-03**: WebSocket endpoints function correctly
 
 ## v10.0/v10.1 Requirements (Complete)
 
@@ -118,8 +118,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REWR-06 | Phase 113 | Complete |
 | REWR-08 | Phase 113 | Complete |
 | VER-01 | Phase 114 | Complete |
-| VER-02 | Phase 114 | Pending |
-| VER-03 | Phase 114 | Pending |
+| VER-02 | Phase 114 | Complete |
+| VER-03 | Phase 114 | Complete |
 
 **Coverage:**
 - v11.0 requirements: 32 total

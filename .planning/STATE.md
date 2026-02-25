@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-02-17)
 ## Current Position
 
 Phase: 114 of 114 (v11.0 Query Builder)
-Plan: 1 of 2 in current phase (114-01 complete)
-Status: In progress -- 114-01 complete, 114-02 next
-Last activity: 2026-02-25 -- Completed 114-01 (Zero-error compile + startup verification against PostgreSQL)
+Plan: 2 of 2 in current phase (114-01 complete, 114-02 complete)
+Status: Complete -- all plans in phase 114 finished
+Last activity: 2026-02-25 -- Completed 114-02 (HTTP API smoke test + WS upgrade verification; SIGSEGV confirmed resolved)
 
-Progress: [████████░░] 75% (v11.0)
+Progress: [██████████] 100% (v11.0)
 
 ## Performance Metrics
 
@@ -66,6 +66,7 @@ Progress: [████████░░] 75% (v11.0)
 | 112   | 02   | 3min     | 2     | 1     |
 | 113   | 01   | 5min     | 2     | 1     |
 | 114   | 01   | 30min    | 2     | 2     |
+| 114   | 02   | 15min    | 1     | 1     |
 
 ## Accumulated Context
 
@@ -109,6 +110,8 @@ Recent decisions affecting current work:
 - [Phase 114]: MirType::Tuple SIGSEGV fix confirmed active: arm returns context.ptr_type(...) heap pointer, not by-value struct -- no crash during Mesher startup
 - [Phase 114]: PostgreSQL running in Docker mesher-postgres (postgres:16-alpine); single migration 20260216120000_create_initial_schema applied cleanly
 - [Phase 114]: Mesher startup reaches [Mesher] Foundation ready with all 7 services started; EventProcessor SIGSEGV does not manifest at startup (triggered by POST /api/v1/events, tested in 114-02)
+- [Phase 114]: Event ingestion uses x-sentry-auth header (not X-Api-Key) -- confirmed from mesher/ingestion/auth.mpl
+- [Phase 114]: POST /api/v1/events returns 202 Accepted; all 8 HTTP domain endpoints return 2xx; WebSocket :8081 returns 101; process alive -- MirType::Tuple SIGSEGV confirmed resolved
 
 ### Roadmap Evolution
 
@@ -121,11 +124,11 @@ None.
 
 ### Blockers/Concerns
 
-- Event ingestion (POST /api/v1/events) crashes during background EventProcessor service call after HTTP response is sent. Requires deeper investigation of EventProcessor service loop state or call dispatch.
+None. The EventProcessor SIGSEGV blocker is confirmed resolved (MirType::Tuple fix -- types.rs returns ptr not by-value struct). POST /api/v1/events returned 202 with Mesher process alive after all endpoint tests.
 
 ## Session Continuity
 
 Last session: 2026-02-25
-Stopped at: Completed 114-01-PLAN.md (Zero-error compile + Mesher startup verified against PostgreSQL)
+Stopped at: Completed 114-02-PLAN.md (HTTP API smoke test + WebSocket upgrade verification; SIGSEGV confirmed resolved)
 Resume file: None
-Next action: Execute Phase 114 Plan 02 -- HTTP API endpoint smoke test and WebSocket upgrade verification.
+Next action: Phase 114 complete. Proceed to Phase 115 (tracking corrections) if planned.
