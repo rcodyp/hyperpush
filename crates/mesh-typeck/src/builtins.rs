@@ -48,6 +48,12 @@ pub fn register_builtins(
     // hatch. We register the bare name so `Pid` resolves in annotations.
     env.insert("Pid".into(), Scheme::mono(Ty::untyped_pid()));
 
+    // ── Regex type constructor (Phase 119) ──────────────────────
+    //
+    // Regex is an opaque type representing a compiled regex pattern.
+    // Values of type Regex are produced by the ~r/pattern/flags literal.
+    env.insert("Regex".into(), Scheme::mono(Ty::Con(TyCon::new("Regex"))));
+
     // ── I/O builtins ──────────────────────────────────────────────
 
     // println(String) -> () -- prints a string with trailing newline

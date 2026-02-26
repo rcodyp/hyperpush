@@ -4170,6 +4170,11 @@ fn infer_expr(
             // Atoms have a distinct type from String -- they are opaque typed values.
             Ty::Con(TyCon::new("Atom"))
         }
+        Expr::RegexExpr(_rx) => {
+            // Regex literals have the opaque Regex type.
+            // The runtime represents a compiled regex as an opaque pointer.
+            Ty::Con(TyCon::new("Regex"))
+        }
         Expr::StructUpdate(update) => {
             infer_struct_update(ctx, env, update, types, type_registry, trait_registry, fn_constraints)?
         }
@@ -5904,7 +5909,7 @@ fn format_abstract_pat(pat: &AbsPat) -> String {
 /// and other complex expressions are disallowed.
 fn validate_guard_expr(expr: &Expr) -> Result<(), String> {
     match expr {
-        Expr::Literal(_) | Expr::NameRef(_) | Expr::AtomLiteral(_) => Ok(()),
+        Expr::Literal(_) | Expr::NameRef(_) | Expr::AtomLiteral(_) | Expr::RegexExpr(_) => Ok(()),
         Expr::BinaryExpr(bin) => {
             // Allow comparisons and boolean ops.
             if let Some(op) = bin.op() {

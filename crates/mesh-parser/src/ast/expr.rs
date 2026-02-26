@@ -51,6 +51,8 @@ pub enum Expr {
     StructUpdate(StructUpdate),
     // Slot pipe expression
     SlotPipeExpr(SlotPipeExpr),
+    // Regex literal expression: ~r/pattern/flags
+    RegexExpr(RegexExpr),
 }
 
 impl Expr {
@@ -101,6 +103,7 @@ impl Expr {
             SyntaxKind::SLOT_PIPE_EXPR => {
                 Some(Expr::SlotPipeExpr(SlotPipeExpr { syntax: node }))
             }
+            SyntaxKind::REGEX_EXPR => Some(Expr::RegexExpr(RegexExpr { syntax: node })),
             _ => None,
         }
     }
@@ -139,6 +142,7 @@ impl Expr {
             Expr::AtomLiteral(n) => &n.syntax,
             Expr::StructUpdate(n) => &n.syntax,
             Expr::SlotPipeExpr(n) => &n.syntax,
+            Expr::RegexExpr(n) => &n.syntax,
         }
     }
 }
@@ -829,5 +833,85 @@ impl AtomLiteral {
             // Strip leading ':'
             text.strip_prefix(':').unwrap_or(&text).to_string()
         })
+    }
+}
+
+// ── Regex Literal Expression ─────────────────────────────────────────────
+
+ast_node!(RegexExpr, REGEX_EXPR);
+
+impl RegexExpr {
+    /// Returns the regex pattern string (content between `/` delimiters).
+    ///
+    /// Parses the source token text `~r/pattern/flags` by scanning for the
+    /// first unescaped `/` after the `~r/` prefix.
+    pub fn pattern(&self) -> Option<String> {
+        child_token(&self.syntax, SyntaxKind::REGEX_LITERAL).map(|t| {
+            let text = t.text();
+            extract_regex_pattern(text)
+        })
+    }
+
+    /// Returns the flags string (e.g. "ims", "i", "").
+    ///
+    /// Parses the source token text `~r/pattern/flags` to extract everything
+    /// after the closing `/`.
+    pub fn flags(&self) -> String {
+        child_token(&self.syntax, SyntaxKind::REGEX_LITERAL)
+            .map(|t| {
+                let text = t.text();
+                extract_regex_flags(text)
+            })
+            .unwrap_or_default()
+    }
+}
+
+/// Extract the pattern from a regex literal source text like `~r/pattern/flags`.
+///
+/// Scans char-by-char after `~r/`, tracking backslash escapes.
+/// The first unescaped `/` ends the pattern.
+fn extract_regex_pattern(text: &str) -> String {
+    let Some(rest) = text.strip_prefix("~r/") else {
+        return String::new();
+    };
+    let mut pattern = String::new();
+    let mut prev_was_backslash = false;
+    for c in rest.chars() {
+        if c == '/' && !prev_was_backslash {
+            break;
+        }
+        pattern.push(c);
+        if c == '\\' && !prev_was_backslash {
+            prev_was_backslash = true;
+        } else {
+            prev_was_backslash = false;
+        }
+    }
+    pattern
+}
+
+/// Extract the flags from a regex literal source text like `~r/pattern/flags`.
+///
+/// Finds the closing unescaped `/` and returns everything after it.
+fn extract_regex_flags(text: &str) -> String {
+    let Some(rest) = text.strip_prefix("~r/") else {
+        return String::new();
+    };
+    let mut prev_was_backslash = false;
+    let mut slash_pos = None;
+    for (i, c) in rest.char_indices() {
+        if c == '/' && !prev_was_backslash {
+            slash_pos = Some(i);
+            break;
+        }
+        if c == '\\' && !prev_was_backslash {
+            prev_was_backslash = true;
+        } else {
+            prev_was_backslash = false;
+        }
+    }
+    match slash_pos {
+        Some(pos) => rest[pos + 1..].to_string(),
+        None => String::new(),
     }
 }

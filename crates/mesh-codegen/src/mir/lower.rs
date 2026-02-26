@@ -652,6 +652,11 @@ impl<'a> Lowerer<'a> {
             "mesh_env_get_int".to_string(),
             MirType::FnPtr(vec![MirType::String, MirType::Int], Box::new(MirType::Int)),
         );
+        // Regex runtime functions (Phase 119)
+        self.known_functions.insert(
+            "mesh_regex_from_literal".to_string(),
+            MirType::FnPtr(vec![MirType::String, MirType::Int], Box::new(MirType::Ptr)),
+        );
         // ── Collection functions (Phase 8 Plan 02) ─────────────────────
         // List
         self.known_functions.insert("mesh_list_new".to_string(), MirType::FnPtr(vec![], Box::new(MirType::Ptr)));
@@ -5481,6 +5486,34 @@ impl<'a> Lowerer<'a> {
             Expr::AtomLiteral(atom) => {
                 let name = atom.atom_text().unwrap_or_default();
                 MirExpr::StringLit(name, MirType::String)
+            }
+            // Regex literal -- desugar to mesh_regex_from_literal(pattern, flags_bitmask)
+            // mesh_regex_from_literal is declared in Phase 119-02 runtime; we wire the call
+            // site here. Flags bitmask: i=1, m=2, s=4.
+            Expr::RegexExpr(rx) => {
+                let pattern = rx.pattern().unwrap_or_default();
+                let flags_str = rx.flags();
+                let flags_bits: i64 = flags_str.chars().fold(0i64, |acc, c| match c {
+                    'i' => acc | 1,
+                    'm' => acc | 2,
+                    's' => acc | 4,
+                    _ => acc,
+                });
+                let fn_ty = MirType::FnPtr(
+                    vec![MirType::String, MirType::Int],
+                    Box::new(MirType::Ptr),
+                );
+                MirExpr::Call {
+                    func: Box::new(MirExpr::Var(
+                        "mesh_regex_from_literal".to_string(),
+                        fn_ty,
+                    )),
+                    args: vec![
+                        MirExpr::StringLit(pattern, MirType::String),
+                        MirExpr::IntLit(flags_bits, MirType::Int),
+                    ],
+                    ty: MirType::Ptr,
+                }
             }
             // Struct update expression: %{base | field: value, ...}
             Expr::StructUpdate(update) => self.lower_struct_update(update),
@@ -10400,6 +10433,7 @@ const STDLIB_MODULES: &[&str] = &[
     "Repo",  // Phase 98
     "Changeset",  // Phase 99
     "Migration",  // Phase 101
+    "Regex",  // Phase 119
 ];
 
 /// Map Mesh builtin function names to their runtime equivalents.
@@ -10440,6 +10474,8 @@ fn map_builtin_name(name: &str) -> String {
         "env_get_with_default" => "mesh_env_get_with_default".to_string(),
         "env_get_int" => "mesh_env_get_int".to_string(),
         "env_args" => "mesh_env_args".to_string(),
+        // Regex functions (Phase 119)
+        "regex_from_literal" => "mesh_regex_from_literal".to_string(),
         // Names that have already been resolved via from-import and lowered
         // with the module prefix (e.g., user wrote `length` after `from String import length`,
         // but it was registered with both names so it may arrive as bare name here).

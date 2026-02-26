@@ -240,6 +240,13 @@ fn lhs(p: &mut Parser) -> Option<MarkClosed> {
             Some(p.close(m, SyntaxKind::ATOM_EXPR))
         }
 
+        // Regex literal: ~r/pattern/flags
+        SyntaxKind::REGEX_LITERAL => {
+            let m = p.open();
+            p.advance();
+            Some(p.close(m, SyntaxKind::REGEX_EXPR))
+        }
+
         // Identifier
         SyntaxKind::IDENT => {
             let m = p.open();
