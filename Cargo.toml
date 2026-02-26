@@ -1,16 +1,16 @@
 [workspace]
 members = [
-    "crates/mesh-common",
-    "crates/mesh-lexer",
-    "crates/mesh-parser",
-    "crates/mesh-typeck",
-    "crates/mesh-rt",
-    "crates/mesh-codegen",
-    "crates/meshc",
-    "crates/mesh-pkg",
-    "crates/mesh-lsp",
-    "crates/mesh-fmt",
-    "crates/mesh-repl",
+    "compiler/mesh-common",
+    "compiler/mesh-lexer",
+    "compiler/mesh-parser",
+    "compiler/mesh-typeck",
+    "compiler/mesh-rt",
+    "compiler/mesh-codegen",
+    "compiler/meshc",
+    "compiler/mesh-pkg",
+    "compiler/mesh-lsp",
+    "compiler/mesh-fmt",
+    "compiler/mesh-repl",
 ]
 resolver = "2"
 
