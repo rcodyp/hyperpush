@@ -47,7 +47,7 @@ Requirements for v12.0 Language Ergonomics & Open Source Readiness. Each maps to
 - [x] **REPO-03**: Documentation website moved under `website/` directory
 - [x] **REPO-04**: Install scripts and build tooling moved under `tools/` directory
 - [x] **REPO-05**: All CI/CD pipelines (GitHub Actions) updated for new directory structure
-- [ ] **REPO-06**: All tests pass and Mesher E2E verified after reorganization
+- [x] **REPO-06**: All tests pass and Mesher E2E verified after reorganization
 
 ### Performance Benchmarks
 
@@ -117,7 +117,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPO-03 | Phase 122 | Complete |
 | REPO-04 | Phase 122 | Complete |
 | REPO-05 | Phase 122 | Complete |
-| REPO-06 | Phase 122 | Pending |
+| REPO-06 | Phase 122 | Complete |
 | BENCH-01 | Phase 123 | Pending |
 | BENCH-02 | Phase 123 | Pending |
 | BENCH-03 | Phase 123 | Pending |

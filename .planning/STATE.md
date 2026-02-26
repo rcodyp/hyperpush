@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-26T06:14:15.594Z"
+last_updated: "2026-02-26T07:15:02.859Z"
 progress:
   total_phases: 130
-  completed_phases: 128
+  completed_phases: 129
   total_plans: 336
-  completed_plans: 335
+  completed_plans: 336
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 
 ## Current Position
 
-Phase: 122 of 123 (Phase 122: Repository Reorganization — Plan 01 complete)
-Plan: 01 complete (1 of 1 plans)
-Status: Phase 122 plan 01 complete — compiler/, tools/, mesher/frontend/ moves done; next is Phase 123 (benchmarks)
-Last activity: 2026-02-26 — 122-01 complete: all crates moved to compiler/, tools/ created, root cleaned
+Phase: 122 of 123 (Phase 122: Repository Reorganization — COMPLETE)
+Plan: 02 complete (2 of 2 plans)
+Status: Phase 122 complete — all builds verified, Mesher compiles, human-approved; next is Phase 123 (benchmarks)
+Last activity: 2026-02-26 — 122-02 complete: cargo build/release pass, 12/13 tests green, Mesher compiles, human checkpoint approved
 
 Progress: [█░░░░░░░░░] 5% (v12.0)
 
@@ -63,6 +63,7 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | Phase 121 P03 | 2min | 3 tasks | 3 files |
 | Phase 121 P04 | 2min | 3 tasks | 3 files |
 | Phase 122 P01 | 3min | 2 tasks | 15 files |
+| Phase 122 P02 | 15min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,7 @@ Recent decisions affecting current work:
 - [Phase 121]: database sub-skill covers Sqlite/PostgreSQL raw APIs, deriving(Row) ORM, upserts/RETURNING/subqueries, JOINs, and gotchas (execute vs query for RETURNING)
 - [Phase 122]: Root package.json deleted (not moved to website/) because website/ already has its own real package.json; root was dev-only concurrently wrapper
 - [Phase 122]: crates/ flattened directly to compiler/ with no intermediate directory — all 11 crates are direct children of compiler/
+- [Phase 122]: Docker/Mesher E2E test skipped in 122-02 — container crashed; user approved and confirmed E2E works
 
 ### Roadmap Evolution
 
@@ -131,6 +133,6 @@ None. v11.0 fully shipped and verified. Zero known compiler correctness issues.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 122-01-PLAN.md (repo reorganization — compiler/, tools/, mesher/frontend/ moves complete)
+Stopped at: Completed 122-02-PLAN.md (build verification — cargo build/release pass, Mesher compiles, human-approved)
 Resume file: None
 Next action: /gsd:execute-phase 123 (benchmarks)

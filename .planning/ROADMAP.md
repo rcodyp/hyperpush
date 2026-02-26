@@ -217,7 +217,7 @@ See milestones/v11.0-ROADMAP.md for full phase details.
 - [x] **Phase 119: Regular Expressions** - Add regex literals, `Regex.compile`, and match/capture/replace/split API (completed 2026-02-26)
 - [x] **Phase 120: Mesher Dogfooding** - Update Mesher to use slot pipe and string features; verify E2E (completed 2026-02-26)
 - [x] **Phase 121: Mesh Agent Skill** - Create GSD agent skill with progressive disclosure for all Mesh topics (completed 2026-02-26)
-- [ ] **Phase 122: Repository Reorganization** - Move crates and apps under compiler/mesher/website/tools/
+- [x] **Phase 122: Repository Reorganization** - Move crates and apps under compiler/mesher/website/tools/ (completed 2026-02-26)
 - [ ] **Phase 123: Performance Benchmarks** - HTTP throughput benchmarks vs Rust, Go, and Elixir with published results
 
 ## Phase Details
@@ -369,7 +369,7 @@ Note: Phase 119 (Regex) depends only on Phase 115 and may proceed in parallel wi
 | 119. Regular Expressions | 3/3 | Complete    | 2026-02-26 | - |
 | 120. Mesher Dogfooding | 2/2 | Complete    | 2026-02-26 | - |
 | 121. Mesh Agent Skill | 4/4 | Complete    | 2026-02-26 | - |
-| 122. Repository Reorganization | 1/2 | In Progress|  | - |
+| 122. Repository Reorganization | 2/2 | Complete   | 2026-02-26 | - |
 | 123. Performance Benchmarks | v12.0 | 0/? | Not started | - |
 
 **Total through v11.0: 115 phases shipped, 319 plans completed across 21 milestones.**
@@ -379,7 +379,7 @@ Note: Phase 119 (Regex) depends only on Phase 115 and may proceed in parallel wi
 **Goal:** [To be planned]
 **Requirements**: TBD
 **Depends on:** Phase 123
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] TBD (run /gsd:plan-phase 124 to break down)
