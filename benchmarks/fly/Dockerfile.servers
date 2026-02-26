@@ -2,7 +2,7 @@ FROM ubuntu:22.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    curl wget git build-essential pkg-config \
+    curl wget git build-essential pkg-config libssl-dev \
     erlang-dev elixir \
     && rm -rf /var/lib/apt/lists/*
 
