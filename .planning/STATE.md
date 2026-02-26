@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-26T02:16:18.605Z"
+last_updated: "2026-02-26T02:46:00.010Z"
 progress:
   total_phases: 115
-  completed_phases: 114
+  completed_phases: 115
   total_plans: 307
-  completed_plans: 305
+  completed_plans: 307
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 119 of 123 (Phase 119: Regular Expressions)
-Plan: 02 complete
-Status: Phase 119 complete — Plan 03 (E2E tests) next
-Last activity: 2026-02-26 — 119-02 complete: Regex stdlib runtime + full compiler wiring (mesh-rt, typeck, codegen, MIR, JIT)
+Plan: 03 complete — Phase 119 DONE
+Status: Phase 119 complete — next phase: 120 (Mesher Dogfooding)
+Last activity: 2026-02-26 — 119-03 complete: Regex E2E tests (6 new tests passing; 3 compiler bugs fixed)
 
 Progress: [█░░░░░░░░░] 5% (v12.0)
 
@@ -55,6 +55,7 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | 118   | 02   | 13min    | 2     | 6     |
 | 119   | 01   | 6min     | 2     | 8     |
 | 119   | 02   | 10min    | 2     | 8     |
+| 119   | 03   | 13min    | 2     | 10    |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Recent decisions affecting current work:
 - [Phase 119]: mesh_regex_from_literal call site wired in Plan 01; runtime symbol added in Plan 02
 - [Phase 119]: Bool return for mesh_regex_match uses i8 (matches mesh_string_contains convention)
 - [Phase 119]: No bare regex 'replace'/'split' in map_builtin_name (would conflict with string variants); module-qualified regex_replace/regex_split unambiguous
+- [Phase 119]: Regex.is_match used instead of Regex.match: 'match' is a Mesh keyword causing parse errors
+- [Phase 119]: Ty::Con(Regex) maps to MirType::Ptr in types.rs resolve_con: opaque heap pointer, prevents LLVM opaque struct failures
+- [Phase 119]: Regex added to STDLIB_MODULE_NAMES in infer.rs: required for Regex.compile/is_match/etc to route through module call path
 
 ### Roadmap Evolution
 
@@ -106,6 +110,6 @@ None. v11.0 fully shipped and verified. Zero known compiler correctness issues.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 119-02-PLAN.md (Regex stdlib runtime + compiler wiring)
+Stopped at: Completed 119-03-PLAN.md (Regex E2E tests + 3 compiler bug fixes; Phase 119 complete)
 Resume file: None
-Next action: /gsd:execute-phase 119 (plan 03 — E2E tests)
+Next action: /gsd:execute-phase 120 (Mesher Dogfooding)
