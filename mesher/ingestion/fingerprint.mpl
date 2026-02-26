@@ -14,9 +14,11 @@ from Types.Event import EventPayload, StackFrame, ExceptionInfo
 # Lowercases and strips hex address prefixes (0x). Full regex not available
 # in Mesh; this covers the most common source of fingerprint instability.
 fn normalize_message(msg :: String) -> String do
-  let lower = String.to_lower(msg)
-  let no_hex = String.replace(lower, "0x", "")
-  String.trim(no_hex)
+  # Slot pipe: |2> inserts the piped value as the second argument
+  msg
+    |> String.to_lower()
+    |2> String.replace("0x", "")
+    |> String.trim()
 end
 
 # Build a fingerprint component from a single stack frame.
@@ -28,8 +30,11 @@ end
 # Build fingerprint from stack trace frames and message (GROUP-01).
 # Format: "file|func;file|func;...:normalized_message"
 fn fingerprint_from_frames(frames, msg :: String) -> String do
-  let parts = List.map(frames, fn(frame) do fingerprint_frame(frame) end)
-  String.join(parts, ";") <> ":" <> normalize_message(msg)
+  let suffix = ":" <> normalize_message(msg)
+  frames
+    |> List.map(fn(frame) do fingerprint_frame(frame) end)
+    |2> String.join(";")
+    <> suffix
 end
 
 # Fallback fingerprint when no stack trace is available (GROUP-02).
