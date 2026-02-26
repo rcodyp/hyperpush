@@ -8,17 +8,17 @@ from Storage.Queries import delete_expired_events, get_all_project_retention, ge
 # Log helpers (extracted for single-expression case arms, decision [88-02]).
 
 fn log_cleanup_result(deleted :: Int) do
-  let _ = println("[Mesher] Retention cleanup: deleted " <> String.from(deleted) <> " expired events")
+  let _ = println("[Mesher] Retention cleanup: deleted #{deleted} expired events")
   0
 end
 
 fn log_cleanup_error(e :: String) do
-  let _ = println("[Mesher] Retention cleanup error: " <> e)
+  let _ = println("[Mesher] Retention cleanup error: #{e}")
   0
 end
 
 fn log_partition_drop(name :: String) do
-  let _ = println("[Mesher] Dropped expired partition: " <> name)
+  let _ = println("[Mesher] Dropped expired partition: #{name}")
   0
 end
 

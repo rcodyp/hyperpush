@@ -20,7 +20,7 @@ end
 
 # Helper: build 400 response with reason
 fn bad_request_response(reason :: String) do
-  HTTP.response(400, "{\"error\":\"" <> reason <> "\"}")
+  HTTP.response(400, """{"error":"#{reason}"}""")
 end
 
 # Helper: build 429 rate-limited response with Retry-After header
@@ -40,8 +40,8 @@ end
 fn broadcast_count_from_rows(project_id :: String, rows) do
   if List.length(rows) > 0 do
     let count = Map.get(List.head(rows), "cnt")
-    let room = "project:" <> project_id
-    let _ = Ws.broadcast(room, "{\"type\":\"issue_count\",\"project_id\":\"" <> project_id <> "\",\"count\":" <> count <> "}")
+    let room = "project:#{project_id}"
+    let _ = Ws.broadcast(room, """{"type":"issue_count","project_id":"#{project_id}","count":#{count}}""")
     0
   else
     0
@@ -64,8 +64,8 @@ end
 
 # Broadcast alert notification to project WebSocket room (ALERT-04).
 fn broadcast_alert_notification(project_id :: String, alert_id :: String, rule_name :: String, condition_type :: String, message :: String) do
-  let room = "project:" <> project_id
-  let msg = "{\"type\":\"alert\",\"alert_id\":\"" <> alert_id <> "\",\"rule_name\":\"" <> rule_name <> "\",\"condition\":\"" <> condition_type <> "\",\"message\":\"" <> message <> "\"}"
+  let room = "project:#{project_id}"
+  let msg = """{"type":"alert","alert_id":"#{alert_id}","rule_name":"#{rule_name}","condition":"#{condition_type}","message":"#{message}"}"""
   let _ = Ws.broadcast(room, msg)
   0
 end
@@ -73,7 +73,7 @@ end
 # Fire alert if cooldown allows (ALERT-05).
 fn fire_if_cooldown_ok(pool :: PoolHandle, rule_id :: String, project_id :: String, rule_name :: String, condition_type :: String, issue_id :: String, should_fire :: Bool) do
   if should_fire do
-    let message = condition_type <> " detected for issue " <> issue_id
+    let message = "#{condition_type} detected for issue #{issue_id}"
     let result = fire_alert(pool, rule_id, project_id, message, condition_type, rule_name)
     case result do
       Ok(alert_id) -> broadcast_alert_notification(project_id, alert_id, rule_name, condition_type, message)
@@ -137,8 +137,8 @@ end
 
 # Helper: broadcast event notification, issue count, check alerts, and return response
 fn broadcast_event(project_id :: String, issue_id :: String, body :: String) do
-  let room = "project:" <> project_id
-  let notification = "{\"type\":\"event\",\"issue_id\":\"" <> issue_id <> "\",\"data\":" <> body <> "}"
+  let room = "project:#{project_id}"
+  let notification = """{"type":"event","issue_id":"#{issue_id}","data":#{body}}"""
   let _ = Ws.broadcast(room, notification)
   let _ = broadcast_issue_count(project_id)
   let reg_pid = get_registry()
@@ -262,8 +262,8 @@ end
 fn broadcast_update_from_rows(rows, issue_id :: String, action :: String) do
   if List.length(rows) > 0 do
     let project_id = Map.get(List.head(rows), "project_id")
-    let room = "project:" <> project_id
-    let msg = "{\"type\":\"issue\",\"action\":\"" <> action <> "\",\"issue_id\":\"" <> issue_id <> "\"}"
+    let room = "project:#{project_id}"
+    let msg = """{"type":"issue","action":"#{action}","issue_id":"#{issue_id}"}"""
     let _ = Ws.broadcast(room, msg)
     0
   else
@@ -283,25 +283,25 @@ end
 # Helper: broadcast resolve notification then return success response
 fn resolve_success(pool, issue_id :: String, n :: Int) do
   let _ = broadcast_issue_update(pool, issue_id, "resolved")
-  HTTP.response(200, "{\"status\":\"ok\",\"affected\":" <> String.from(n) <> "}")
+  HTTP.response(200, """{"status":"ok","affected":#{n}}""")
 end
 
 # Helper: broadcast archive notification then return success response
 fn archive_success(pool, issue_id :: String, n :: Int) do
   let _ = broadcast_issue_update(pool, issue_id, "archived")
-  HTTP.response(200, "{\"status\":\"ok\",\"affected\":" <> String.from(n) <> "}")
+  HTTP.response(200, """{"status":"ok","affected":#{n}}""")
 end
 
 # Helper: broadcast unresolve notification then return success response
 fn unresolve_success(pool, issue_id :: String, n :: Int) do
   let _ = broadcast_issue_update(pool, issue_id, "unresolved")
-  HTTP.response(200, "{\"status\":\"ok\",\"affected\":" <> String.from(n) <> "}")
+  HTTP.response(200, """{"status":"ok","affected":#{n}}""")
 end
 
 # Helper: broadcast discard notification then return success response
 fn discard_success(pool, issue_id :: String, n :: Int) do
   let _ = broadcast_issue_update(pool, issue_id, "discarded")
-  HTTP.response(200, "{\"status\":\"ok\",\"affected\":" <> String.from(n) <> "}")
+  HTTP.response(200, """{"status":"ok","affected":#{n}}""")
 end
 
 # --- Issue management route handlers (Phase 89 Plan 02) ---
@@ -327,7 +327,7 @@ pub fn handle_list_issues(request) do
   let result = list_issues_by_status(pool, project_id, "unresolved")
   case result do
     Ok(issues) -> HTTP.response(200, issues_to_json(issues))
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end
 
@@ -339,7 +339,7 @@ pub fn handle_resolve_issue(request) do
   let result = resolve_issue(pool, issue_id)
   case result do
     Ok(n) -> resolve_success(pool, issue_id, n)
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end
 
@@ -351,7 +351,7 @@ pub fn handle_archive_issue(request) do
   let result = archive_issue(pool, issue_id)
   case result do
     Ok(n) -> archive_success(pool, issue_id, n)
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end
 
@@ -363,7 +363,7 @@ pub fn handle_unresolve_issue(request) do
   let result = unresolve_issue(pool, issue_id)
   case result do
     Ok(n) -> unresolve_success(pool, issue_id, n)
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end
 
@@ -372,7 +372,7 @@ fn assign_with_user_id(pool :: PoolHandle, issue_id :: String, user_id :: String
   let result = assign_issue(pool, issue_id, user_id)
   case result do
     Ok(n) -> HTTP.response(200, "{\"status\":\"ok\"}")
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end
 
@@ -395,7 +395,7 @@ pub fn handle_discard_issue(request) do
   let result = discard_issue(pool, issue_id)
   case result do
     Ok(n) -> discard_success(pool, issue_id, n)
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end
 
@@ -406,7 +406,7 @@ pub fn handle_delete_issue(request) do
   let issue_id = require_param(request, "id")
   let result = delete_issue(pool, issue_id)
   case result do
-    Ok(n) -> HTTP.response(200, "{\"status\":\"ok\",\"affected\":" <> String.from(n) <> "}")
-    Err(e) -> HTTP.response(500, "{\"error\":\"" <> e <> "\"}")
+    Ok(n) -> HTTP.response(200, """{"status":"ok","affected":#{n}}""")
+    Err(e) -> HTTP.response(500, """{"error":"#{e}"}""")
   end
 end

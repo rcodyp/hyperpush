@@ -44,7 +44,7 @@ fn flush_batch(pool :: PoolHandle, project_id :: String, events) -> Int!String d
 end
 
 fn flush_drop(project_id :: String, count_val :: Int) -> Int!String do
-  println("[StorageWriter] Dropping batch of " <> String.from(count_val) <> " events for project " <> project_id <> " after 3 retries")
+  println("[StorageWriter] Dropping batch of #{count_val} events for project #{project_id} after 3 retries")
   Ok(0)
 end
 

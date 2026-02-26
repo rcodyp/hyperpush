@@ -98,7 +98,8 @@ end
 # Helper: log spike checker result (extracted for single-expression case arm).
 fn log_spike_result(n :: Int) do
   if n > 0 do
-    let _ = println("[Mesher] Spike checker: escalated " <> String.from(n) <> " archived issues")
+    # String interpolation: #{n} converts Int to String inline
+    let _ = println("[Mesher] Spike checker: escalated #{n} archived issues")
     0
   else
     0
@@ -107,7 +108,7 @@ end
 
 # Helper: log spike checker error (extracted for matching branch types).
 fn log_spike_error(e :: String) do
-  let _ = println("[Mesher] Spike checker error: " <> e)
+  let _ = println("[Mesher] Spike checker error: #{e}")
   0
 end
 
@@ -130,8 +131,9 @@ end
 
 # Broadcast alert notification to project WebSocket room (ALERT-04).
 fn broadcast_alert(project_id :: String, alert_id :: String, rule_name :: String, condition_type :: String, message :: String) do
-  let room = "project:" <> project_id
-  let msg = "{\"type\":\"alert\",\"alert_id\":\"" <> alert_id <> "\",\"rule_name\":\"" <> rule_name <> "\",\"condition\":\"" <> condition_type <> "\",\"message\":\"" <> message <> "\"}"
+  let room = "project:#{project_id}"
+  # Heredoc: triple quotes eliminate escaped quote noise in JSON strings
+  let msg = """{"type":"alert","alert_id":"#{alert_id}","rule_name":"#{rule_name}","condition":"#{condition_type}","message":"#{message}"}"""
   let _ = Ws.broadcast(room, msg)
   0
 end
@@ -153,7 +155,7 @@ end
 # Fire if threshold exceeded.
 fn fire_threshold_if_needed(pool :: PoolHandle, rule_id :: String, project_id :: String, rule_name :: String, should_fire :: Bool, threshold_str :: String, window_str :: String) do
   if should_fire do
-    let message = "Event count exceeded " <> threshold_str <> " in " <> window_str <> " minutes"
+    let message = "Event count exceeded #{threshold_str} in #{window_str} minutes"
     fire_and_broadcast(pool, rule_id, project_id, rule_name, "threshold", message)
   else
     0
@@ -211,12 +213,12 @@ end
 
 # Log helpers (extracted for single-expression case arms, decision [88-02]).
 fn log_eval_result(n :: Int) do
-  let _ = println("[Mesher] Alert evaluator: checked rules, " <> String.from(n) <> " fired")
+  let _ = println("[Mesher] Alert evaluator: checked rules, #{n} fired")
   0
 end
 
 fn log_eval_error(e :: String) do
-  let _ = println("[Mesher] Alert evaluator error: " <> e)
+  let _ = println("[Mesher] Alert evaluator error: #{e}")
   0
 end
 
@@ -237,7 +239,7 @@ end
 
 # Helper: log load monitor status
 fn log_load_status(event_count :: Int, node_count :: Int) do
-  println("[Mesher] Load monitor: " <> String.from(event_count) <> " events/5s, " <> String.from(node_count) <> " peers")
+  println("[Mesher] Load monitor: #{event_count} events/5s, #{node_count} peers")
 end
 
 # Worker function for remote event processing (CLUSTER-05).
@@ -258,9 +260,9 @@ end
 # Does NOT send local PoolHandle across nodes (research pitfall 1 -- raw pointer, meaningless remotely).
 fn try_remote_spawn(nodes) do
   let target = List.head(nodes)
-  let _ = println("[Mesher] Load high -- spawning remote processor on " <> target)
+  let _ = println("[Mesher] Load high -- spawning remote processor on #{target}")
   let _ = Node.spawn(target, event_processor_worker)
-  let _ = println("[Mesher] Spawned remote event_processor_worker on " <> target)
+  let _ = println("[Mesher] Spawned remote event_processor_worker on #{target}")
   0
 end
 
@@ -271,10 +273,10 @@ end
 fn monitor_peer(node_name :: String) do
   let result = Node.monitor(node_name)
   if result == 0 do
-    let _ = println("[Mesher] Monitoring peer: " <> node_name)
+    let _ = println("[Mesher] Monitoring peer: #{node_name}")
     0
   else
-    let _ = println("[Mesher] Failed to monitor peer: " <> node_name)
+    let _ = println("[Mesher] Failed to monitor peer: #{node_name}")
     0
   end
 end
@@ -307,12 +309,12 @@ actor load_monitor(pool :: PoolHandle, threshold :: Int, prev_peers :: Int) do
 
   # Detect peer changes and set up monitoring for new peers
   if node_count > prev_peers do
-    let _ = println("[Mesher] New peers detected (" <> String.from(prev_peers) <> " -> " <> String.from(node_count) <> "), setting up monitors")
+    let _ = println("[Mesher] New peers detected (#{prev_peers} -> #{node_count}), setting up monitors")
     let _ = monitor_all_peers(nodes, 0, node_count)
     0
   else
     if node_count < prev_peers do
-      let _ = println("[Mesher] Peer lost (" <> String.from(prev_peers) <> " -> " <> String.from(node_count) <> ") -- NODEDOWN detected")
+      let _ = println("[Mesher] Peer lost (#{prev_peers} -> #{node_count}) -- NODEDOWN detected")
       0
     else
       0
@@ -339,9 +341,9 @@ end
 fn register_global_services(registry_pid) do
   let node_name = Node.self()
   if node_name != "" do
-    let _ = Global.register("mesher_registry@" <> node_name, registry_pid)
+    let _ = Global.register("mesher_registry@#{node_name}", registry_pid)
     let _ = Global.register("mesher_registry", registry_pid)
-    println("[Mesher] Services registered globally as mesher_registry@" <> node_name)
+    println("[Mesher] Services registered globally as mesher_registry@#{node_name}")
   else
     println("[Mesher] Running in standalone mode (skipping global registration)")
   end
