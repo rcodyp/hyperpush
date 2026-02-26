@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-26T00:42:50.554Z"
+last_updated: "2026-02-26T01:27:47.506Z"
 progress:
-  total_phases: 113
+  total_phases: 114
   completed_phases: 113
-  total_plans: 302
-  completed_plans: 302
+  total_plans: 304
+  completed_plans: 303
 ---
 
 # Project State
@@ -22,17 +22,17 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 
 ## Current Position
 
-Phase: 117 of 123 (Phase 117: String Interpolation & Heredocs)
-Plan: 02 complete (phase complete)
-Status: Phase 117 complete — advancing to Phase 118
-Last activity: 2026-02-26 — 117-02 complete: heredoc trimIndent + #{} interpolation in heredocs + E2E tests
+Phase: 118 of 123 (Phase 118: Env Var Stdlib)
+Plan: 01 complete (phase in progress)
+Status: Phase 118 Plan 01 complete — Plan 02 next
+Last activity: 2026-02-26 — 118-01 complete: Env.get, Env.get_int, Env.args stdlib functions wired end-to-end
 
 Progress: [█░░░░░░░░░] 5% (v12.0)
 
 ## Performance Metrics
 
 **All-time Totals:**
-- Plans completed: 319
+- Plans completed: 320
 - Phases completed: 115+
 - Milestones shipped: 21 (v1.0-v11.0)
 - Lines of Rust: ~168,500
@@ -51,6 +51,7 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | 116   | 02   | 8min     | 2     | 6     |
 | 117   | 01   | 8min     | 2     | 3     |
 | 117   | 02   | 8min     | 2     | 4     |
+| 118   | 01   | 10min    | 2     | 6     |
 
 ## Accumulated Context
 
@@ -75,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 117]: Both ${ and #{ emit identical InterpolationStart tokens — parser/codegen require zero changes, only lexer updated
 - [Phase 117]: apply_heredoc_content() processes each STRING_CONTENT segment independently to handle interpolation boundaries; mid-line content after #{} is left untouched
 - [Phase 117]: into_token() used instead of as_token() in iterator chains to avoid Rust E0515 borrow errors
+- [Phase 118]: Old bare env_get (Option-returning) removed entirely from builtins.rs; env_get now routes to 2-arg mesh_env_get_with_default
+- [Phase 118]: env_get_int silently returns default on any parse failure (non-numeric, overflow) — no stderr warning required
+- [Phase 118]: env_args type signature upgraded to Ty::list(Ty::string()) in builtins.rs
 
 ### Roadmap Evolution
 
@@ -92,6 +96,6 @@ None. v11.0 fully shipped and verified. Zero known compiler correctness issues.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 117-02-PLAN.md (heredoc trimIndent + interpolation + E2E tests)
+Stopped at: Completed 118-01-PLAN.md (Env.get, Env.get_int, Env.args stdlib functions wired end-to-end)
 Resume file: None
-Next action: /gsd:execute-phase 118
+Next action: /gsd:execute-phase 118 (plan 02)
