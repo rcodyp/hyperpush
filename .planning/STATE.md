@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-26T03:20:48.537Z"
+last_updated: "2026-02-26T04:34:51.587Z"
 progress:
-  total_phases: 116
-  completed_phases: 115
-  total_plans: 309
-  completed_plans: 308
+  total_phases: 127
+  completed_phases: 127
+  total_plans: 330
+  completed_plans: 330
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 120 of 123 (Phase 120: Mesher Dogfooding)
-Plan: 01 complete
-Status: Phase 120 in progress — Plan 01 done (slot pipe + string interpolation); Plan 02 next (E2E verification)
-Last activity: 2026-02-26 — 120-01 complete: dogfooding slot pipe and string interpolation across 6 Mesher files
+Plan: 02 complete (Phase 120 complete)
+Status: Phase 120 complete — PIPE-05 and STRG-06 satisfied; Phase 121 next (Agent Skill)
+Last activity: 2026-02-26 — 120-02 complete: E2E verification passed; Mesher compiles cleanly with v12.0 features; all HTTP endpoints verified
 
 Progress: [█░░░░░░░░░] 5% (v12.0)
 
@@ -57,6 +57,7 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | 119   | 02   | 10min    | 2     | 8     |
 | 119   | 03   | 13min    | 2     | 10    |
 | 120   | 01   | 4min     | 2     | 6     |
+| Phase 120 P02 | 70min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -96,6 +97,7 @@ Recent decisions affecting current work:
 - [Phase 119]: Regex added to STDLIB_MODULE_NAMES in infer.rs: required for Regex.compile/is_match/etc to route through module call path
 - [Phase 120]: Slot pipe applied only in fingerprint.mpl where genuine argument threading exists; other API files already use idiomatic patterns
 - [Phase 120]: Heredocs used for JSON builders with 2+ embedded double quotes; simple error strings use regular #{} without heredoc
+- [Phase 120]: HTTP test assertions fixed: unescape_string() in MIR lowerer correctly processes backslash escapes; test comments claiming otherwise were stale since Phase 117
 
 ### Roadmap Evolution
 
@@ -113,6 +115,6 @@ None. v11.0 fully shipped and verified. Zero known compiler correctness issues.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 120-01-PLAN.md (slot pipe + string interpolation dogfooding; cargo check passes; 6 files updated)
+Stopped at: Completed 120-02-PLAN.md (E2E verification; Phase 120 complete — PIPE-05 and STRG-06 satisfied)
 Resume file: None
-Next action: /gsd:execute-phase 120 Plan 02 (E2E verification)
+Next action: /gsd:execute-phase 121 Plan 01 (Agent Skill)

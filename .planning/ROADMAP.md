@@ -215,7 +215,7 @@ See milestones/v11.0-ROADMAP.md for full phase details.
 - [x] **Phase 117: String Interpolation & Heredocs** - Add `#{expr}` interpolation and `"""..."""` multiline heredoc strings (completed 2026-02-26)
 - [x] **Phase 118: Env Var Stdlib** - Add `Env.get` and `Env.get_int` typed stdlib functions (completed 2026-02-26)
 - [x] **Phase 119: Regular Expressions** - Add regex literals, `Regex.compile`, and match/capture/replace/split API (completed 2026-02-26)
-- [ ] **Phase 120: Mesher Dogfooding** - Update Mesher to use slot pipe and string features; verify E2E
+- [x] **Phase 120: Mesher Dogfooding** - Update Mesher to use slot pipe and string features; verify E2E (completed 2026-02-26)
 - [ ] **Phase 121: Mesh Agent Skill** - Create GSD agent skill with progressive disclosure for all Mesh topics
 - [ ] **Phase 122: Repository Reorganization** - Move crates and apps under compiler/mesher/website/tools/
 - [ ] **Phase 123: Performance Benchmarks** - HTTP throughput benchmarks vs Rust, Go, and Elixir with published results
@@ -358,7 +358,7 @@ Note: Phase 119 (Regex) depends only on Phase 115 and may proceed in parallel wi
 | 117. String Interpolation & Heredocs | 2/2 | Complete    | 2026-02-26 | - |
 | 118. Env Var Stdlib | 2/2 | Complete    | 2026-02-26 | - |
 | 119. Regular Expressions | 3/3 | Complete    | 2026-02-26 | - |
-| 120. Mesher Dogfooding | 1/2 | In Progress|  | - |
+| 120. Mesher Dogfooding | 2/2 | Complete   | 2026-02-26 | - |
 | 121. Mesh Agent Skill | v12.0 | 0/? | Not started | - |
 | 122. Repository Reorganization | v12.0 | 0/? | Not started | - |
 | 123. Performance Benchmarks | v12.0 | 0/? | Not started | - |
