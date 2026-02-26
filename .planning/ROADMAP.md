@@ -288,8 +288,8 @@ Plans:
   4. Mesher E2E verification passes: all 8 HTTP API endpoints return 2xx, WebSocket 101 confirmed
 **Plans**: 2 plans
 Plans:
-- [ ] 120-01-PLAN.md — Apply slot pipe and string interpolation across all Mesher .mpl files
-- [ ] 120-02-PLAN.md — Full build, compiler error fixes, E2E test suite, and human endpoint verification
+- [x] 120-01-PLAN.md — Apply slot pipe and string interpolation across all Mesher .mpl files
+- [x] 120-02-PLAN.md — Full build, compiler error fixes, E2E test suite, and human endpoint verification
 
 ### Phase 121: Mesh Agent Skill
 **Goal**: An AI agent skill exists that provides complete progressive-disclosure coverage of the Mesh language
@@ -299,7 +299,12 @@ Plans:
   1. Skill file exists in GSD skill format with a main entry command providing a concise language overview and list of available sub-topics
   2. Skill provides per-topic deep-dive commands covering syntax, types, actors, ORM, HTTP/WS, stdlib, and distributed actors
   3. Skill is registered in the GSD system and can be auto-loaded for Mesh questions without explicit invocation
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 121-01-PLAN.md — Root SKILL.md + directory scaffold + syntax and types sub-skills (Wave 1)
+- [ ] 121-02-PLAN.md — pattern-matching, error-handling, and traits sub-skills (Wave 2, parallel)
+- [ ] 121-03-PLAN.md — actors, supervisors, and collections sub-skills (Wave 2, parallel)
+- [ ] 121-04-PLAN.md — strings/regex/env, http, and database sub-skills (Wave 2, parallel)
 
 ### Phase 122: Repository Reorganization
 **Goal**: Repository top-level is clean and navigable for open source with compiler/mesher/website/tools/ directories
@@ -359,8 +364,18 @@ Note: Phase 119 (Regex) depends only on Phase 115 and may proceed in parallel wi
 | 118. Env Var Stdlib | 2/2 | Complete    | 2026-02-26 | - |
 | 119. Regular Expressions | 3/3 | Complete    | 2026-02-26 | - |
 | 120. Mesher Dogfooding | 2/2 | Complete    | 2026-02-26 | - |
-| 121. Mesh Agent Skill | v12.0 | 0/? | Not started | - |
+| 121. Mesh Agent Skill | v12.0 | 0/4 | Not started | - |
 | 122. Repository Reorganization | v12.0 | 0/? | Not started | - |
 | 123. Performance Benchmarks | v12.0 | 0/? | Not started | - |
 
 **Total through v11.0: 115 phases shipped, 319 plans completed across 21 milestones.**
+
+### Phase 124: Fix POST /api/v1/events 401 seed data issue
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 123
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 124 to break down)
