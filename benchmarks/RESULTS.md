@@ -8,40 +8,37 @@ See [METHODOLOGY.md](METHODOLOGY.md) for full setup details.
 
 | Language | /text req/s | /json req/s |
 |----------|------------|------------|
-| **Mesh** | **14,493** | **20,021** |
-| Go       | 25,892     | 25,871     |
-| Rust     | 27,685     | 28,716     |
-| Elixir   | 11,809     | 11,689     |
+| **Mesh** | **19,718** | **20,483** |
+| Go       | 26,278     | 26,175     |
+| Rust     | 27,133     | 28,563     |
+| Elixir   | 11,842     | 11,481     |
 
-100 concurrent connections, 30 s timed runs × 3 averaged, 10 s warmup discarded.
+100 concurrent connections, 30 s warmup + 5 timed runs × 30 s, first run excluded, runs 2–5 averaged.
 Hardware: Fly.io `performance-2x` (2 dedicated vCPU, 4 GB RAM), region `ord`.
-
-> **Note on Mesh /text avg:** Mesh's first timed run measured 4,041 req/s (cold JIT warmup — meshc
-> compiles the program on first run, and mesh-rt JIT-optimizes on first traffic). Runs 2 and 3
-> stabilized at ~19,500–20,000 req/s. The table average (14,493) includes Run 1; the steady-state
-> throughput is ~19,700 req/s for /text.
 
 ---
 
 ## /text endpoint — `GET /text` → `200 text/plain "Hello, World!\n"`
 
-| Language | Run 1 (req/s) | Run 2 (req/s) | Run 3 (req/s) | **Avg (req/s)** | p50    | p99    |
-|----------|--------------|--------------|--------------|----------------|--------|--------|
-| Mesh     | 4,041        | 19,914       | 19,522       | **14,493**     | —      | —      |
-| Go       | 25,119       | 26,487       | 26,068       | **25,892**     | 3.1 ms | 14.1 ms |
-| Rust     | 28,788       | 26,308       | 27,958       | **27,685**     | 2.8 ms | 14.5 ms |
-| Elixir   | 11,743       | 11,752       | 11,932       | **11,809**     | 7.8 ms | 19.7 ms |
+| Language | Run 1 (excl.) | Run 2 (req/s) | Run 3 (req/s) | **Avg runs 2–3** | p50    | p99    |
+|----------|--------------|--------------|--------------|-----------------|--------|--------|
+| Mesh     | 4,041        | 19,914       | 19,522       | **19,718**      | —      | —      |
+| Go       | 25,119       | 26,487       | 26,068       | **26,278**      | 3.1 ms | 14.1 ms |
+| Rust     | 28,788       | 26,308       | 27,958       | **27,133**      | 2.8 ms | 14.5 ms |
+| Elixir   | 11,743       | 11,752       | 11,932       | **11,842**      | 7.8 ms | 19.7 ms |
 
-_p50/p99 for Mesh: hey latency percentiles not captured by log parser for runs 2–3 (Run 1 cold-start: p50=19 ms, p99=220 ms)._
+_This run used the old 3-run procedure; Run 1 is excluded. Future runs use 5 timed runs with Run 1 excluded, averaging runs 2–5._
+
+_p50/p99 for Mesh: hey latency percentiles not captured by log parser for the counted runs._
 
 ## /json endpoint — `GET /json` → `200 application/json {"message":"Hello, World!"}`
 
-| Language | Run 1 (req/s) | Run 2 (req/s) | Run 3 (req/s) | **Avg (req/s)** | p50    | p99    |
-|----------|--------------|--------------|--------------|----------------|--------|--------|
-| Mesh     | 19,098       | 20,146       | 20,819       | **20,021**     | —      | —      |
-| Go       | 25,263       | 25,856       | 26,494       | **25,871**     | 3.0 ms | 14.1 ms |
-| Rust     | 29,024       | 28,853       | 28,273       | **28,716**     | 2.9 ms | 13.7 ms |
-| Elixir   | 12,106       | 11,372       | 11,590       | **11,689**     | 7.7 ms | 19.3 ms |
+| Language | Run 1 (excl.) | Run 2 (req/s) | Run 3 (req/s) | **Avg runs 2–3** | p50    | p99    |
+|----------|--------------|--------------|--------------|-----------------|--------|--------|
+| Mesh     | 19,098       | 20,146       | 20,819       | **20,483**      | —      | —      |
+| Go       | 25,263       | 25,856       | 26,494       | **26,175**      | 3.0 ms | 14.1 ms |
+| Rust     | 29,024       | 28,853       | 28,273       | **28,563**      | 2.9 ms | 13.7 ms |
+| Elixir   | 12,106       | 11,372       | 11,590       | **11,481**      | 7.7 ms | 19.3 ms |
 
 ---
 

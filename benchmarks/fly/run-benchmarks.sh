@@ -3,14 +3,15 @@ set -e
 
 SERVER_HOST="${SERVER_HOST:-localhost}"
 CONNECTIONS=100
-WARMUP_DURATION=10
+WARMUP_DURATION=30
 BENCH_DURATION=30
-RUNS=3
+RUNS=5
+DISCARD_RUNS=1   # first N timed runs excluded from average (allow JIT/code-cache warmup)
 
 echo "=== Mesh HTTP Benchmark Runner ==="
 echo "Target:      $SERVER_HOST"
 echo "Connections: $CONNECTIONS"
-echo "Duration:    ${WARMUP_DURATION}s warmup + ${BENCH_DURATION}s x${RUNS} timed runs"
+echo "Duration:    ${WARMUP_DURATION}s warmup + ${BENCH_DURATION}s x${RUNS} timed runs (first ${DISCARD_RUNS} discarded)"
 echo ""
 
 declare -A RESULT_RPS
@@ -75,6 +76,7 @@ for lang in Mesh Go Rust Elixir; do
     echo "  Warmup done. Running ${RUNS} timed runs..."
 
     rps_total=0
+    counted=0
     last_p50="N/A"
     last_p99="N/A"
 
@@ -84,13 +86,18 @@ for lang in Mesh Go Rust Elixir; do
       rps=$(echo "$output" | grep "Requests/sec:" | awk '{print $2}' | tr -d '[:space:]')
       p50=$(echo "$output" | grep "^ *50% in" | awk '{print $3, $4}')
       p99=$(echo "$output" | grep "^ *99% in" | awk '{print $3, $4}')
-      rps_total=$(echo "$rps_total + ${rps:-0}" | bc -l)
-      last_p50="${p50:-N/A}"
-      last_p99="${p99:-N/A}"
-      echo "    Run $i: ${rps:-N/A} req/s  p50=${p50:-N/A}  p99=${p99:-N/A}"
+      if [ "$i" -le "$DISCARD_RUNS" ]; then
+        echo "    Run $i: ${rps:-N/A} req/s  p50=${p50:-N/A}  p99=${p99:-N/A}  [warmup — excluded]"
+      else
+        rps_total=$(echo "$rps_total + ${rps:-0}" | bc -l)
+        counted=$((counted + 1))
+        last_p50="${p50:-N/A}"
+        last_p99="${p99:-N/A}"
+        echo "    Run $i: ${rps:-N/A} req/s  p50=${p50:-N/A}  p99=${p99:-N/A}"
+      fi
     done
 
-    avg_rps=$(echo "scale=0; $rps_total / $RUNS" | bc -l)
+    avg_rps=$(echo "scale=0; $rps_total / $counted" | bc -l)
     RESULT_RPS["${lang}_${endpoint}"]="$avg_rps"
     RESULT_P50["${lang}_${endpoint}"]="$last_p50"
     RESULT_P99["${lang}_${endpoint}"]="$last_p99"
@@ -99,7 +106,7 @@ done
 
 echo ""
 echo "============================================================"
-echo "== RESULTS (${CONNECTIONS} connections, ${BENCH_DURATION}s x${RUNS} averaged)       =="
+echo "== RESULTS (${CONNECTIONS} connections, ${BENCH_DURATION}s x$((RUNS - DISCARD_RUNS)) averaged, run 1 excluded) =="
 echo "============================================================"
 echo ""
 printf "%-10s  %-12s  %-10s  %-10s\n" "Language" "Req/s" "p50" "p99"

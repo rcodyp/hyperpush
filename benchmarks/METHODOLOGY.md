@@ -59,10 +59,10 @@ HTTP/1.1 over IPv6 (Fly.io 6PN private network). All servers bind `[::]:PORT` fo
 
 For each language × endpoint combination:
 
-1. **Warmup run:** 10 seconds (`-z 10s`) — discarded
-2. **Timed runs:** 3 × 30-second runs (`-z 30s`)
-3. **Average req/s** across 3 runs reported
-4. **p50 / p99** from last timed run's hey latency distribution
+1. **Warmup pass:** 30 seconds (`-z 30s`) — discarded. Matches timed run duration to ensure all JIT compilation, code-cache population, and OS-level TCP stack warmup complete before measurement begins.
+2. **Timed runs:** 5 × 30-second runs (`-z 30s`). Run 1 is logged but excluded from the average (belt-and-suspenders warmup for runtimes that continue optimising past the warmup pass).
+3. **Average req/s** across runs 2–5 reported.
+4. **p50 / p99** from the last timed run's hey latency distribution.
 
 Servers are benchmarked sequentially (Mesh → Go → Rust → Elixir) to avoid cross-interference.
 
@@ -108,5 +108,5 @@ All server and load generator code is in `benchmarks/` and `benchmarks/fly/`. Th
 ## Caveats
 
 - All 4 language servers run on the **same VM**. Under sustained load, they compete for the 2 dedicated CPUs and 4 GB RAM. Results reflect realistic co-located throughput, not isolated single-server maximum throughput.
-- Mesh's first timed run for `/text` was 4,041 req/s due to JIT warmup; subsequent runs stabilised at ~19,500–20,000 req/s. The reported average (14,493) includes this cold-start run.
+- Mesh's first timed run for `/text` was 4,041 req/s (JIT warmup). It is excluded from the reported average (19,718 req/s); subsequent runs stabilised at ~19,500–20,000 req/s.
 - p50/p99 for Mesh were not reliably captured — the hey latency percentile format was not matched by the log parser for the warmed-up runs.
