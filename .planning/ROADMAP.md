@@ -273,9 +273,9 @@ Plans:
   5. User can call `Regex.replace(rx, str, replacement)` and `Regex.split(rx, str)` for replacement and splitting
 **Plans**: 3 plans
 Plans:
-- [ ] 119-01-PLAN.md — Lexer + Parser + AST + typeck + MIR: RegexLiteral token, REGEX_EXPR node, ~r/pat/flags syntax (REGEX-01)
-- [ ] 119-02-PLAN.md — Runtime (mesh-rt/regex.rs) + full compiler pipeline: compile/match/captures/replace/split (REGEX-02 to REGEX-06)
-- [ ] 119-03-PLAN.md — E2E test fixtures and test functions for all 6 requirements
+- [x] 119-01-PLAN.md — Lexer + Parser + AST + typeck + MIR: RegexLiteral token, REGEX_EXPR node, ~r/pat/flags syntax (REGEX-01)
+- [x] 119-02-PLAN.md — Runtime (mesh-rt/regex.rs) + full compiler pipeline: compile/match/captures/replace/split (REGEX-02 to REGEX-06)
+- [x] 119-03-PLAN.md — E2E test fixtures and test functions for all 6 requirements
 
 ### Phase 120: Mesher Dogfooding
 **Goal**: Mesher production codebase demonstrates slot pipe and string features in real usage, verified end-to-end
@@ -286,7 +286,10 @@ Plans:
   2. At least one real Mesher usage of string interpolation or heredocs replaces less ergonomic string construction
   3. Mesher compiles with zero errors after all updates
   4. Mesher E2E verification passes: all 8 HTTP API endpoints return 2xx, WebSocket 101 confirmed
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 120-01-PLAN.md — Apply slot pipe and string interpolation across all Mesher .mpl files
+- [ ] 120-02-PLAN.md — Full build, compiler error fixes, E2E test suite, and human endpoint verification
 
 ### Phase 121: Mesh Agent Skill
 **Goal**: An AI agent skill exists that provides complete progressive-disclosure coverage of the Mesh language
@@ -355,7 +358,7 @@ Note: Phase 119 (Regex) depends only on Phase 115 and may proceed in parallel wi
 | 117. String Interpolation & Heredocs | 2/2 | Complete    | 2026-02-26 | - |
 | 118. Env Var Stdlib | 2/2 | Complete    | 2026-02-26 | - |
 | 119. Regular Expressions | 3/3 | Complete    | 2026-02-26 | - |
-| 120. Mesher Dogfooding | v12.0 | 0/? | Not started | - |
+| 120. Mesher Dogfooding | v12.0 | 0/2 | Not started | - |
 | 121. Mesh Agent Skill | v12.0 | 0/? | Not started | - |
 | 122. Repository Reorganization | v12.0 | 0/? | Not started | - |
 | 123. Performance Benchmarks | v12.0 | 0/? | Not started | - |
