@@ -270,6 +270,35 @@ pub fn register_builtins(
         Scheme::mono(Ty::fun(vec![], Ty::list(Ty::string()))),
     );
 
+    // ── Standard library: Regex functions (Phase 119) ─────────────────
+
+    // Regex.compile(pattern) -> Result<Regex, String>
+    // Module-qualified: Regex.compile -> prefixed "regex_compile" -> map_builtin_name -> mesh_regex_compile
+    env.insert(
+        "regex_compile".into(),
+        Scheme::mono(Ty::fun(vec![Ty::string()], Ty::result(Ty::Con(TyCon::new("Regex")), Ty::string()))),
+    );
+    // Regex.match(rx, str) -> Bool
+    env.insert(
+        "regex_match".into(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string()], Ty::bool())),
+    );
+    // Regex.captures(rx, str) -> Option<List<String>>
+    env.insert(
+        "regex_captures".into(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string()], Ty::option(Ty::list(Ty::string())))),
+    );
+    // Regex.replace(rx, str, replacement) -> String
+    env.insert(
+        "regex_replace".into(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string(), Ty::string()], Ty::string())),
+    );
+    // Regex.split(rx, str) -> List<String>
+    env.insert(
+        "regex_split".into(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string()], Ty::list(Ty::string()))),
+    );
+
     // ── Standard library: Collection types (Phase 8) ─────────────────
 
     // Type constructors for collection types (bare names).
@@ -1743,6 +1772,13 @@ mod tests {
         assert!(env.lookup("env_get_with_default").is_some());
         assert!(env.lookup("env_get_int").is_some());
         assert!(env.lookup("env_args").is_some());
+
+        // Regex functions (Phase 119)
+        assert!(env.lookup("regex_compile").is_some());
+        assert!(env.lookup("regex_match").is_some());
+        assert!(env.lookup("regex_captures").is_some());
+        assert!(env.lookup("regex_replace").is_some());
+        assert!(env.lookup("regex_split").is_some());
 
         // HTTP functions (Phase 8 Plan 05)
         assert!(env.lookup("http_router").is_some());

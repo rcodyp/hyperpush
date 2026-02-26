@@ -252,6 +252,32 @@ pub fn declare_intrinsics<'ctx>(module: &Module<'ctx>) {
     let env_get_int_ty = i64_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
     module.add_function("mesh_env_get_int", env_get_int_ty, Some(inkwell::module::Linkage::External));
 
+    // ── Standard library: Regex functions (Phase 119) ──────────────────
+
+    // mesh_regex_from_literal(pattern: ptr, flags_bits: i64) -> ptr
+    let regex_from_lit_ty = ptr_type.fn_type(&[ptr_type.into(), i64_type.into()], false);
+    module.add_function("mesh_regex_from_literal", regex_from_lit_ty, Some(inkwell::module::Linkage::External));
+
+    // mesh_regex_compile(pattern: ptr) -> ptr  (returns MeshOption/Result)
+    let regex_compile_ty = ptr_type.fn_type(&[ptr_type.into()], false);
+    module.add_function("mesh_regex_compile", regex_compile_ty, Some(inkwell::module::Linkage::External));
+
+    // mesh_regex_match(rx_ptr: ptr, s: ptr) -> i8 (bool)
+    let regex_match_ty = i8_type.fn_type(&[ptr_type.into(), ptr_type.into()], false);
+    module.add_function("mesh_regex_match", regex_match_ty, Some(inkwell::module::Linkage::External));
+
+    // mesh_regex_captures(rx_ptr: ptr, s: ptr) -> ptr  (MeshOption<List<String>>)
+    let regex_captures_ty = ptr_type.fn_type(&[ptr_type.into(), ptr_type.into()], false);
+    module.add_function("mesh_regex_captures", regex_captures_ty, Some(inkwell::module::Linkage::External));
+
+    // mesh_regex_replace(rx_ptr: ptr, s: ptr, replacement: ptr) -> ptr  (String)
+    let regex_replace_ty = ptr_type.fn_type(&[ptr_type.into(), ptr_type.into(), ptr_type.into()], false);
+    module.add_function("mesh_regex_replace", regex_replace_ty, Some(inkwell::module::Linkage::External));
+
+    // mesh_regex_split(rx_ptr: ptr, s: ptr) -> ptr  (List<String>)
+    let regex_split_ty = ptr_type.fn_type(&[ptr_type.into(), ptr_type.into()], false);
+    module.add_function("mesh_regex_split", regex_split_ty, Some(inkwell::module::Linkage::External));
+
     // ── Standard library: Collection functions (Phase 8 Plan 02) ──────────
 
     // List functions
@@ -1700,6 +1726,14 @@ mod tests {
         assert!(module.get_function("mesh_repo_insert_or_update").is_some());
         assert!(module.get_function("mesh_repo_delete_where_returning").is_some());
         assert!(module.get_function("mesh_query_where_sub").is_some());
+
+        // Phase 119: Regex functions
+        assert!(module.get_function("mesh_regex_from_literal").is_some());
+        assert!(module.get_function("mesh_regex_compile").is_some());
+        assert!(module.get_function("mesh_regex_match").is_some());
+        assert!(module.get_function("mesh_regex_captures").is_some());
+        assert!(module.get_function("mesh_regex_replace").is_some());
+        assert!(module.get_function("mesh_regex_split").is_some());
     }
 
     #[test]

@@ -249,6 +249,14 @@ fn register_runtime_symbols() {
     add_sym("mesh_env_get_with_default", mesh_rt::mesh_env_get_with_default as *const ());
     add_sym("mesh_env_get_int", mesh_rt::mesh_env_get_int as *const ());
 
+    // Regex (Phase 119)
+    add_sym("mesh_regex_from_literal", mesh_rt::mesh_regex_from_literal as *const ());
+    add_sym("mesh_regex_compile", mesh_rt::mesh_regex_compile as *const ());
+    add_sym("mesh_regex_match", mesh_rt::mesh_regex_match as *const ());
+    add_sym("mesh_regex_captures", mesh_rt::mesh_regex_captures as *const ());
+    add_sym("mesh_regex_replace", mesh_rt::mesh_regex_replace as *const ());
+    add_sym("mesh_regex_split", mesh_rt::mesh_regex_split as *const ());
+
     // JSON
     add_sym("mesh_json_get", mesh_rt::mesh_json_get as *const ());
     add_sym("mesh_json_get_nested", mesh_rt::mesh_json_get_nested as *const ());

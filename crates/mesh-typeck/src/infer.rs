@@ -314,6 +314,35 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
     );
     modules.insert("Env".to_string(), env_mod);
 
+    // ── Regex module (Phase 119) ─────────────────────────────────────
+    let mut regex_mod = HashMap::new();
+    // Regex.compile(pattern) -> Result<Regex, String>
+    regex_mod.insert(
+        "compile".to_string(),
+        Scheme::mono(Ty::fun(vec![Ty::string()], Ty::result(Ty::Con(TyCon::new("Regex")), Ty::string()))),
+    );
+    // Regex.match(rx, str) -> Bool
+    regex_mod.insert(
+        "match".to_string(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string()], Ty::bool())),
+    );
+    // Regex.captures(rx, str) -> Option<List<String>>
+    regex_mod.insert(
+        "captures".to_string(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string()], Ty::option(Ty::list(Ty::string())))),
+    );
+    // Regex.replace(rx, str, replacement) -> String
+    regex_mod.insert(
+        "replace".to_string(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string(), Ty::string()], Ty::string())),
+    );
+    // Regex.split(rx, str) -> List<String>
+    regex_mod.insert(
+        "split".to_string(),
+        Scheme::mono(Ty::fun(vec![Ty::Con(TyCon::new("Regex")), Ty::string()], Ty::list(Ty::string()))),
+    );
+    modules.insert("Regex".to_string(), regex_mod);
+
     // ── File module ─────────────────────────────────────────────────
     let mut file_mod = HashMap::new();
     file_mod.insert(
