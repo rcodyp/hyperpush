@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-26T07:20:14.424Z"
+last_updated: "2026-02-26T07:55:51.214Z"
 progress:
-  total_phases: 130
+  total_phases: 131
   completed_phases: 129
-  total_plans: 336
-  completed_plans: 336
+  total_plans: 339
+  completed_plans: 338
 ---
 
 # Project State
@@ -64,6 +64,8 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | Phase 121 P04 | 2min | 3 tasks | 3 files |
 | Phase 122 P01 | 3min | 2 tasks | 15 files |
 | Phase 122 P02 | 15min | 3 tasks | 1 files |
+| Phase 123 P02 | 2min | 2 tasks | 5 files |
+| Phase 123 P01 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -115,6 +117,9 @@ Recent decisions affecting current work:
 - [Phase 122]: Root package.json deleted (not moved to website/) because website/ already has its own real package.json; root was dev-only concurrently wrapper
 - [Phase 122]: crates/ flattened directly to compiler/ with no intermediate directory — all 11 crates are direct children of compiler/
 - [Phase 122]: Docker/Mesher E2E test skipped in 122-02 — container crashed; user approved and confirmed E2E works
+- [Phase 123]: Port assignments: Mesh=3000, Go=3001, Rust=3002, Elixir=3003 — consistent across all benchmark plans
+- [Phase 123]: Port 3000 for Mesh benchmark server, port 3001 for Go benchmark server (hardcoded, wrk runner script uses these)
+- [Phase 123]: Go benchmark uses GOMAXPROCS(NumCPU()) at startup for fair multi-core CPU utilization comparison
 
 ### Roadmap Evolution
 

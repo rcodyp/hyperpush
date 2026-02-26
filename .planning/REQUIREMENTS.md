@@ -51,10 +51,10 @@ Requirements for v12.0 Language Ergonomics & Open Source Readiness. Each maps to
 
 ### Performance Benchmarks
 
-- [ ] **BENCH-01**: Mesh benchmark HTTP server written (JSON endpoint, configurable concurrency)
-- [ ] **BENCH-02**: Equivalent benchmark server written in Go (net/http or Gin)
-- [ ] **BENCH-03**: Equivalent benchmark server written in Rust (axum or actix-web)
-- [ ] **BENCH-04**: Equivalent benchmark server written in Elixir (Plug/Cowboy)
+- [x] **BENCH-01**: Mesh benchmark HTTP server written (JSON endpoint, configurable concurrency)
+- [x] **BENCH-02**: Equivalent benchmark server written in Go (net/http or Gin)
+- [x] **BENCH-03**: Equivalent benchmark server written in Rust (axum or actix-web)
+- [x] **BENCH-04**: Equivalent benchmark server written in Elixir (Plug/Cowboy)
 - [ ] **BENCH-05**: Benchmarks measure throughput (req/s), p50/p99 latency, and memory usage
 - [ ] **BENCH-06**: Methodology documented (tool, hardware, concurrency settings) and results published in repo
 
@@ -118,10 +118,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | REPO-04 | Phase 122 | Complete |
 | REPO-05 | Phase 122 | Complete |
 | REPO-06 | Phase 122 | Complete |
-| BENCH-01 | Phase 123 | Pending |
-| BENCH-02 | Phase 123 | Pending |
-| BENCH-03 | Phase 123 | Pending |
-| BENCH-04 | Phase 123 | Pending |
+| BENCH-01 | Phase 123 | Complete |
+| BENCH-02 | Phase 123 | Complete |
+| BENCH-03 | Phase 123 | Complete |
+| BENCH-04 | Phase 123 | Complete |
 | BENCH-05 | Phase 123 | Pending |
 | BENCH-06 | Phase 123 | Pending |
 
