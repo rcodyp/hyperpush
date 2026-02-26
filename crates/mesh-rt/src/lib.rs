@@ -126,7 +126,7 @@ pub use collections::set::{
     mesh_set_union,
 };
 pub use collections::tuple::{mesh_tuple_first, mesh_tuple_nth, mesh_tuple_second, mesh_tuple_size};
-pub use env::{mesh_env_args, mesh_env_get};
+pub use env::{mesh_env_args, mesh_env_get, mesh_env_get_with_default, mesh_env_get_int};
 pub use iter::{
     mesh_iter_generic_next,
     mesh_iter_map, mesh_iter_map_next,
