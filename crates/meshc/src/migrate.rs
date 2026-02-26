@@ -138,10 +138,11 @@ fn run_with_url(url :: String) do
 end
 
 fn main() do
-  let url_opt = Env.get("DATABASE_URL")
-  case url_opt do
-    Some(url) -> run_with_url(url)
-    None -> println("DATABASE_URL not set")
+  let url = Env.get("DATABASE_URL", "")
+  if url != "" do
+    run_with_url(url)
+  else
+    println("DATABASE_URL not set")
   end
 end
 "#,

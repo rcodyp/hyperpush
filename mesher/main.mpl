@@ -19,14 +19,6 @@ from Api.Alerts import handle_create_alert_rule, handle_list_alert_rules, handle
 from Api.Settings import handle_get_project_settings, handle_update_project_settings, handle_get_project_storage
 from Ingestion.WsHandler import ws_on_connect, ws_on_message, ws_on_close
 
-fn get_env_or_default(key :: String, default_val :: String) -> String do
-  let result = Env.get(key)
-  case result do
-    Some(val) -> val
-    None -> default_val
-  end
-end
-
 fn parse_port(port_str :: String, default_port :: Int) -> Int do
   let parsed = String.to_int(port_str)
   case parsed do
@@ -49,10 +41,11 @@ fn connect_to_peer(peer :: String) do
 end
 
 fn try_connect_peers() do
-  let peer_opt = Env.get("MESHER_PEERS")
-  case peer_opt do
-    Some(peer) -> connect_to_peer(peer)
-    None -> println("[Mesher] No peers configured")
+  let peer = Env.get("MESHER_PEERS", "")
+  if peer != "" do
+    connect_to_peer(peer)
+  else
+    println("[Mesher] No peers configured")
   end
 end
 
@@ -67,18 +60,20 @@ fn start_node_with(node_name :: String, cookie :: String) do
 end
 
 fn try_start_with_cookie(node_name :: String) do
-  let cookie_opt = Env.get("MESHER_COOKIE")
-  case cookie_opt do
-    Some(cookie) -> start_node_with(node_name, cookie)
-    None -> println("[Mesher] Running in standalone mode (no distribution)")
+  let cookie = Env.get("MESHER_COOKIE", "")
+  if cookie != "" do
+    start_node_with(node_name, cookie)
+  else
+    println("[Mesher] Running in standalone mode (no distribution)")
   end
 end
 
 fn start_node() do
-  let name_opt = Env.get("MESHER_NODE_NAME")
-  case name_opt do
-    Some(node_name) -> try_start_with_cookie(node_name)
-    None -> println("[Mesher] Running in standalone mode (no distribution)")
+  let name = Env.get("MESHER_NODE_NAME", "")
+  if name != "" do
+    try_start_with_cookie(name)
+  else
+    println("[Mesher] Running in standalone mode (no distribution)")
   end
 end
 
@@ -121,9 +116,9 @@ fn start_services(pool :: PoolHandle) do
   println("[Mesher] Foundation ready")
 
   # Read configurable ports from environment (defaults: 8080 HTTP, 8081 WS)
-  let ws_port_str = get_env_or_default("MESHER_WS_PORT", "8081")
+  let ws_port_str = Env.get("MESHER_WS_PORT", "8081")
   let ws_port = parse_port(ws_port_str, 8081)
-  let http_port_str = get_env_or_default("MESHER_HTTP_PORT", "8080")
+  let http_port_str = Env.get("MESHER_HTTP_PORT", "8080")
   let http_port = parse_port(http_port_str, 8080)
 
   # Start WebSocket server (non-blocking -- spawns accept thread in runtime)
