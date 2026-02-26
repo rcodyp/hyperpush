@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-02-25)
 ## Current Position
 
 Phase: 119 of 123 (Phase 119: Regular Expressions)
-Plan: 01 complete
-Status: Phase 119 in progress — Plan 02 next
-Last activity: 2026-02-26 — 119-01 complete: regex literal full compiler pipeline (~r/pat/flags lexer, parser, AST, typeck, MIR)
+Plan: 02 complete
+Status: Phase 119 complete — Plan 03 (E2E tests) next
+Last activity: 2026-02-26 — 119-02 complete: Regex stdlib runtime + full compiler wiring (mesh-rt, typeck, codegen, MIR, JIT)
 
 Progress: [█░░░░░░░░░] 5% (v12.0)
 
@@ -54,6 +54,7 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | 118   | 01   | 10min    | 2     | 6     |
 | 118   | 02   | 13min    | 2     | 6     |
 | 119   | 01   | 6min     | 2     | 8     |
+| 119   | 02   | 10min    | 2     | 8     |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 119]: RegexExpr.pattern()/flags() parse CST source text (not TokenKind payload) since SyntaxToken only stores text spans
 - [Phase 119]: Flags bitmask i=1, m=2, s=4; only i/m/s valid -- other letters produce lexer Error token
 - [Phase 119]: mesh_regex_from_literal call site wired in Plan 01; runtime symbol added in Plan 02
+- [Phase 119]: Bool return for mesh_regex_match uses i8 (matches mesh_string_contains convention)
+- [Phase 119]: No bare regex 'replace'/'split' in map_builtin_name (would conflict with string variants); module-qualified regex_replace/regex_split unambiguous
 
 ### Roadmap Evolution
 
@@ -103,6 +106,6 @@ None. v11.0 fully shipped and verified. Zero known compiler correctness issues.
 ## Session Continuity
 
 Last session: 2026-02-26
-Stopped at: Completed 119-01-PLAN.md (regex literal full compiler pipeline)
+Stopped at: Completed 119-02-PLAN.md (Regex stdlib runtime + compiler wiring)
 Resume file: None
-Next action: /gsd:execute-phase 119 (plan 02)
+Next action: /gsd:execute-phase 119 (plan 03 — E2E tests)

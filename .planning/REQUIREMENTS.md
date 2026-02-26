@@ -18,11 +18,11 @@ Requirements for v12.0 Language Ergonomics & Open Source Readiness. Each maps to
 ### Regular Expressions
 
 - [x] **REGEX-01**: User can write regex literals `~r/pattern/` and `~r/pattern/flags` (i, m, s flags)
-- [ ] **REGEX-02**: User can compile regex at runtime: `Regex.compile(str) -> Result<Regex, String>`
-- [ ] **REGEX-03**: User can test a match: `Regex.match(rx, str) -> Bool`
-- [ ] **REGEX-04**: User can extract captures: `Regex.captures(rx, str) -> Option<List<String>>`
-- [ ] **REGEX-05**: User can replace matches: `Regex.replace(rx, str, replacement) -> String`
-- [ ] **REGEX-06**: User can split by pattern: `Regex.split(rx, str) -> List<String>`
+- [x] **REGEX-02**: User can compile regex at runtime: `Regex.compile(str) -> Result<Regex, String>`
+- [x] **REGEX-03**: User can test a match: `Regex.match(rx, str) -> Bool`
+- [x] **REGEX-04**: User can extract captures: `Regex.captures(rx, str) -> Option<List<String>>`
+- [x] **REGEX-05**: User can replace matches: `Regex.replace(rx, str, replacement) -> String`
+- [x] **REGEX-06**: User can split by pattern: `Regex.split(rx, str) -> List<String>`
 
 ### String Ergonomics
 
@@ -97,11 +97,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PIPE-04 | Phase 116 | Complete |
 | PIPE-05 | Phase 120 | Pending |
 | REGEX-01 | Phase 119 | Complete |
-| REGEX-02 | Phase 119 | Pending |
-| REGEX-03 | Phase 119 | Pending |
-| REGEX-04 | Phase 119 | Pending |
-| REGEX-05 | Phase 119 | Pending |
-| REGEX-06 | Phase 119 | Pending |
+| REGEX-02 | Phase 119 | Complete |
+| REGEX-03 | Phase 119 | Complete |
+| REGEX-04 | Phase 119 | Complete |
+| REGEX-05 | Phase 119 | Complete |
+| REGEX-06 | Phase 119 | Complete |
 | STRG-01 | Phase 117 | Complete |
 | STRG-02 | Phase 117 | Complete |
 | STRG-03 | Phase 117 | Complete |
