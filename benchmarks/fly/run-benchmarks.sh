@@ -2,7 +2,6 @@
 set -e
 
 SERVER_HOST="${SERVER_HOST:-localhost}"
-THREADS="$(nproc)"
 CONNECTIONS=100
 WARMUP_DURATION=10
 BENCH_DURATION=30
@@ -10,7 +9,6 @@ RUNS=3
 
 echo "=== Mesh HTTP Benchmark Runner ==="
 echo "Target:      $SERVER_HOST"
-echo "Threads:     $THREADS"
 echo "Connections: $CONNECTIONS"
 echo "Duration:    ${WARMUP_DURATION}s warmup + ${BENCH_DURATION}s x${RUNS} timed runs"
 echo ""
@@ -44,11 +42,11 @@ wait_for_server() {
   return 0
 }
 
-run_wrk() {
+run_hey() {
   local url=$1
   local duration=$2
-  local extra_flags="${3:-}"
-  wrk -t"$THREADS" -c"$CONNECTIONS" -d"${duration}s" $extra_flags "$url" 2>/dev/null
+  # hey -c: concurrency, -z: duration, -t: per-request timeout (30s)
+  hey -c "$CONNECTIONS" -z "${duration}s" -t 30 "$url" 2>/dev/null
 }
 
 for lang in Mesh Go Rust Elixir; do
@@ -73,7 +71,7 @@ for lang in Mesh Go Rust Elixir; do
     echo "  Endpoint: /$endpoint"
 
     # Warmup run (results discarded)
-    run_wrk "$url" "$WARMUP_DURATION" > /dev/null
+    run_hey "$url" "$WARMUP_DURATION" > /dev/null
     echo "  Warmup done. Running ${RUNS} timed runs..."
 
     rps_total=0
@@ -81,10 +79,11 @@ for lang in Mesh Go Rust Elixir; do
     last_p99="N/A"
 
     for i in $(seq 1 $RUNS); do
-      output=$(run_wrk "$url" "$BENCH_DURATION" "--latency")
+      # hey outputs: "  Requests/sec: NNNN.NN" and "  50% in X.XXXX secs"
+      output=$(run_hey "$url" "$BENCH_DURATION")
       rps=$(echo "$output" | grep "Requests/sec:" | awk '{print $2}' | tr -d '[:space:]')
-      p50=$(echo "$output" | grep "50.000%" | awk '{print $2}')
-      p99=$(echo "$output" | grep "99.000%" | awk '{print $2}')
+      p50=$(echo "$output" | grep "^ *50% in" | awk '{print $3, $4}')
+      p99=$(echo "$output" | grep "^ *99% in" | awk '{print $3, $4}')
       rps_total=$(echo "$rps_total + ${rps:-0}" | bc -l)
       last_p50="${p50:-N/A}"
       last_p99="${p99:-N/A}"

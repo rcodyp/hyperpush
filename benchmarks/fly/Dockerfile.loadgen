@@ -2,14 +2,13 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    curl git build-essential libssl-dev bc unzip \
+    curl bc \
     && rm -rf /var/lib/apt/lists/*
 
-# Build wrk from source (not in Ubuntu 22.04 apt)
-RUN git clone https://github.com/wg/wrk.git /tmp/wrk \
-    && cd /tmp/wrk && make \
-    && cp /tmp/wrk/wrk /usr/local/bin/wrk \
-    && rm -rf /tmp/wrk
+# Install hey — Go-based HTTP load tester with IPv6 support
+# (wrk does not support IPv6; Fly's private network is IPv6-only)
+RUN curl -sf https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64 \
+    -o /usr/local/bin/hey && chmod +x /usr/local/bin/hey
 
 WORKDIR /app
 COPY benchmarks/fly/run-benchmarks.sh /app/run-benchmarks.sh
