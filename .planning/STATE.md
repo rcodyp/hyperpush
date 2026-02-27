@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-27T17:29:31.620Z"
+last_updated: "2026-02-27T17:50:53.507Z"
 progress:
-  total_phases: 131
+  total_phases: 132
   completed_phases: 131
-  total_plans: 340
-  completed_plans: 340
+  total_plans: 343
+  completed_plans: 342
 ---
 
 # Project State
@@ -68,6 +68,8 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | Phase 123 P01 | 5min | 2 tasks | 3 files |
 | Phase 123 P03 | 3 | 3 tasks | 5 files |
 | Phase 124 P01 | 2min | 2 tasks | 1 files |
+| Phase 125 P01 | 1min | 1 tasks | 1 files |
+| Phase 125 P02 | 1min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -127,12 +129,16 @@ Recent decisions affecting current work:
 - [Phase 123]: RSS logged as CSV to stdout (RSS,lang,epoch,kB) every 2s; extracted via fly logs | grep '^RSS,'
 - [Phase 124]: projects.slug ON CONFLICT requires WHERE slug IS NOT NULL predicate to match partial index (bare ON CONFLICT (slug) causes PostgreSQL runtime error)
 - [Phase 124]: Seed migration uses Pool.execute for INSERT/DELETE and Repo.query_raw for SELECT, matching existing schema migration pattern
+- [Phase 125]: README.md updated to v12.0 with isolated benchmarks (29,108/28,955 req/s) and correct HTTP module syntax
+- [Phase 125]: Pipe Operators feature renamed (plural) to encompass both standard |> and slot pipe |N> in one feature card
+- [Phase 125]: Slot pipe |2> example uses insert_at('[', ']') pattern derived from tests/e2e/slot_pipe_basic.mpl
 
 ### Roadmap Evolution
 
 - v12.0 roadmap created 2026-02-25: 8 phases (116-123), 33 requirements mapped, 100% coverage
 - Phase ordering: compiler features first (116-119), then dogfooding (120), then skill (121), then repo (122), then benchmarks (123)
 - Phase 124 added: Fix POST /api/v1/events 401 seed data issue
+- Phase 125 added: update documentation such that it is up to date in the main read me, landing page, documents page. Use the mesh test's that are all passing as the source of truth.
 
 ### Pending Todos
 

@@ -60,7 +60,7 @@ Requirements for v12.0 Language Ergonomics & Open Source Readiness. Each maps to
 
 ## Documentation Requirements (Phase 125)
 
-- [ ] **DOC-01**: All public-facing documentation (README.md, landing page, docs pages) accurately reflects v12.0 features using passing e2e tests as source of truth — correct version badge, isolated benchmark numbers, #{} interpolation, slot pipe |N>, heredocs, regex, and env var stdlib documented.
+- [x] **DOC-01**: All public-facing documentation (README.md, landing page, docs pages) accurately reflects v12.0 features using passing e2e tests as source of truth — correct version badge, isolated benchmark numbers, #{} interpolation, slot pipe |N>, heredocs, regex, and env var stdlib documented.
 
 ## Future Requirements
 

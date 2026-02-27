@@ -394,7 +394,7 @@ Plans:
 **Goal:** Update all public-facing documentation (README, landing page, docs pages) to be accurate and current for v12.0, using the passing mesh tests as the authoritative source of truth.
 **Requirements**: DOC-01
 **Depends on:** Phase 124
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 125-01-PLAN.md — Update README.md: version badge, isolated benchmark numbers, project status, code examples
