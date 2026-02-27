@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Completeness
 status: unknown
-last_updated: "2026-02-27T21:51:50.328Z"
+last_updated: "2026-02-27T22:41:26Z"
 progress:
   total_phases: 124
   completed_phases: 124
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** v13.0 Language Completeness — Phase 127 complete (incl. ALIAS-03 E2E), Phase 128 (TryFrom/TryInto) next
+**Current focus:** v13.0 Language Completeness — Phase 128-01 complete (TryFrom/TryInto trait registration), Phase 128-02 (E2E tests) next
 
 ## Current Position
 
-Phase: 127 of 131 (Type Aliases) — Complete
-Plan: 03 complete — Phase 128 next
+Phase: 128 of 131 (TryFrom/TryInto Traits) — In Progress
+Plan: 01 complete — Phase 128-02 next
 Status: In Progress
-Last activity: 2026-02-27 — 127-03 complete: cross-module pub type E2E, ALIAS-03 fully verified with compile_multifile_and_run
+Last activity: 2026-02-27 — 128-01 complete: TryFrom/TryInto trait registration + synthetic TryInto derivation
 
-Progress: [████░░░░░░] 45% (5/11 plans)
+Progress: [█████░░░░░] 55% (6/11 plans)
 
 ## Performance Metrics
 
@@ -42,7 +42,7 @@ Progress: [████░░░░░░] 45% (5/11 plans)
 |-------|-------|--------|
 | 126. Multi-line Pipe | 2 | Complete (2/2) |
 | 127. Type Aliases | 3 | Complete (3/3) |
-| 128. TryFrom/TryInto | 2 | Not started |
+| 128. TryFrom/TryInto | 2 | In Progress (1/2) |
 | 129. Map.collect + Quality | 2 | Not started |
 | 130. Mesher Dogfooding | 1 | Not started |
 | 131. Documentation | 2 | Not started |
@@ -56,6 +56,7 @@ Progress: [████░░░░░░] 45% (5/11 plans)
 | 127 | P01 | 18m | 2 | 9 |
 | 127 | P02 | 12m | 2 | 5 |
 | 127 | P03 | 20m | 1 | 3 |
+| 128 | P01 | 3m | 2 | 2 |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 127]: Added DOT to collect_annotation_tokens and IDENT.DOT.IDENT joining in parse_type_tokens to support qualified type annotations like Types.UserId
 - [Phase 127]: Register imported aliases under qualified name (Types.UserId) as well as short name (UserId) during infer_with_imports pre-registration
 - [Phase 127]: Use fn main() wrapper in cross-module fixtures — all compile_multifile_and_run tests require a main function
+- [Phase 128-01]: No built-in TryFrom impls added — TryFrom is user-defined only (unlike From which ships Int->Float/String)
+- [Phase 128-01]: TryInto return_type set to None in synthetic impl — actual Result<T,E> resolved per-impl from user body
 
 ### Pending Todos
 
@@ -90,5 +93,5 @@ None. v12.0 fully shipped. v13.0 roadmap created with 100% requirement coverage 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed 127-03-PLAN.md — cross-module pub type E2E coverage, ALIAS-03 fully verified with compile_multifile_and_run
+Stopped at: Completed 128-01-PLAN.md — TryFrom/TryInto trait registration + synthetic TryInto derivation
 Resume file: None
