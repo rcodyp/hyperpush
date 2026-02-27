@@ -19,14 +19,6 @@ from Api.Alerts import handle_create_alert_rule, handle_list_alert_rules, handle
 from Api.Settings import handle_get_project_settings, handle_update_project_settings, handle_get_project_storage
 from Ingestion.WsHandler import ws_on_connect, ws_on_message, ws_on_close
 
-fn parse_port(port_str :: String, default_port :: Int) -> Int do
-  let parsed = String.to_int(port_str)
-  case parsed do
-    Some(p) -> p
-    None -> default_port
-  end
-end
-
 fn connect_to_peer(peer :: String) do
   if peer != "" do
     let connect_result = Node.connect(peer)
@@ -116,17 +108,15 @@ fn start_services(pool :: PoolHandle) do
   println("[Mesher] Foundation ready")
 
   # Read configurable ports from environment (defaults: 8080 HTTP, 8081 WS)
-  let ws_port_str = Env.get("MESHER_WS_PORT", "8081")
-  let ws_port = parse_port(ws_port_str, 8081)
-  let http_port_str = Env.get("MESHER_HTTP_PORT", "8080")
-  let http_port = parse_port(http_port_str, 8080)
+  let ws_port = Env.get_int("MESHER_WS_PORT", 8081)
+  let http_port = Env.get_int("MESHER_HTTP_PORT", 8080)
 
   # Start WebSocket server (non-blocking -- spawns accept thread in runtime)
-  println("[Mesher] WebSocket server starting on :#{ws_port_str}")
+  println("[Mesher] WebSocket server starting on :#{ws_port}")
   Ws.serve(on_ws_connect, on_ws_message, on_ws_close, ws_port)
 
   # Set up HTTP routes and start server (ingestion, search, dashboard, detail, issues, team, API keys)
-  println("[Mesher] HTTP server starting on :#{http_port_str}")
+  println("[Mesher] HTTP server starting on :#{http_port}")
   HTTP.serve((HTTP.router()
     |> HTTP.on_post("/api/v1/events", handle_event)
     |> HTTP.on_post("/api/v1/events/bulk", handle_bulk)
