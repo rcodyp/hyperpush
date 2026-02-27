@@ -5,10 +5,11 @@ RUN apt-get update && apt-get install -y \
     curl bc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install hey — Go-based HTTP load tester with IPv6 support
-# (wrk does not support IPv6; Fly's private network is IPv6-only)
-RUN curl -sf https://hey-release.s3.us-east-2.amazonaws.com/hey_linux_amd64 \
-    -o /usr/local/bin/hey && chmod +x /usr/local/bin/hey
+# Install bombardier — HTTP benchmarker with reliable IPv6 support and latency percentiles
+# (hey -o csv is unreliable on some builds; wrk does not support IPv6)
+RUN curl -L -o /usr/local/bin/bombardier \
+    https://github.com/codesenberg/bombardier/releases/download/v1.2.6/bombardier-linux-amd64 \
+    && chmod +x /usr/local/bin/bombardier
 
 # Install fly CLI (needed by run-benchmarks-isolated.sh to manage server machines)
 RUN curl -L https://fly.io/install.sh | FLYCTL_INSTALL=/usr/local sh

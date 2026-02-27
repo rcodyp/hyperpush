@@ -30,10 +30,10 @@ PORTS[Go]=3001
 PORTS[Rust]=3002
 PORTS[Elixir]=3003
 
-run_hey() {
+run_bench() {
   local url=$1
   local duration=$2
-  hey -c "$CONNECTIONS" -z "${duration}s" -t 30 -o csv "$url" 2>/dev/null
+  bombardier -c "$CONNECTIONS" -d "${duration}s" --timeout=30s -l "$url" 2>/dev/null
 }
 
 for lang in Mesh Go Rust Elixir; do
@@ -130,7 +130,7 @@ for lang in Mesh Go Rust Elixir; do
     echo "  Endpoint: /$endpoint"
 
     # Warmup run (results discarded)
-    run_hey "$url" "$WARMUP_DURATION" > /dev/null
+    run_bench "$url" "$WARMUP_DURATION" > /dev/null
     echo "  Warmup done. Running ${RUNS} timed runs..."
 
     rps_total=0
@@ -139,12 +139,10 @@ for lang in Mesh Go Rust Elixir; do
     last_p99="N/A"
 
     for i in $(seq 1 $RUNS); do
-      csv=$(run_hey "$url" "$BENCH_DURATION")
-      rps=$(echo "$csv" | awk -F',' 'NR>1{n++} END{printf "%.0f", n/BENCH_DUR}' BENCH_DUR="$BENCH_DURATION")
-      p50_p99=$(echo "$csv" | awk -F',' 'NR>1 && $7==200{print $1}' | sort -n | awk \
-        '{a[NR]=$1} END{n=NR; if(n>0) printf "%.4f secs|%.4f secs", a[int(n*0.50)+1], a[int(n*0.99)+1]; else printf "N/A|N/A"}')
-      p50=$(echo "$p50_p99" | cut -d'|' -f1)
-      p99=$(echo "$p50_p99" | cut -d'|' -f2)
+      output=$(run_bench "$url" "$BENCH_DURATION")
+      rps=$(echo "$output" | awk '/Reqs\/sec/{print $2}')
+      p50=$(echo "$output" | awk '/^ *50%/{print $2}')
+      p99=$(echo "$output" | awk '/^ *99%/{print $2}')
       if [ "$i" -le "$DISCARD_RUNS" ]; then
         echo "    Run $i: ${rps:-N/A} req/s  p50=${p50:-N/A}  p99=${p99:-N/A}  [warmup — excluded]"
       else
