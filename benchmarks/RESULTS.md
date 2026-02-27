@@ -60,34 +60,34 @@ _RSS captured from `/proc/PID/status` (VmRSS) at server startup. During-load pea
 Each language benchmarked in isolation on a dedicated `performance-2x` VM (2 vCPU, 4 GB RAM).
 Same protocol: 100 connections, 30s warmup + 5 × 30s timed runs, Run 1 excluded.
 
-_Results to be populated after isolated run — see `benchmarks/fly/run-benchmarks-isolated.sh`._
-
 ### /text endpoint
 
-| Language | Run 1 (excl.) | Runs 2–5 avg (req/s) | p50 | p99 | Peak RSS |
-|----------|--------------|----------------------|-----|-----|----------|
-| Mesh     |              |                      |     |     |          |
-| Go       |              |                      |     |     |          |
-| Rust     |              |                      |     |     |          |
-| Elixir   |              |                      |     |     |          |
+| Language | Run 1 (excl.) | Runs 2–5 avg (req/s) | p50      | p99       | Peak RSS |
+|----------|--------------|----------------------|----------|-----------|----------|
+| Mesh     | 28,681       | **29,108**           | 2.77 ms  | 16.94 ms  | N/A¹     |
+| Go       | 30,270       | **30,306**           | 2.95 ms  | 8.51 ms   | N/A¹     |
+| Rust     | 45,584       | **46,244**           | 2.06 ms  | 4.55 ms   | N/A¹     |
+| Elixir   | 12,583       | **12,441**           | 6.74 ms  | 25.14 ms  | N/A¹     |
 
 ### /json endpoint
 
-| Language | Run 1 (excl.) | Runs 2–5 avg (req/s) | p50 | p99 | Peak RSS |
-|----------|--------------|----------------------|-----|-----|----------|
-| Mesh     |              |                      |     |     |          |
-| Go       |              |                      |     |     |          |
-| Rust     |              |                      |     |     |          |
-| Elixir   |              |                      |     |     |          |
+| Language | Run 1 (excl.) | Runs 2–5 avg (req/s) | p50      | p99       | Peak RSS |
+|----------|--------------|----------------------|----------|-----------|----------|
+| Mesh     | 28,562       | **28,955**           | 2.84 ms  | 16.19 ms  | N/A¹     |
+| Go       | 30,690       | **29,934**           | 2.97 ms  | 8.40 ms   | N/A¹     |
+| Rust     | 46,672       | **46,234**           | 2.08 ms  | 4.77 ms   | N/A¹     |
+| Elixir   | 13,391       | **12,733**           | 7.15 ms  | 23.41 ms  | N/A¹     |
+
+¹ _Peak RSS not captured during the isolated run — `fly logs --no-tail` completed before RSS sampling lines appeared. Pre-load baseline values in the [Peak RSS](#peak-rss-baseline-at-server-startup-before-load) section above still apply._
 
 ### Comparison: Co-located vs Isolated
 
 | Language | Co-located /text | Isolated /text | Delta | Co-located /json | Isolated /json | Delta |
 |----------|-----------------|----------------|-------|-----------------|----------------|-------|
-| Mesh     | 19,718          |                |       | 20,483          |                |       |
-| Go       | 26,278          |                |       | 26,175          |                |       |
-| Rust     | 27,133          |                |       | 28,563          |                |       |
-| Elixir   | 11,842          |                |       | 11,481          |                |       |
+| Mesh     | 19,718          | 29,108         | +47%  | 20,483          | 28,955         | +41%  |
+| Go       | 26,278          | 30,306         | +15%  | 26,175          | 29,934         | +14%  |
+| Rust     | 27,133          | 46,244         | +70%  | 28,563          | 46,234         | +62%  |
+| Elixir   | 11,842          | 12,441         | +5%   | 11,481          | 12,733         | +11%  |
 
 ---
 

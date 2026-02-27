@@ -62,9 +62,26 @@ The payoff is that the same runtime that handles your HTTP server also handles y
 
 Mesh starts heavier than the others — the actor runtime has real upfront cost. But it produces ~66% more throughput than Elixir at ~3x Elixir's memory. That's a reasonable trade.
 
+**ISOLATED RESULTS**
+
+Those numbers are co-located — all four servers on one 2-vCPU VM, competing for CPU. I ran a follow-up with each server on its own dedicated VM:
+
+| Language | /text req/s | /json req/s |
+|----------|------------|------------|
+| **Mesh** | **29,108** | **28,955** |
+| Go       | 30,306     | 29,934     |
+| Rust     | 46,244     | 46,234     |
+| Elixir   | 12,441     | 12,733     |
+
+The deltas are informative. Rust jumped +70% — it was badly CPU-starved in the co-located run. Go barely moved (+15%). Elixir barely moved (+5%). Mesh went +47%.
+
+Mesh now sits just behind Go: 29,108 vs 30,306 on `/text`, a 4% gap. Rust at 46,244 is in a different category — axum/tokio with dedicated cores is fast. The Mesh-vs-Elixir gap widens to ~134%.
+
+Latency in isolation: Mesh p50=2.77 ms vs Go p50=2.95 ms — Mesh actually wins on median. The p99 gap (16.9 ms vs 8.5 ms) is the actor overhead tail under load.
+
 **CAVEATS**
 
-All four servers ran co-located on the same 2-vCPU VM. They share resources under load; none of these numbers represent isolated peak throughput. Mesh's first timed run for `/text` came in at 4,041 req/s — classic JIT warmup effect. It's excluded from the reported average. Subsequent runs stabilized at 19,500–20,000 req/s.
+The initial co-located run had all four servers sharing one VM. The isolated run above is a better measure of peak throughput. Mesh's first timed run in the co-located run came in at 4,041 req/s — excluded warmup anomaly. In the isolated run the warmup was 28,681 req/s, confirming the 4k result was resource contention, not a Mesh warmup phenomenon.
 
 **METHODOLOGY**
 
