@@ -99,6 +99,9 @@ pub struct ModuleExports {
 
     /// Names of private (non-pub) items, for distinguishing "private" from "nonexistent" in errors.
     pub private_names: FxHashSet<String>,
+
+    /// Type aliases exported by this module (pub type only).
+    pub type_aliases: FxHashMap<String, TypeAliasInfo>,
 }
 
 /// Symbols exported by a module after type checking.
@@ -120,6 +123,8 @@ pub struct ExportedSymbols {
     pub trait_impls: Vec<TraitImplDef>,
     /// Names of private (non-pub) items, for distinguishing "private" from "nonexistent" in errors.
     pub private_names: FxHashSet<String>,
+    /// Type alias definitions exported by this module (pub type only).
+    pub type_aliases: FxHashMap<String, TypeAliasInfo>,
 }
 
 /// Information about an exported service, containing the helper function
@@ -284,6 +289,21 @@ pub fn collect_exports(
                     } else {
                         exports.private_names.insert(name);
                     }
+                }
+            }
+        }
+    }
+
+    // Copy pub type aliases from type_registry, filtered by AST visibility
+    for item in tree.items() {
+        if let Item::TypeAliasDef(alias_def) = &item {
+            if let Some(name) = alias_def.name().and_then(|n| n.text()) {
+                if alias_def.visibility().is_some() {
+                    if let Some(def) = typeck.type_registry.type_aliases.get(&name) {
+                        exports.type_aliases.insert(name, def.clone());
+                    }
+                } else {
+                    exports.private_names.insert(name);
                 }
             }
         }

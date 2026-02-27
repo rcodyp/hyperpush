@@ -132,7 +132,7 @@ impl TypeRegistry {
         self.struct_defs.insert(info.name.clone(), info);
     }
 
-    fn register_alias(&mut self, info: TypeAliasInfo) {
+    pub fn register_alias(&mut self, info: TypeAliasInfo) {
         self.type_aliases.insert(info.name.clone(), info);
     }
 
@@ -1556,6 +1556,14 @@ pub fn infer_with_imports(parse: &Parse, import_ctx: &ImportContext) -> TypeckRe
                 &sum_type_def.generic_params,
                 &sum_type_def.variants,
             );
+        }
+    }
+
+    // Pre-register imported type aliases so they are available for resolution
+    // in the current module's type annotations (ALIAS-03).
+    for mod_exports in import_ctx.module_exports.values() {
+        for (_name, alias_info) in &mod_exports.type_aliases {
+            type_registry.register_alias(alias_info.clone());
         }
     }
 

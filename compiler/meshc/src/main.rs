@@ -487,6 +487,7 @@ fn build_import_context(
                         service_defs: exports.service_defs.clone(),
                         actor_defs: exports.actor_defs.clone(),
                         private_names: exports.private_names.clone(),
+                        type_aliases: exports.type_aliases.clone(),
                     };
                     ctx.module_exports.insert(last_segment, mod_exports);
                 }
