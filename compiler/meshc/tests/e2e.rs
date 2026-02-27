@@ -5395,17 +5395,59 @@ fn e2e_type_alias_basic() {
     assert_eq!(output, "https://example.com\n42\n");
 }
 
-/// Phase 127: pub type alias is usable as a parameter/return/let type (ALIAS-03).
+/// Phase 127: pub type alias is usable across module boundaries (ALIAS-03).
 ///
-/// Verifies that:
-/// - `pub type UserId = Int` and `pub type Email = String` are exported by a module
-/// - Values of the aliased type are accepted where the alias is annotated
-/// - The alias is transparent: no explicit coercion needed
-/// Single-file form (pub type in same file) exercises the export/import path;
-/// true cross-module coverage is the compile-and-link path in meshc.
+/// Verifies the full cross-module pub type pipeline:
+/// - `collect_exports` picks up `pub type UserId = Int` and `pub type Email = String`
+/// - `build_import_context` copies type_aliases into ModuleExports
+/// - `infer_with_imports` pre-registers the imported aliases into TypeRegistry
+/// - The importing module can use `Types.UserId` and `Types.Email` in fn signatures
+///   and let bindings without explicit conversion (aliases are transparent).
 #[test]
 fn e2e_type_alias_pub() {
-    let source = read_fixture("type_alias_pub.mpl");
-    let output = compile_and_run(&source);
+    let output = compile_multifile_and_run(&[
+        ("types.mpl", r#"
+pub type UserId = Int
+pub type Email = String
+"#),
+        ("main.mpl", r#"
+import Types
+
+fn greet(id :: Types.UserId, email :: Types.Email) -> Types.Email do
+  email
+end
+
+fn main() do
+  let id :: Types.UserId = 42
+  let addr :: Types.Email = "user@example.com"
+  println(greet(id, addr))
+end
+"#),
+    ]);
     assert_eq!(output, "user@example.com\n");
+}
+
+/// Phase 127: private type alias (no `pub`) is NOT accessible in importing module (ALIAS-03 negative).
+///
+/// Verifies that a type alias without `pub` is not exported and causes a compile error
+/// when an importing module tries to reference it.
+#[test]
+fn e2e_type_alias_private_not_exported() {
+    let error = compile_multifile_expect_error(&[
+        ("internals.mpl", r#"
+type InternalId = Int
+"#),
+        ("main.mpl", r#"
+import Internals
+
+fn main() do
+  let x :: Internals.InternalId = 42
+  println(x)
+end
+"#),
+    ]);
+    assert!(
+        !error.is_empty(),
+        "Expected compilation error when using private type alias from another module"
+    );
 }

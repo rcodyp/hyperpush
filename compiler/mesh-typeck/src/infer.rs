@@ -1561,9 +1561,20 @@ pub fn infer_with_imports(parse: &Parse, import_ctx: &ImportContext) -> TypeckRe
 
     // Pre-register imported type aliases so they are available for resolution
     // in the current module's type annotations (ALIAS-03).
-    for mod_exports in import_ctx.module_exports.values() {
+    // Register under both the short name ("UserId") and the qualified name
+    // ("Types.UserId") so that annotations like `:: Types.UserId` resolve
+    // correctly when the annotation parser emits a qualified key.
+    for (mod_namespace, mod_exports) in &import_ctx.module_exports {
         for (_name, alias_info) in &mod_exports.type_aliases {
+            // Unqualified: `UserId`
             type_registry.register_alias(alias_info.clone());
+            // Qualified: `Types.UserId`
+            let qualified_name = format!("{}.{}", mod_namespace, alias_info.name);
+            type_registry.register_alias(TypeAliasInfo {
+                name: qualified_name,
+                generic_params: alias_info.generic_params.clone(),
+                aliased_type: alias_info.aliased_type.clone(),
+            });
         }
     }
 
@@ -8426,7 +8437,10 @@ fn resolve_type_annotation(
 }
 
 /// Collect significant tokens (IDENT, LT, GT, COMMA, QUESTION, BANG,
-/// L_PAREN, R_PAREN) from a TYPE_ANNOTATION node tree.
+/// L_PAREN, R_PAREN, DOT) from a TYPE_ANNOTATION node tree.
+/// DOT is included so that qualified type names like `Types.UserId` are
+/// collected as `[IDENT("Types"), DOT("."), IDENT("UserId")]` and can be
+/// joined into a qualified lookup key by `parse_type_tokens`.
 fn collect_annotation_tokens(
     node: &mesh_parser::SyntaxNode,
     tokens: &mut Vec<(SyntaxKind, String)>,
@@ -8439,7 +8453,7 @@ fn collect_annotation_tokens(
                     SyntaxKind::IDENT | SyntaxKind::LT | SyntaxKind::GT
                     | SyntaxKind::COMMA | SyntaxKind::QUESTION | SyntaxKind::BANG
                     | SyntaxKind::L_PAREN | SyntaxKind::R_PAREN
-                    | SyntaxKind::ARROW => {
+                    | SyntaxKind::ARROW | SyntaxKind::DOT => {
                         tokens.push((kind, t.text().to_string()));
                     }
                     _ => {}
@@ -8481,6 +8495,20 @@ fn parse_type_tokens(tokens: &[(SyntaxKind, String)], pos: &mut usize) -> Ty {
 
     let name = tokens[*pos].1.clone();
     *pos += 1;
+
+    // Qualified type name: Module.TypeName  (e.g. Types.UserId)
+    // When we encounter IDENT DOT IDENT, join them into "Module.TypeName" so
+    // that the lookup key matches the qualified alias registered from imports.
+    let name = if *pos + 1 < tokens.len()
+        && tokens[*pos].0 == SyntaxKind::DOT
+        && tokens[*pos + 1].0 == SyntaxKind::IDENT
+    {
+        let qualified = format!("{}.{}", name, tokens[*pos + 1].1);
+        *pos += 2; // consume DOT and IDENT
+        qualified
+    } else {
+        name
+    };
 
     // Function type: Fun(ParamTypes) -> ReturnType
     if name == "Fun" && *pos < tokens.len() && tokens[*pos].0 == SyntaxKind::L_PAREN {
