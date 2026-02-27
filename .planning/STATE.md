@@ -156,11 +156,12 @@ None. v12.0 fully shipped and verified. Zero known compiler correctness issues.
 | 6 | write an article about the benchmarks in MD format | 2026-02-26 | a125e3f0 | [6-write-an-article-about-the-benchmarks-in](./quick/6-write-an-article-about-the-benchmarks-in/) |
 | 7 | get isolated peak throughput numbers by running each server alone | 2026-02-26 | 30cc9dc8 | [7-get-isolated-peak-throughput-numbers-by-](./quick/7-get-isolated-peak-throughput-numbers-by-/) |
 | 8 | improve env syntax ergonomics in mesher (replace parse_port with Env.get_int) | 2026-02-27 | eb45bd8a | [8-improve-env-syntax-ergonomics-in-mesher-](./quick/8-improve-env-syntax-ergonomics-in-mesher-/) |
+| 9 | update mesh skill with service blocks, Job module, List.get/length/++ | 2026-02-27 | ba7d4050 | [9-update-the-tools-skill-mesh-skill-with-t](./quick/9-update-the-tools-skill-mesh-skill-with-t/) |
 
 ## Session Continuity
 
 Last session: 2026-02-27
-Stopped at: Completed quick task 8: improve env syntax ergonomics in mesher (replace parse_port with Env.get_int)
+Stopped at: Completed quick task 9: update mesh skill with service blocks, Job module, List.get/length/++
 Resume file: None
 
 ISOLATED BENCHMARK RESULTS (machine 48e693ec054208, now complete):
