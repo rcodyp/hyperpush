@@ -270,11 +270,11 @@ Plans:
   1. User can implement `TryFrom<F>` for a type with `fn try_from(value: F) -> Result<Self, E>` and it type-checks correctly
   2. `TryInto<T>` is automatically available on any type that implements `TryFrom<F>`, mirroring the From/Into auto-derivation from v7.0
   3. The `?` operator works on `try_from`/`try_into` call results inside `Result`-returning functions without extra unwrapping
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 128-01: TryFrom trait definition, impl resolution, and TryInto auto-derivation
-- [ ] 128-02: ? operator integration and end-to-end tests
+- [ ] 128-01-PLAN.md — TryFrom/TryInto trait registration + synthetic TryInto derivation in typeck
+- [ ] 128-02-PLAN.md — MIR codegen dispatch for try_from/try_into + E2E tests
 
 ### Phase 129: Map.collect String Keys and Code Quality
 **Goal**: Users can collect string-keyed iterators into maps, and the compiler builds without warnings
