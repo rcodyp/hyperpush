@@ -2550,3 +2550,39 @@ fn impl_assoc_type_generic_binding() {
     let p = parse(source);
     assert!(p.ok(), "parse errors: {:?}", p.errors());
 }
+
+// ── Multi-line pipe (PIPE-01) ──────────────────────────────────────────
+
+#[test]
+fn pipe_multiline_leading() {
+    // |> at start of continuation line (already worked, regression test)
+    assert_snapshot!(parse_and_debug("x\n  |> foo()"));
+}
+
+#[test]
+fn pipe_multiline_trailing() {
+    // |> at end of line (new in Phase 126)
+    assert_snapshot!(parse_and_debug("x |>\n  foo()"));
+}
+
+#[test]
+fn pipe_multiline_chain_leading() {
+    assert_snapshot!(parse_and_debug("x\n  |> foo()\n  |> bar()"));
+}
+
+#[test]
+fn pipe_multiline_chain_trailing() {
+    assert_snapshot!(parse_and_debug("x |>\n  foo() |>\n  bar()"));
+}
+
+#[test]
+fn slot_pipe_multiline_leading() {
+    // |2> at start of continuation line
+    assert_snapshot!(parse_and_debug("x\n  |2> foo(1)"));
+}
+
+#[test]
+fn slot_pipe_multiline_trailing() {
+    // |2> at end of line (new in Phase 126)
+    assert_snapshot!(parse_and_debug("x |2>\n  foo(1)"));
+}
