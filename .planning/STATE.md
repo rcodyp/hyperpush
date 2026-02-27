@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Ergonomics & Open Source Readiness
 status: unknown
-last_updated: "2026-02-27T17:50:53.507Z"
+last_updated: "2026-02-27T17:51:57.876Z"
 progress:
   total_phases: 132
-  completed_phases: 131
+  completed_phases: 132
   total_plans: 343
-  completed_plans: 342
+  completed_plans: 343
 ---
 
 # Project State
@@ -70,6 +70,7 @@ Progress: [█░░░░░░░░░] 5% (v12.0)
 | Phase 124 P01 | 2min | 2 tasks | 1 files |
 | Phase 125 P01 | 1min | 1 tasks | 1 files |
 | Phase 125 P02 | 1min | 2 tasks | 3 files |
+| Phase 125 P03 | 1min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ Recent decisions affecting current work:
 - [Phase 125]: README.md updated to v12.0 with isolated benchmarks (29,108/28,955 req/s) and correct HTTP module syntax
 - [Phase 125]: Pipe Operators feature renamed (plural) to encompass both standard |> and slot pipe |N> in one feature card
 - [Phase 125]: Slot pipe |2> example uses insert_at('[', ']') pattern derived from tests/e2e/slot_pipe_basic.mpl
+- [Phase 125]: Cheatsheet String Features section added to consolidate heredoc, regex, and env examples in one scannable block; Operators table split to fix factual error (++ is list concat, <> is string concat)
+- [Phase 125]: getting-started: #{} shown first in interpolation bullet with ${} noted as 'also valid'; language-basics: Heredoc Strings and Slot Pipe Operator added as standalone subsections
 
 ### Roadmap Evolution
 
