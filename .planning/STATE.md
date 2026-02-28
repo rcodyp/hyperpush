@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Completeness
 status: unknown
-last_updated: "2026-02-28T01:36:03.959Z"
+last_updated: "2026-02-28T01:54:58.217Z"
 progress:
-  total_phases: 127
-  completed_phases: 127
-  total_plans: 329
-  completed_plans: 329
+  total_phases: 128
+  completed_phases: 128
+  total_plans: 331
+  completed_plans: 331
 ---
 
 # Project State
@@ -18,14 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** v13.0 Language Completeness — Phase 130 complete (Mesher dogfooding: multi-line pipe + type alias), Phase 131 next
+**Current focus:** v13.0 Language Completeness — Phase 131 complete (Documentation: cheatsheet + type-system guide), v13.0 fully shipped
 
 ## Current Position
 
-Phase: 130 of 131 (Mesher Dogfooding) — Complete
-Plan: 01 complete — Phase 130 done
-Status: In Progress
-Last activity: 2026-02-28 — 130-01 complete: DOGFOOD-01 router let binding, DOGFOOD-02 Fingerprint type alias, compiler bug fix for type alias named imports
+Phase: 131 of 131 (Documentation) — Complete
+Plan: 02 complete — Phase 131 done, v13.0 complete
+Status: Complete
+Last activity: 2026-02-28 — 131-02 complete: DOCS-02 Type Aliases section, DOCS-03 TryFrom/TryInto section added to type-system guide
 
 Progress: [█████████░] 100% (11/11 plans)
 
@@ -45,7 +45,7 @@ Progress: [█████████░] 100% (11/11 plans)
 | 128. TryFrom/TryInto | 2 | Complete (2/2) |
 | 129. Map.collect + Quality | 2 | Complete (2/2) |
 | 130. Mesher Dogfooding | 1 | Complete (1/1) |
-| 131. Documentation | 2 | Not started |
+| 131. Documentation | 2 | Complete (2/2) |
 
 **v13.0 Execution Metrics:**
 
@@ -61,6 +61,8 @@ Progress: [█████████░] 100% (11/11 plans)
 | 129 | P01 | 11m | 2 | 3 |
 | 129 | P02 | 20m | 2 | 2 |
 | 130 | P01 | 7m | 2 | 5 |
+| 131 | P01 | 2m | 2 | 2 |
+| 131 | P02 | 1m 2s | 2 | 1 |
 
 ## Accumulated Context
 
@@ -92,6 +94,9 @@ Recent decisions affecting current work:
 - [Phase 129-02]: Passthrough middleware (next(request) body) requires :: Request annotation — without it, type variable gets generalized as forall T; codegen emits {} (empty struct) LLVM type → SIGBUS at runtime. Handler inference works when body uses Request.* accessors (constrains type before generalization).
 - [Phase 130-01]: FromImportDecl handler in infer.rs didn't check mod_exports.type_aliases — importing a pub type alias by name caused E0034. Fixed by adding type_aliases check branch in the import name lookup chain.
 - [Phase 130-01]: WS close callback unannotated code/reason parameters caused LLVM {} type mismatch (same root cause as Phase 129-02 passthrough middleware). Fixed with :: Int and :: String annotations.
+- [Phase 131]: Type Aliases section placed after Generics and before Structs to match conceptual progression
+- [Phase 131]: TryFrom/TryInto section placed immediately after From/Into as natural fallible extension
+- [Phase 131]: Language Basics Multi-Line Pipes placed as H3 under Pipe Operator, Type Aliases as H2 before What's Next; cheatsheet entries added inline in existing blocks
 
 ### Pending Todos
 
@@ -104,5 +109,5 @@ None. v12.0 fully shipped. v13.0 roadmap created with 100% requirement coverage 
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 130-01-PLAN.md — DOGFOOD-01 router let binding, DOGFOOD-02 Fingerprint type alias, compiler type alias named import fix
+Stopped at: Completed 131-02-PLAN.md — DOCS-02 Type Aliases section, DOCS-03 TryFrom/TryInto section in type-system guide; v13.0 fully complete
 Resume file: None
