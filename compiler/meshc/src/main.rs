@@ -6,6 +6,7 @@
 //! - `meshc init <name>` - Initialize a new Mesh project
 //! - `meshc deps [dir]` - Resolve and fetch dependencies
 //! - `meshc fmt <path>` - Format Mesh source files in-place
+//! - `meshc test [path]` - Run *.test.mpl files in the project directory
 //! - `meshc migrate [up|down|status|generate]` - Database migration management
 //! - `meshc repl` - Start an interactive REPL with LLVM JIT
 //! - `meshc lsp` - Start the LSP server (communicates via stdin/stdout)
@@ -24,6 +25,7 @@ static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 mod discovery;
 mod migrate;
+mod test_runner;
 
 use std::path::{Path, PathBuf};
 use std::process;
@@ -102,6 +104,19 @@ enum Commands {
     Repl,
     /// Start the LSP server (communicates via stdin/stdout)
     Lsp,
+    /// Run test files (*.test.mpl) in a project directory
+    Test {
+        /// Path to a specific test file (optional; runs all *.test.mpl if omitted)
+        path: Option<PathBuf>,
+
+        /// Show dots instead of test names (compact output)
+        #[arg(long)]
+        quiet: bool,
+
+        /// Accept --coverage flag (stub: prints message, exits cleanly)
+        #[arg(long)]
+        coverage: bool,
+    },
     /// Run database migrations
     Migrate {
         #[command(subcommand)]
@@ -219,6 +234,22 @@ fn main() {
         Commands::Lsp => {
             let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
             rt.block_on(mesh_lsp::run_server());
+        }
+        Commands::Test { path, quiet, coverage } => {
+            let project_dir = std::env::current_dir()
+                .unwrap_or_else(|_| PathBuf::from("."));
+            let filter_file = path.as_deref();
+            match test_runner::run_tests(&project_dir, filter_file, quiet, coverage) {
+                Ok(summary) => {
+                    if summary.failed > 0 {
+                        process::exit(1);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("error: {}", e);
+                    process::exit(1);
+                }
+            }
         }
         Commands::Migrate { action, dir } => {
             let action = action.unwrap_or(MigrateAction::Up);
