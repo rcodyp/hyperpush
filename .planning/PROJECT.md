@@ -2,7 +2,17 @@
 
 ## What This Is
 
-Mesh is a programming language that combines Elixir/Ruby-style expressive syntax with static Hindley-Milner type inference and BEAM-style concurrency (actors, supervision trees, fault tolerance), compiled via LLVM to native single-binary executables. The compiler is written in Rust. v1.0-v1.9 built a complete language: compiler pipeline, actor runtime, trait system, module system, loops, stdlib, and developer tooling. v2.0 added database drivers and JSON serde. v3.0 made Mesh production-ready: TLS, connection pooling, transactions, deriving(Row). v4.0 added WebSocket support with actor-per-connection model. v5.0 added distributed actors with location-transparent PIDs and TLS-encrypted node clustering. v6.0 added a documentation website. v7.0 added a comprehensive trait ecosystem (iterators, From/Into, numeric traits, Collect). v8.0 made Mesh installable with one-command install scripts, VS Code extension, and LSP. v9.0 shipped Mesher, a production error-monitoring backend (~4,020 lines of Mesh). v10.0 added a full ORM. v11.0 expanded the ORM with comprehensive query builder capabilities and rewrote all Mesher data queries. v12.0 added language ergonomics: slot pipe operator (`|N>`), string interpolation (`#{expr}`), heredoc strings, regex literals, typed env var stdlib, Mesh agent skill, repository reorganization, and published performance benchmarks (29,108 req/s — within 4% of Go). v13.0 completed the language's expressiveness: multi-line pipe continuation, type aliases (cross-module), TryFrom/TryInto traits, Map.collect string keys, native `json { }` object literals, VS Code extension v0.3.0, and full documentation. ~115,740 LOC Rust + ~4,441 LOC Mesh across 23 milestones. Zero known compiler correctness issues.
+Mesh is a programming language that combines Elixir/Ruby-style expressive syntax with static Hindley-Milner type inference and BEAM-style concurrency (actors, supervision trees, fault tolerance), compiled via LLVM to native single-binary executables. The compiler is written in Rust. v1.0-v1.9 built a complete language: compiler pipeline, actor runtime, trait system, module system, loops, stdlib, and developer tooling. v2.0 added database drivers and JSON serde. v3.0 made Mesh production-ready: TLS, connection pooling, transactions, deriving(Row). v4.0 added WebSocket support with actor-per-connection model. v5.0 added distributed actors with location-transparent PIDs and TLS-encrypted node clustering. v6.0 added a documentation website. v7.0 added a comprehensive trait ecosystem (iterators, From/Into, numeric traits, Collect). v8.0 made Mesh installable with one-command install scripts, VS Code extension, and LSP. v9.0 shipped Mesher, a production error-monitoring backend (~4,020 lines of Mesh). v10.0 added a full ORM. v11.0 expanded the ORM with comprehensive query builder capabilities and rewrote all Mesher data queries. v12.0 added language ergonomics: slot pipe operator (`|N>`), string interpolation (`#{expr}`), heredoc strings, regex literals, typed env var stdlib, Mesh agent skill, repository reorganization, and published performance benchmarks (29,108 req/s — within 4% of Go). v13.0 completed the language's expressiveness: multi-line pipe continuation, type aliases (cross-module), TryFrom/TryInto traits, Map.collect string keys, native `json { }` object literals, VS Code extension v0.3.0, and full documentation. v14.0 is expanding the ecosystem: stdlib (crypto/date/encoding), HTTP client improvements, testing framework, and package registry. ~115,740 LOC Rust + ~4,441 LOC Mesh across 23 milestones. Zero known compiler correctness issues.
+
+## Current Milestone: v14.0 Ecosystem & Standard Library
+
+**Goal:** Expand the Mesh ecosystem with production-ready stdlib modules, HTTP client improvements, a built-in testing framework, and a package registry with hosted site.
+
+**Target features:**
+- Stdlib expansion: crypto (SHA-256/512, HMAC, UUID), date/time, base64/hex encoding
+- HTTP client: streaming/chunked reads, connection keep-alive/reuse, fluent builder API
+- Testing framework: `meshc test` runner, `*.test.mpl` convention, assertions, mock actors/function stubs, coverage reporting
+- Package registry: `mesh.toml` manifest, `meshpkg` CLI (publish/install/search), hosted packages site with browse/search/package pages
 
 ## Current State
 
@@ -196,7 +206,22 @@ Expressive, readable concurrency -- writing concurrent programs should feel as n
 
 ### Active
 
-*(No active requirements — planning next milestone)*
+<!-- v14.0 Ecosystem & Standard Library -->
+
+- [ ] Stdlib: SHA-256, SHA-512, HMAC-SHA256/SHA512 hashing
+- [ ] Stdlib: UUID v4 generation
+- [ ] Stdlib: Base64 encode/decode, hex encode/decode
+- [ ] Stdlib: Date/time — parse, format, duration arithmetic, timestamps
+- [ ] HTTP client: streaming / chunked response reading
+- [ ] HTTP client: connection keep-alive and reuse
+- [ ] HTTP client: fluent builder API (headers, timeouts, auth)
+- [ ] Testing: `meshc test` runner with `*.test.mpl` discovery convention
+- [ ] Testing: assertion helpers (assert, assert_eq, assert_raises)
+- [ ] Testing: mock actors and function-level stubs
+- [ ] Testing: coverage reporting
+- [ ] Package registry: `mesh.toml` manifest format
+- [ ] Package registry: `meshpkg` CLI (publish, install, search)
+- [ ] Package registry: hosted packages site (browse, search, per-package README + versions)
 
 ### Out of Scope
 
@@ -425,4 +450,4 @@ Tech debt (minor, pre-existing):
 | json { } documented in strings sub-skill (not new sub-skill) | JSON literals are a string/serialization concern; adding new sub-skill would fragment discovery | ✓ Good -- v13.0, clean skill organization |
 
 ---
-*Last updated: 2026-02-28 after v13.0 milestone*
+*Last updated: 2026-02-28 after v14.0 milestone start*

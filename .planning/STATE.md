@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v13.0
-milestone_name: Language Completeness
-status: shipped
+milestone: v14.0
+milestone_name: Ecosystem & Standard Library
+status: planning
 last_updated: "2026-02-28T00:00:00.000Z"
 progress:
-  total_phases: 134
-  completed_phases: 134
-  total_plans: 362
-  completed_plans: 362
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -18,16 +18,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** Planning next milestone (v14.0) — run `/gsd:new-milestone` to begin
+**Current focus:** v14.0 Ecosystem & Standard Library
 
 ## Current Position
 
-Phase: 134 of 134 (Docs + Skills: json { } update) — Complete (2/2 plans)
-Plan: 02 complete — HTTP skill and web docs updated with json { } examples and JSON Object Literals subsection
-Status: Complete
-Last activity: 2026-02-28 — 134-02 complete: HTTP skill SKILL.md and web/index.md updated with json { } as idiomatic JSON response pattern
-
-Progress: [██████████] 100% (2/2 plans)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-28 — Milestone v14.0 started
 
 ## Performance Metrics
 
