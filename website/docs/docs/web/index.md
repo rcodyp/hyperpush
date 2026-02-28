@@ -31,7 +31,7 @@ Use `HTTP.response` to create a response with a status code and body:
 
 ```mesh
 fn handler(request) do
-  HTTP.response(200, "{\"status\":\"ok\"}")
+  HTTP.response(200, json { status: "ok" })
 end
 ```
 
@@ -49,7 +49,7 @@ fn home_handler(request) do
 end
 
 fn health_handler(request) do
-  HTTP.response(200, "{\"status\":\"ok\"}")
+  HTTP.response(200, json { status: "ok" })
 end
 
 fn main() do
@@ -182,7 +182,35 @@ Middleware runs in the order added with `HTTP.use`. In the example above, every 
 
 ## JSON
 
-Mesh provides a `Json` module for encoding and decoding JSON data. Use `Json.encode` and `Json.parse` for serialization:
+### JSON Object Literals
+
+Use `json { }` to construct JSON objects without manual string escaping or heredoc interpolation. The result auto-coerces to `String` and can be passed directly to `HTTP.response`:
+
+```mesh
+fn api_handler(request) do
+  HTTP.response(200, json { status: "ok", count: 42 })
+end
+
+fn error_handler(request) do
+  HTTP.response(400, json { error: "bad request" })
+end
+```
+
+Values are serialized based on their Mesh type: `String` → quoted, `Int`/`Float` → unquoted number, `Bool` → `true`/`false`, `nil` → `null`, `Option<T>` → `null` or value, `List<T>` → array, struct with `deriving(Json)` → nested object. See [JSON Literals](/docs/language-basics/#json-literals) in the Language Basics guide for the full type table.
+
+Nested `json { }` values embed raw — no double-encoding:
+
+```mesh
+let inner = json { code: 200 }
+let outer = json { result: inner, ok: true }
+# outer is: {"result":{"code":200},"ok":true}
+```
+
+> **Note:** Keys must be bare identifiers. Reserved keywords (`type`, `fn`, `let`, etc.) cannot be used as keys — use heredoc strings for JSON objects with keyword-named fields.
+
+### Json Module
+
+Mesh also provides a `Json` module for encoding and decoding JSON data. Use `Json.encode` and `Json.parse` for serialization:
 
 ```mesh
 fn main() do
@@ -234,7 +262,7 @@ For HTTP handlers, combine JSON encoding with `HTTP.response` to return JSON res
 fn api_handler(request) do
   let body = Request.body(request)
   # Process the JSON body...
-  HTTP.response(200, "{\"status\":\"ok\"}")
+  HTTP.response(200, json { status: "ok" })
 end
 ```
 
