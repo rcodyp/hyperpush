@@ -330,3 +330,15 @@ Plans:
 | 129. Map.collect + Code Quality | 2/2 | Complete    | 2026-02-28 | - |
 | 130. Mesher Dogfooding | 1/1 | Complete    | 2026-02-28 | - |
 | 131. Documentation Site Update | 2/2 | Complete    | 2026-02-28 | - |
+
+### Phase 132: Improve language JSON handling with native object literal syntax instead of manual string concatenation
+
+**Goal:** Native `json { }` object literal syntax that produces JSON strings without manual escaping or heredoc interpolation — replaces `"{\"k\":\"" <> v <> "\""` and `"""{"k":"#{v}"}"""` patterns throughout Mesher
+**Requirements**: JSON-01
+**Depends on:** Phase 131
+**Plans:** 3 plans
+
+Plans:
+- [ ] 132-01-PLAN.md — Lexer keyword + parser grammar + AST node + type inference (JsonExpr as String)
+- [ ] 132-02-PLAN.md — MIR lowering to mesh_json_* calls + 5 E2E test fixtures
+- [ ] 132-03-PLAN.md — Mesher migration (all .mpl files) + documentation update
