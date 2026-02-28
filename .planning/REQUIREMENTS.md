@@ -37,8 +37,8 @@ Requirements for v13.0. Each maps to roadmap phases.
 
 ### DOGFOOD — Mesher dogfooding
 
-- [ ] **DOGFOOD-01**: Mesher source updated to use multi-line pipes where long chains benefit from line breaks
-- [ ] **DOGFOOD-02**: Mesher uses type aliases where repeated type patterns benefit from named aliases
+- [x] **DOGFOOD-01**: Mesher source updated to use multi-line pipes where long chains benefit from line breaks
+- [x] **DOGFOOD-02**: Mesher uses type aliases where repeated type patterns benefit from named aliases
 
 ### DOCS — Documentation site
 
@@ -83,8 +83,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MAPCOL-01 | Phase 129 | Complete |
 | QUAL-01 | Phase 129 | Pending |
 | QUAL-02 | Phase 129 | Pending |
-| DOGFOOD-01 | Phase 130 | Pending |
-| DOGFOOD-02 | Phase 130 | Pending |
+| DOGFOOD-01 | Phase 130 | Complete |
+| DOGFOOD-02 | Phase 130 | Complete |
 | DOCS-01 | Phase 131 | Pending |
 | DOCS-02 | Phase 131 | Pending |
 | DOCS-03 | Phase 131 | Pending |

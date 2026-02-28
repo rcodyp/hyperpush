@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-27)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** v13.0 Language Completeness — Phase 129 complete (Map.collect zip fix + QUAL-01/QUAL-02), Phase 130 next
+**Current focus:** v13.0 Language Completeness — Phase 130 complete (Mesher dogfooding: multi-line pipe + type alias), Phase 131 next
 
 ## Current Position
 
-Phase: 129 of 131 (Map.collect + Quality) — Complete
-Plan: 02 complete — Phase 129 done
+Phase: 130 of 131 (Mesher Dogfooding) — Complete
+Plan: 01 complete — Phase 130 done
 Status: In Progress
-Last activity: 2026-02-28 — 129-02 complete: QUAL-01 verified, QUAL-02 handler type inference test added, generalization bug documented
+Last activity: 2026-02-28 — 130-01 complete: DOGFOOD-01 router let binding, DOGFOOD-02 Fingerprint type alias, compiler bug fix for type alias named imports
 
-Progress: [████████░░] 91% (10/11 plans)
+Progress: [█████████░] 100% (11/11 plans)
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Progress: [████████░░] 91% (10/11 plans)
 | 127. Type Aliases | 3 | Complete (3/3) |
 | 128. TryFrom/TryInto | 2 | Complete (2/2) |
 | 129. Map.collect + Quality | 2 | Complete (2/2) |
-| 130. Mesher Dogfooding | 1 | Not started |
+| 130. Mesher Dogfooding | 1 | Complete (1/1) |
 | 131. Documentation | 2 | Not started |
 
 **v13.0 Execution Metrics:**
@@ -60,6 +60,7 @@ Progress: [████████░░] 91% (10/11 plans)
 | 128 | P02 | 22m | 2 | 9 |
 | 129 | P01 | 11m | 2 | 3 |
 | 129 | P02 | 20m | 2 | 2 |
+| 130 | P01 | 7m | 2 | 5 |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ Recent decisions affecting current work:
 - [Phase 128-02]: impl method return type now uses resolve_type_annotation (handles generic types) over resolve_type_name (simple ident only)
 - [Phase 129]: Fixed Map.collect string key dispatch for Iter.zip: extended pipe_chain_has_string_keys with Iter.zip detection (rhs_is_iter_zip + pipe_source_has_string_list) instead of result-type check, because HM let-generalization prevents K=String unification at collect-pipe time
 - [Phase 129-02]: Passthrough middleware (next(request) body) requires :: Request annotation — without it, type variable gets generalized as forall T; codegen emits {} (empty struct) LLVM type → SIGBUS at runtime. Handler inference works when body uses Request.* accessors (constrains type before generalization).
+- [Phase 130-01]: FromImportDecl handler in infer.rs didn't check mod_exports.type_aliases — importing a pub type alias by name caused E0034. Fixed by adding type_aliases check branch in the import name lookup chain.
+- [Phase 130-01]: WS close callback unannotated code/reason parameters caused LLVM {} type mismatch (same root cause as Phase 129-02 passthrough middleware). Fixed with :: Int and :: String annotations.
 
 ### Pending Todos
 
@@ -101,5 +104,5 @@ None. v12.0 fully shipped. v13.0 roadmap created with 100% requirement coverage 
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 129-02-PLAN.md — QUAL-01 verification, QUAL-02 handler type inference test, generalization bug documented
+Stopped at: Completed 130-01-PLAN.md — DOGFOOD-01 router let binding, DOGFOOD-02 Fingerprint type alias, compiler type alias named import fix
 Resume file: None
