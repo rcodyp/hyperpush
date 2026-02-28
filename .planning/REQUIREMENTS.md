@@ -17,12 +17,12 @@
 
 ### Encoding (ENCODE)
 
-- [ ] **ENCODE-01**: User can base64-encode a string with standard alphabet (`Base64.encode(s)`) returning String
-- [ ] **ENCODE-02**: User can base64-decode a standard-alphabet string (`Base64.decode(s)`) returning Result<String, String>
-- [ ] **ENCODE-03**: User can base64-encode with URL-safe alphabet (`Base64.encode_url(s)`) returning String
-- [ ] **ENCODE-04**: User can base64-decode a URL-safe string (`Base64.decode_url(s)`) returning Result<String, String>
-- [ ] **ENCODE-05**: User can hex-encode a string (`Hex.encode(s)`) returning a lowercase hex string
-- [ ] **ENCODE-06**: User can hex-decode a hex string (`Hex.decode(s)`) returning Result<String, String>
+- [x] **ENCODE-01**: User can base64-encode a string with standard alphabet (`Base64.encode(s)`) returning String
+- [x] **ENCODE-02**: User can base64-decode a standard-alphabet string (`Base64.decode(s)`) returning Result<String, String>
+- [x] **ENCODE-03**: User can base64-encode with URL-safe alphabet (`Base64.encode_url(s)`) returning String
+- [x] **ENCODE-04**: User can base64-decode a URL-safe string (`Base64.decode_url(s)`) returning Result<String, String>
+- [x] **ENCODE-05**: User can hex-encode a string (`Hex.encode(s)`) returning a lowercase hex string
+- [x] **ENCODE-06**: User can hex-decode a hex string (`Hex.decode(s)`) returning Result<String, String>
 
 ### DateTime (DTIME)
 
@@ -120,12 +120,12 @@ Which phases cover which requirements.
 | CRYPTO-04 | Phase 135 | Complete |
 | CRYPTO-05 | Phase 135 | Complete |
 | CRYPTO-06 | Phase 135 | Complete |
-| ENCODE-01 | Phase 135 | Pending |
-| ENCODE-02 | Phase 135 | Pending |
-| ENCODE-03 | Phase 135 | Pending |
-| ENCODE-04 | Phase 135 | Pending |
-| ENCODE-05 | Phase 135 | Pending |
-| ENCODE-06 | Phase 135 | Pending |
+| ENCODE-01 | Phase 135 | Complete |
+| ENCODE-02 | Phase 135 | Complete |
+| ENCODE-03 | Phase 135 | Complete |
+| ENCODE-04 | Phase 135 | Complete |
+| ENCODE-05 | Phase 135 | Complete |
+| ENCODE-06 | Phase 135 | Complete |
 | DTIME-01 | Phase 136 | Pending |
 | DTIME-02 | Phase 136 | Pending |
 | DTIME-03 | Phase 136 | Pending |

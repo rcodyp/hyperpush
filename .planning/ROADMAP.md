@@ -250,7 +250,7 @@ See milestones/v13.0-ROADMAP.md for full phase details.
 
 #### Phase Summary
 
-- [ ] **Phase 135: Encoding & Crypto Stdlib** - SHA-256/512, HMAC, UUID, Base64, Hex as extern "C" wrappers over already-present crates
+- [x] **Phase 135: Encoding & Crypto Stdlib** - SHA-256/512, HMAC, UUID, Base64, Hex as extern "C" wrappers over already-present crates (complete)
 - [ ] **Phase 136: DateTime Stdlib** - Full DateTime API (parse, format, arithmetic, compare) backed by chrono 0.4
 - [ ] **Phase 137: HTTP Client Improvements** - Fluent builder API, streaming via OS-thread-per-stream, keep-alive agent handle
 - [ ] **Phase 138: Testing Framework** - `meshc test` runner, assertion helpers, describe/setup/teardown, mock actors, assert_receive
@@ -272,8 +272,8 @@ See milestones/v13.0-ROADMAP.md for full phase details.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 135-01-PLAN.md — Crypto stdlib runtime + typeck + codegen (sha256, sha512, hmac_sha256, hmac_sha512, secure_compare, uuid4)
-- [ ] 135-02-PLAN.md — Encoding stdlib runtime + typeck + codegen (Base64 standard + URL-safe, Hex encode/decode)
+- [x] 135-01-PLAN.md — Crypto stdlib runtime + typeck + codegen (sha256, sha512, hmac_sha256, hmac_sha512, secure_compare, uuid4)
+- [x] 135-02-PLAN.md — Encoding stdlib runtime + typeck + codegen (Base64 standard + URL-safe, Hex encode/decode)
 
 ### Phase 136: DateTime Stdlib
 **Goal**: Mesh programs can work with timestamps and date arithmetic using a consistent `DateTime` type backed by chrono 0.4, with ISO 8601 parse/format and Unix timestamp interop

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v14.0
 milestone_name: Ecosystem & Standard Library
 status: in_progress
-last_updated: "2026-02-28T07:15:00.000Z"
+last_updated: "2026-02-28T07:22:54.000Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 13
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** v14.0 Phase 135 — Encoding & Crypto Stdlib
+**Current focus:** v14.0 Phase 136 — DateTime Stdlib (Phase 135 complete)
 
 ## Current Position
 
-Phase: 135 of 140 (Encoding & Crypto Stdlib)
+Phase: 136 of 140 (DateTime Stdlib)
 Plan: 1 of 2 in current phase
 Status: In progress
-Last activity: 2026-02-28 — Phase 135 Plan 01 complete: Crypto stdlib module (sha256, sha512, hmac, secure_compare, uuid4)
+Last activity: 2026-02-28 — Phase 135 Plan 02 complete: Base64 and Hex encoding stdlib modules
 
-Progress: [█░░░░░░░░░] 8%  (1/13 plans)
+Progress: [██░░░░░░░░] 15%  (2/13 plans)
 
 ## Performance Metrics
 
@@ -40,7 +40,7 @@ Progress: [█░░░░░░░░░] 8%  (1/13 plans)
 
 | Phase | Plans | Status |
 |-------|-------|--------|
-| 135. Encoding & Crypto Stdlib | 2 | Not started |
+| 135. Encoding & Crypto Stdlib | 2 | Complete |
 | 136. DateTime Stdlib | 2 | Not started |
 | 137. HTTP Client Improvements | 2 | Not started |
 | 138. Testing Framework | 3 | Not started |
@@ -65,6 +65,8 @@ Recent decisions affecting current work:
 - [v14.0 Roadmap]: Phase 140 (Registry) depends on Phase 139 — manifest format must be finalized before API contract
 - [Phase 135 Plan 01]: stdlib module requires 5 registration points: builtins.rs, infer.rs stdlib_modules() HashMap, infer.rs STDLIB_MODULE_NAMES, lower.rs STDLIB_MODULES + map_builtin_name + known_functions, intrinsics.rs LLVM declarations
 - [Phase 135 Plan 01]: HMAC-SHA256 RFC 2202 test vector for ("Jefe", "what do ya want for nothing?") = 5bdcc146...ec3843 (not a72840 as in plan)
+- [Phase 135 Plan 02]: Base64.decode lenient order: try STANDARD (padded) first, then STANDARD_NO_PAD — if unpadded first, padded input gets bytes incorrectly stripped
+- [Phase 135 Plan 02]: Hex.decode is case-insensitive via to_lowercase() before parsing — accepts both lowercase and uppercase hex digits
 
 ### Pending Todos
 
@@ -79,5 +81,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Phase 135 Plan 01 complete — Crypto stdlib module implemented, all 5 e2e tests passing
+Stopped at: Phase 135 Plan 02 complete — Base64 and Hex stdlib modules implemented, all 5 e2e tests passing, Phase 135 complete
 Resume file: None
