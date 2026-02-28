@@ -297,10 +297,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. At least one multi-line pipe chain exists in Mesher source where a long single-line chain previously existed, and Mesher compiles and passes E2E tests
   2. At least one type alias exists in Mesher source replacing a repeated concrete type pattern, and the type checker accepts it throughout all use sites
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 130-01: Apply multi-line pipes and type aliases in Mesher source
+- [ ] 130-01-PLAN.md — Multi-line pipe router chain in main.mpl + Fingerprint type alias in types/event.mpl and fingerprint.mpl
 
 ### Phase 131: Documentation Site Update
 **Goal**: The public documentation site reflects all v13.0 language additions
