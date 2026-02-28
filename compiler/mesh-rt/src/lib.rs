@@ -35,6 +35,7 @@ pub mod json;
 pub mod iter;
 pub mod option;
 pub mod panic;
+pub mod crypto;
 pub mod regex;
 pub mod string;
 
