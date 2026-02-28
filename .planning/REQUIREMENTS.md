@@ -37,11 +37,11 @@
 
 ### HTTP Client (HTTP)
 
-- [ ] **HTTP-01**: User can create an HTTP request with a fluent builder via `Http.build(:get/:post/:put/:delete, url)` returning a Request value
-- [ ] **HTTP-02**: User can add a header to an HTTP request via `Http.header(req, key, value)` returning an updated Request
-- [ ] **HTTP-03**: User can set the request body via `Http.body(req, s)` returning an updated Request
-- [ ] **HTTP-04**: User can set a per-request timeout via `Http.timeout(req, ms)` returning an updated Request
-- [ ] **HTTP-05**: User can execute an HTTP request via `Http.send(req)` returning `Result<Response, String>` with status, body, and headers
+- [x] **HTTP-01**: User can create an HTTP request with a fluent builder via `Http.build(:get/:post/:put/:delete, url)` returning a Request value
+- [x] **HTTP-02**: User can add a header to an HTTP request via `Http.header(req, key, value)` returning an updated Request
+- [x] **HTTP-03**: User can set the request body via `Http.body(req, s)` returning an updated Request
+- [x] **HTTP-04**: User can set a per-request timeout via `Http.timeout(req, ms)` returning an updated Request
+- [x] **HTTP-05**: User can execute an HTTP request via `Http.send(req)` returning `Result<Response, String>` with status, body, and headers
 - [ ] **HTTP-06**: User can stream an HTTP response chunk-by-chunk via `Http.stream(req, fn chunk -> ... end)` without buffering the full body in memory
 - [ ] **HTTP-07**: User can create a keep-alive HTTP client handle via `Http.client()` and reuse connections via `Http.send_with(client, req)`
 
@@ -134,11 +134,11 @@ Which phases cover which requirements.
 | DTIME-06 | Phase 136 | Complete |
 | DTIME-07 | Phase 136 | Complete |
 | DTIME-08 | Phase 136 | Complete |
-| HTTP-01 | Phase 137 | Pending |
-| HTTP-02 | Phase 137 | Pending |
-| HTTP-03 | Phase 137 | Pending |
-| HTTP-04 | Phase 137 | Pending |
-| HTTP-05 | Phase 137 | Pending |
+| HTTP-01 | Phase 137 | Complete |
+| HTTP-02 | Phase 137 | Complete |
+| HTTP-03 | Phase 137 | Complete |
+| HTTP-04 | Phase 137 | Complete |
+| HTTP-05 | Phase 137 | Complete |
 | HTTP-06 | Phase 137 | Pending |
 | HTTP-07 | Phase 137 | Pending |
 | TEST-01 | Phase 138 | Pending |

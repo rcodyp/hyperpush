@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-02-28T08:36:45.366Z"
+last_updated: "2026-02-28T19:34:14.218Z"
 progress:
-  total_phases: 124
+  total_phases: 125
   completed_phases: 124
-  total_plans: 323
-  completed_plans: 323
+  total_plans: 325
+  completed_plans: 324
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** v14.0 Phase 137 — HTTP Client Improvements (Phase 136 complete)
+**Current focus:** v14.0 Phase 137 — HTTP Client Improvements (Plan 01 complete)
 
 ## Current Position
 
 Phase: 137 of 140 (HTTP Client Improvements)
-Plan: 0 of 2 in current phase
-Status: Not started
-Last activity: 2026-02-28 — Phase 136 Plan 02 complete: 6 DateTime e2e tests pass; 10 compiler bug fixes (MirType::Int registration, boxed scalar deref, atom unit params, is_before/is_after naming)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-02-28 — Phase 137 Plan 01 complete: Http builder API (Http.build/header/body/timeout/query/json/send), ureq 3.2.0 upgrade, HttpResponse struct, 5-point compiler registration, e2e test passes
 
-Progress: [███░░░░░░░] 23%  (3/13 plans)
+Progress: [████░░░░░░] 31%  (4/13 plans)
 
 ## Performance Metrics
 
@@ -42,7 +42,7 @@ Progress: [███░░░░░░░] 23%  (3/13 plans)
 |-------|-------|--------|
 | 135. Encoding & Crypto Stdlib | 2 | Complete |
 | 136. DateTime Stdlib | 2 | Complete |
-| 137. HTTP Client Improvements | 2 | Not started |
+| 137. HTTP Client Improvements | 2 | In Progress (1/2 done) |
 | 138. Testing Framework | 3 | Not started |
 | 139. Package Manifest & meshpkg CLI | 2 | Not started |
 | 140. Package Registry Backend & Website | 2 | Not started |
@@ -75,6 +75,9 @@ Recent decisions affecting current work:
 - [Phase 136 Plan 02]: should_deref_boxed_payload must cover MirType::Int/Float/Bool — any scalar type returned via Box::into_raw needs deref in Ok pattern binding
 - [Phase 136 Plan 02]: Atom literals lower to bare names without colon — atom_text() strips leading ':'; runtime match arms use "day" not ":day"
 - [Phase 136 Plan 02]: is_before/is_after preferred over before?/after? — '?' is Mesh try-operator and 'after' is AFTER_KW (receive-timeout); both block parsing
+- [Phase 137]: Atom type for Http.build method param — :get/:post literals type-check correctly; same pattern as DateTime.add :day/:hour
+- [Phase 137]: MeshRequest handle is u64 ABI (MirType::Int) via Box::into_raw — same as SqliteConn pattern
+- [Phase 137]: http_status_as_error(false) set at Agent level via Agent::config_builder() — ureq 3 removed per-request setting
 
 ### Pending Todos
 
@@ -89,5 +92,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Phase 136 Plan 02 complete — all 6 e2e_datetime_* tests pass; Phase 136 (DateTime Stdlib) fully complete; ready for Phase 137 (HTTP Client Improvements)
+Stopped at: Phase 137 Plan 01 complete — Http builder API + ureq 3 upgrade + e2e test passes; ready for Phase 137 Plan 02 (streaming + keep-alive)
 Resume file: None
