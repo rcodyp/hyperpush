@@ -1,7 +1,7 @@
 //! LSP textDocument/completion implementation for the Mesh language.
 //!
 //! Provides four tiers of code completions:
-//! 1. **Keywords** -- all 48 Mesh keywords, filtered by typed prefix
+//! 1. **Keywords** -- all 49 Mesh keywords, filtered by typed prefix
 //! 2. **Built-in types** -- common types (Int, Float, String, etc.)
 //! 3. **Snippets** -- template expansions for common patterns (fn, let, struct, etc.)
 //! 4. **Scope-aware names** -- variables, functions, and types visible at the cursor
@@ -13,7 +13,7 @@ use mesh_parser::SyntaxNode;
 
 use crate::analysis::AnalysisResult;
 
-/// All 48 Mesh keywords.
+/// All 49 Mesh keywords.
 const KEYWORDS: &[&str] = &[
     "actor",
     "after",
@@ -37,6 +37,7 @@ const KEYWORDS: &[&str] = &[
     "import",
     "in",
     "interface",
+    "json",
     "let",
     "link",
     "match",
@@ -93,6 +94,14 @@ const SNIPPETS: &[(&str, &str)] = &[
     (
         "impl",
         "impl ${1:Trait} for ${2:Type} do\n  ${0}\nend",
+    ),
+    (
+        "type",
+        "type ${1:Alias} = ${0:ExistingType}",
+    ),
+    (
+        "json",
+        "json {\n  ${1:key}: ${0:value}\n}",
     ),
 ];
 
@@ -544,10 +553,10 @@ mod tests {
         let source = "";
         let items = completions_at(source, 0, 0);
 
-        // Should have all 48 keywords + 12 types + 9 snippets = 69 minimum.
+        // Should have all 49 keywords + 12 types + 11 snippets = 72 minimum.
         assert!(
-            items.len() >= 69,
-            "expected at least 69 completions for empty prefix, got {}",
+            items.len() >= 72,
+            "expected at least 72 completions for empty prefix, got {}",
             items.len()
         );
     }
