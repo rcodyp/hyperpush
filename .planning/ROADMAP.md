@@ -359,7 +359,7 @@ Plans:
 **Goal:** json { } native object literal feature propagated into all skill files and web documentation — skills teach the idiomatic pattern, web docs show JSON Object Literals as the primary approach for HTTP JSON responses
 **Requirements**: DOC-134-01
 **Depends on:** Phase 133
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 134-01-PLAN.md — strings SKILL.md + top-level mesh SKILL.md: json { } documentation and routing updates

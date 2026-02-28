@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Language Completeness
 status: unknown
-last_updated: "2026-02-28T04:51:54.717Z"
+last_updated: "2026-02-28T05:19:28.377Z"
 progress:
-  total_phases: 130
-  completed_phases: 130
-  total_plans: 336
-  completed_plans: 336
+  total_phases: 131
+  completed_phases: 131
+  total_plans: 338
+  completed_plans: 338
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-27)
 
 ## Current Position
 
-Phase: 133 of 133 (VSCode Extension Update) — Complete (2/2 plans)
-Plan: 02 complete — Extension v0.3.0 packaged with updated grammar and LSP for m10-m13 syntax forms
+Phase: 134 of 134 (Docs + Skills: json { } update) — Complete (2/2 plans)
+Plan: 02 complete — HTTP skill and web docs updated with json { } examples and JSON Object Literals subsection
 Status: Complete
-Last activity: 2026-02-28 — 133-02 complete: Extension v0.3.0 packaged as mesh-lang-0.3.0.vsix
+Last activity: 2026-02-28 — 134-02 complete: HTTP skill SKILL.md and web/index.md updated with json { } as idiomatic JSON response pattern
 
 Progress: [██████████] 100% (2/2 plans)
 
@@ -68,6 +68,8 @@ Progress: [██████████] 100% (2/2 plans)
 | 132 | P03 | 10m 25s | 3 | 10 |
 | 133 | P01 | 92s | 2 | 2 |
 | 133 | P02 | 3min | 2 | 3 |
+| 134 | P01 | 79s | 2 | 3 |
+| 134 | P02 | 71s | 2 | 2 |
 
 ## Accumulated Context
 
@@ -109,11 +111,17 @@ Recent decisions affecting current work:
 - [Phase 132-03]: Skip 'type' as json { } key: Mesh reserved keyword (TYPE_KW token), not IDENT; parser requires bare IDENT for json literal keys
 - [Phase 132-03]: Skip pre-encoded JSONB field values in json { }: exception/stacktrace/condition_json etc. would double-encode as JSON strings
 - [Phase 133]: Placed #regex-literals and #atoms before #strings in grammar patterns array so they take priority; pipe pattern updated to \|[0-9]*> covering both |> and |N>
+- [Phase 134]: json { } is the idiomatic way to return JSON from HTTP handlers, replacing escaped string literals in all examples
+- [Phase 134]: JSON Object Literals subsection placed first under ## JSON in web docs to front-load the preferred pattern
+- [Phase 134]: json { } documented in strings sub-skill (not new sub-skill) — JSON literals are a string/serialization concern
+- [Phase 134]: Heredoc Strings section gets explicit note pointing to json { } — prevents AI recommending heredoc for JSON
+- [Phase 134]: Type serialization table included with all 7 Mesh types — AI needs precise mapping to generate correct json { } code
 
 ### Roadmap Evolution
 
 - Phase 132 added: Improve language JSON handling with native object literal syntax instead of manual string concatenation
 - Phase 133 added: Ensure the vscode extension is updated with changes from milestones 10, 11, 12, 13
+- Phase 134 added: Add phase 132's change to the documentation site and update the appropriate skill(s) in tools/skill/mesh/skills/
 
 ### Pending Todos
 
@@ -126,5 +134,5 @@ None. v12.0 fully shipped. v13.0 roadmap created with 100% requirement coverage 
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 133-02-PLAN.md — VSCode extension v0.3.0 packaged as mesh-lang-0.3.0.vsix. Phase 133 complete (2/2 plans). All phases complete.
+Stopped at: Completed 134-02-PLAN.md — HTTP skill SKILL.md and web/index.md updated with json { } as idiomatic JSON response pattern. Phase 134 complete (2/2 plans). All phases complete.
 Resume file: None
