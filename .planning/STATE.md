@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-03-01T05:18:50.589Z"
+last_updated: "2026-03-01T05:25:31.594Z"
 progress:
   total_phases: 128
-  completed_phases: 127
+  completed_phases: 128
   total_plans: 336
-  completed_plans: 334
+  completed_plans: 336
 ---
 
 # Project State
@@ -47,6 +47,7 @@ Progress: [██████████] 99%  (13/13 plans)
 | 139. Package Manifest & meshpkg CLI | 2 | Complete |
 | 140. Package Registry Backend & Website | 4 | In Progress (1/4 summaries) |
 | Phase 140 P01 | 12 | 2 tasks | 19 files |
+| Phase 140 P02 | 3 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work:
 - [Phase 140 Plan 03]: time::Duration::days(30) for session expiry — tower-sessions uses the time crate (0.3), not std::time; explicit time dep required
 - [Phase 140 Plan 03]: reqwest 0.11 added as explicit dep for GitHub user API calls — matches transitive version pulled in by oauth2 4.4
 - [Phase 140 Plan 03]: session.remove::<String>(SESSION_CSRF) called immediately after retrieval — prevents CSRF replay attacks
+- [Phase 140]: Runtime sqlx::query_as() for user UUID lookup in publish (no sqlx::query! macro — no live DB or .sqlx/ cache)
+- [Phase 140]: extract_readme_from_tarball case-insensitive match (readme.md) for README.md/readme.md/Readme.md variants using flate2+tar
+- [Phase 140]: DefaultBodyLimit::max(50MB) applied via .layer() on publish route chain (not globally)
 
 ### Pending Todos
 

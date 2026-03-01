@@ -255,7 +255,7 @@ See milestones/v13.0-ROADMAP.md for full phase details.
 - [x] **Phase 137: HTTP Client Improvements** - Fluent builder API, streaming via OS-thread-per-stream, keep-alive agent handle (completed 2026-02-28)
 - [x] **Phase 138: Testing Framework** - `meshc test` runner, assertion helpers, describe/setup/teardown, mock actors, assert_receive (completed 2026-02-28)
 - [x] **Phase 139: Package Manifest & meshpkg CLI** - mesh.toml format, mesh.lock lockfile, meshpkg publish/install/search/login binary (completed 2026-03-01)
-- [ ] **Phase 140: Package Registry Backend & Website** - Axum+PostgreSQL registry server, SHA-256 content addressing, VitePress packages site
+- [x] **Phase 140: Package Registry Backend & Website** - Axum+PostgreSQL registry server, SHA-256 content addressing, VitePress packages site (completed 2026-03-01)
 
 ## Phase Details
 
@@ -370,4 +370,4 @@ Plans:
 | 137. HTTP Client Improvements | 2/2 | Complete    | 2026-02-28 |
 | 138. Testing Framework | 5/5 | Complete    | 2026-02-28 |
 | 139. Package Manifest & meshpkg CLI | 2/2 | Complete    | 2026-03-01 |
-| 140. Package Registry Backend & Website | 3/4 | In Progress|  |
+| 140. Package Registry Backend & Website | 4/4 | Complete   | 2026-03-01 |
