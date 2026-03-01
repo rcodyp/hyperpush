@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-03-01T23:11:03.232Z"
+last_updated: "2026-03-01T23:14:21Z"
 progress:
   total_phases: 133
-  completed_phases: 132
+  completed_phases: 133
   total_plans: 351
-  completed_plans: 349
+  completed_plans: 351
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** Phase 145 — Redesigning packages-website to production-grade with Tailwind v4 OKLCH design system
+**Current focus:** Phase 145 complete — packages-website fully redesigned with Tailwind v4 OKLCH design system
 
 ## Current Position
 
-Phase: 145 of 145 (Completely redesign the mesh packages page) — 2 of 3 plans COMPLETE
-Plan: 2 of 3 — DONE
-Status: Phase 145 Plan 02 complete — +layout.svelte redesigned (sticky navbar + backdrop-blur + dark mode toggle + footer); +page.svelte redesigned (hero + responsive 3-col grid + IntersectionObserver reveal); npm run build passes
-Last activity: 2026-03-01 — Phase 145 Plan 02 complete: layout and home page redesigned; build passes
+Phase: 145 of 145 (Completely redesign the mesh packages page) — 3 of 3 plans COMPLETE
+Plan: 3 of 3 — DONE
+Status: Phase 145 Plan 03 complete — package detail page redesigned (two-column README prose + metadata sidebar + install copy button + version history); search results redesigned (3-col card grid matching home page); npm run build passes
+Last activity: 2026-03-01 — Phase 145 Plan 03 complete: package detail and search results redesigned; all pages production-grade; build passes
 
-Progress: [██████████] 100%  (2/3 plans for phase 145)
+Progress: [██████████] 100%  (3/3 plans for phase 145) — PHASE COMPLETE
 
 ## Performance Metrics
 
@@ -156,6 +156,9 @@ Recent decisions affecting current work:
 - [Phase 145]: outline-ring/50 removed from app.css base layer — ring color token not defined in OKLCH theme, caused build failure; border-border sufficient
 - [Phase 145]: export let data removed from +layout.svelte — Svelte 5 warns on unused exports; layout doesn't use page data
 - [Phase 145]: pkg.version (not pkg.latest_version) used in +page.svelte card — list API returns version field per registry/src/routes/search.rs
+- [Phase 145 Plan 03]: marked.parse() + prose prose-neutral max-w-none dark:prose-invert for README rendering — typography plugin handles all heading/code/list styles automatically
+- [Phase 145 Plan 03]: Promise.all([pkgRes, versionsRes]) in server loader — parallel fetch reduces page load latency; versions fallback to [] if endpoint fails
+- [Phase 145 Plan 03]: pkg.version (not pkg.latest_version) confirmed in search page — consistent with search.rs registry field name
 
 ### Roadmap Evolution
 
@@ -178,5 +181,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 145-02-PLAN.md — +layout.svelte and +page.svelte redesigned; sticky navbar with backdrop-blur + dark mode toggle + footer; hero section + responsive 3-column package grid with IntersectionObserver reveal animations; npm run build passes
+Stopped at: Completed 145-03-PLAN.md — package detail page redesigned (two-column README prose + metadata sidebar + install copy button + version history); search results redesigned (3-col card grid matching home page); Phase 145 complete; npm run build passes
 Resume file: None
