@@ -404,17 +404,17 @@ Plans:
 **Plans:** 4/4 plans complete
 
 Plans:
-- [ ] 143-01-PLAN.md — Pre-deploy code fixes (with_secure, DEFAULT_REGISTRY URL) + Dockerfile/fly.toml + infrastructure provisioning checkpoint
-- [ ] 143-02-PLAN.md — SvelteKit packages website (scaffold + 3 SSR routes + CF Pages config)
-- [ ] 143-03-PLAN.md — meshpkg release pipeline (extend release.yml + update install.sh)
-- [ ] 143-04-PLAN.md — Deploy registry to Fly.io + trigger docs + tag v14.0.0 release + CF Pages setup + smoke test
+- [x] 143-01-PLAN.md — Pre-deploy code fixes (with_secure, DEFAULT_REGISTRY URL) + Dockerfile/fly.toml + infrastructure provisioning checkpoint
+- [x] 143-02-PLAN.md — SvelteKit packages website (scaffold + 3 SSR routes + CF Pages config)
+- [x] 143-03-PLAN.md — meshpkg release pipeline (extend release.yml + update install.sh)
+- [x] 143-04-PLAN.md — Deploy registry to Fly.io + trigger docs + tag v14.0.0 release + CF Pages setup + smoke test
 
 ### Phase 144: Update GitHub Actions to deploy all services on release branch push with post-deploy health checks
 
 **Goal:** Pushing a v* tag automatically redeploys mesh-registry and mesh-packages to Fly.io (parallel jobs), redeploys the docs site to GitHub Pages, and runs post-deploy health checks on all three live endpoints — no manual fly deploy or workflow dispatch required
 **Requirements**: CI-144
 **Depends on:** Phase 143
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 144-01-PLAN.md — Create deploy-services.yml (parallel Fly.io deploys + health checks) + add tag trigger to deploy.yml

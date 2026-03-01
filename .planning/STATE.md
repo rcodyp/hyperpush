@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: complete
-last_updated: "2026-03-01T20:50:00.000Z"
+last_updated: "2026-03-01T22:01:49Z"
 progress:
   total_phases: 131
   completed_phases: 131
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-02-28)
 
 ## Current Position
 
-Phase: 143 of 143 (Deploy everything including new stuff from v14) — 4 of 4 plans COMPLETE
-Plan: 4 of 4 — DONE
-Status: Phase 143 Plan 04 complete — all v14.0 services live: registry API at api.packages.meshlang.dev, packages website at packages.meshlang.dev, docs at meshlang.dev, GitHub Release v14.0.0 with 10 binary artifacts
-Last activity: 2026-03-01 — Phase 143 Plan 04 complete: all services deployed; smoke tests pass; packages-website on Fly.io (adapter-node); v14.0 milestone SHIPPED
+Phase: 144 of 144 (Update GitHub Actions to deploy all services on release branch push with post-deploy health checks) — 1 of 1 plans COMPLETE
+Plan: 1 of 1 — DONE
+Status: Phase 144 Plan 01 complete — deploy-services.yml created (Fly.io parallel deploy + health checks on v* tag push); deploy.yml updated (docs auto-redeploy on tag push); full release automation in place
+Last activity: 2026-03-01 — Phase 144 Plan 01 complete: GitHub Actions fully automated; pushing v* tag now triggers all four deploys (registry, packages, docs, binaries) automatically
 
 Progress: [██████████] 100%  (13/13 plans)
 
@@ -145,12 +145,17 @@ Recent decisions affecting current work:
 - [Phase 143 Plan 01]: ubuntu:24.04 required as Dockerfile runtime base — cargo-chef rust:1 builder produces GLIBC 2.38 binary; debian:bookworm-slim only provides GLIBC 2.35 causing startup linker error
 - [Phase 143 Plan 01]: auto_stop_machines must be string 'off' not boolean false in fly.toml — fly launch generates canonical string format; boolean causes fly deploy parse error
 - [Phase 143 Plan 04]: packages-website deployed to Fly.io (mesh-packages, iad) instead of Cloudflare Pages — user preference; adapter-node + Dockerfile pattern used; consistent with registry platform
+- [Phase 144 Plan 01]: cancel-in-progress: false on deploy-fly concurrency group — never cancel a mid-flight Fly.io deploy (leaves app broken)
+- [Phase 144 Plan 01]: flyctl deploy --remote-only required — remote builder handles Docker; Actions runner has no production Docker daemon configured
+- [Phase 144 Plan 01]: Per-job working-directory (registry/ vs packages-website/) so flyctl picks up correct fly.toml
+- [Phase 144 Plan 01]: curl --retry 5 --retry-delay 10 --retry-connrefused for Fly.io health checks (VM warmup window); --retry 3 --retry-delay 5 for GitHub Pages docs (faster propagation)
 
 ### Roadmap Evolution
 
 - Phase 141 added: Dogfeed v14 changes to mesher
 - Phase 142 added: Update docs page with changes/additions from v14
 - Phase 143 added: Deploy everything including new stuff from v14
+- Phase 144 added: Update GitHub Actions to deploy all services on release branch push with post-deploy health checks
 
 ### Pending Todos
 
@@ -165,5 +170,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 143-04-PLAN.md — all v14.0 services live in production; packages-website on Fly.io; GitHub Release v14.0.0 published with 10 binary artifacts; v14.0 milestone COMPLETE
+Stopped at: Completed 144-01-PLAN.md — GitHub Actions fully automated; deploy-services.yml created for Fly.io parallel deploy + health checks; deploy.yml updated for tag-triggered docs redeploy; full release automation in place
 Resume file: None
