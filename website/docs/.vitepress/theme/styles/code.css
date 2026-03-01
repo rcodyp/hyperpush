@@ -29,6 +29,7 @@ div[class*='language-'] {
 /* Light mode code block background */
 div[class*='language-'] > pre {
   background-color: var(--muted);
+  color: var(--foreground);
   padding: 1.25rem 1.5rem;
   overflow-x: auto;
 }
