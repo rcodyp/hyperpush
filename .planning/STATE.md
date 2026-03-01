@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-03-01T17:25:10.029Z"
+last_updated: "2026-03-01T17:28:11.725Z"
 progress:
   total_phases: 131
   completed_phases: 130
   total_plans: 346
-  completed_plans: 343
+  completed_plans: 344
 ---
 
 # Project State
@@ -55,6 +55,7 @@ Progress: [██████████] 99%  (13/13 plans)
 | Phase 142 P02 | 2 | 3 tasks | 3 files |
 | Phase 142 P03 | 2 | 2 tasks | 2 files |
 | Phase 143 P02 | 2 | 2 tasks | 12 files |
+| Phase 143-deploy-everything-including-new-stuff-from-v14 P01 | 1 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -134,6 +135,8 @@ Recent decisions affecting current work:
 - [Phase 143]: vite ^6 required for @sveltejs/vite-plugin-svelte 6.x peer dep compatibility
 - [Phase 143]: type:module required in SvelteKit package.json — kit is ESM-only
 - [Phase 143]: vite.config.js required in SvelteKit projects — vite build needs sveltekit() plugin registered
+- [Phase 143]: with_secure(true) correct for Fly.io — TLS terminates at edge proxy, HTTPS-only session cookies work correctly for production
+- [Phase 143]: cargo-chef multi-stage Dockerfile used for registry — dependency layer caching reduces rebuild times; binary target is mesh-registry
 
 ### Roadmap Evolution
 
