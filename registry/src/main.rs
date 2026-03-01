@@ -6,6 +6,9 @@ mod state;
 mod storage;
 
 use std::sync::Arc;
+use time::Duration;
+use tower_sessions::{Expiry, SessionManagerLayer};
+use tower_sessions_sqlx_store::PostgresStore;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -25,11 +28,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     sqlx::migrate!("./migrations").run(&pool).await?;
 
+    // Set up session store using the same PostgreSQL pool
+    let session_store = PostgresStore::new(pool.clone());
+    session_store.migrate().await
+        .expect("Failed to create sessions table");
+
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)  // Set true in production (HTTPS only)
+        .with_expiry(Expiry::OnInactivity(Duration::days(30)));
+
     let s3 = storage::r2::build_r2_client(&config);
     let oauth_client = Arc::new(build_oauth_client(&config));
     let state = Arc::new(state::AppState { pool, s3, config: Arc::new(config.clone()), oauth_client });
 
-    let app = routes::router(state);
+    let app = routes::router(state).layer(session_layer);
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port)).await?;
     tracing::info!("Listening on {}", listener.local_addr()?);
     axum::serve(listener, app).await?;
