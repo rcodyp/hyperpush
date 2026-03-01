@@ -77,7 +77,7 @@ export default defineConfig({
       pattern: 'https://github.com/snowdamiz/mesh-lang/edit/main/website/docs/:path',
       text: 'Edit this page on GitHub',
     },
-    meshVersion: '12.0',
+    meshVersion: '14.0',
     sidebar: {
       '/docs/': [
         {
@@ -122,6 +122,14 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Developer Tools', link: '/docs/tooling/' },
+          ],
+        },
+        {
+          text: 'Standard Library',
+          collapsed: false,
+          items: [
+            { text: 'Standard Library', link: '/docs/stdlib/' },
+            { text: 'Testing', link: '/docs/testing/' },
           ],
         },
         {
