@@ -391,7 +391,93 @@ The TLS functions are identical to their non-TLS counterparts, with two addition
 
 ## HTTP Client
 
-Mesh also provides a simple HTTP client for making outbound requests:
+Mesh provides a fluent builder API for making outbound HTTP requests via the `Http` module (note: lowercase `Http`, distinct from the `HTTP` server module).
+
+### Fluent Builder
+
+Build a request step by step, then send it:
+
+```mesh
+fn main() do
+  let req = Http.build(:get, "https://api.example.com/data")
+  let req = Http.header(req, "Authorization", "Bearer token")
+  let req = Http.timeout(req, 5000)
+  let result = Http.send(req)
+  case result do
+    Ok(resp) -> println(resp)
+    Err(e) -> println("error: #{e}")
+  end
+end
+```
+
+| Function | Description |
+|----------|-------------|
+| `Http.build(method, url)` | Create a request. `method` is an atom: `:get`, `:post`, `:put`, `:delete` |
+| `Http.header(req, key, value)` | Add a request header |
+| `Http.body(req, s)` | Set the request body (for POST/PUT) |
+| `Http.timeout(req, ms)` | Set a per-request timeout in milliseconds |
+| `Http.send(req)` | Execute the request — returns `Result<Response, String>` |
+
+`Http.send` returns `Ok(response_body_as_string)` on 2xx, `Err(message)` on network failure or non-2xx status.
+
+### POST Requests
+
+```mesh
+fn main() do
+  let req = Http.build(:post, "https://api.example.com/items")
+  let req = Http.header(req, "Content-Type", "application/json")
+  let req = Http.body(req, json { name: "widget", price: 9 })
+  let result = Http.send(req)
+  case result do
+    Ok(resp) -> println("created: #{resp}")
+    Err(e) -> println("error: #{e}")
+  end
+end
+```
+
+### Streaming
+
+For large responses, use `Http.stream` to receive the body chunk by chunk without buffering the full response in memory:
+
+```mesh
+fn main() do
+  let req = Http.build(:get, "https://example.com/large-file")
+  let _handle = Http.stream(req, fn chunk do
+    println(chunk)
+    "ok"
+  end)
+end
+```
+
+The callback runs for each chunk. Return `"ok"` to continue or `"stop"` to cancel the stream.
+
+### Keep-Alive Client
+
+Reuse a connection pool across multiple requests to the same host:
+
+```mesh
+fn main() do
+  let client = Http.client()
+  let req = Http.build(:get, "https://api.example.com/data")
+  let result = Http.send_with(client, req)
+  case result do
+    Ok(resp) -> println(resp)
+    Err(e) -> println(e)
+  end
+  Http.client_close(client)
+end
+```
+
+| Function | Description |
+|----------|-------------|
+| `Http.client()` | Create a keep-alive HTTP client handle |
+| `Http.send_with(client, req)` | Send request reusing the client's connection pool |
+| `Http.stream(req, fn chunk -> ... end)` | Stream response body chunk by chunk |
+| `Http.client_close(client)` | Close the client and release connections |
+
+### Legacy Single-Call API
+
+The original `HTTP.get` function (uppercase `HTTP`) is still available for simple GET requests:
 
 ```mesh
 fn main() do
@@ -403,7 +489,7 @@ fn main() do
 end
 ```
 
-`HTTP.get` returns a `Result` -- `Ok(body)` on success or `Err(message)` on failure.
+For new code, prefer the `Http.build` fluent API — it supports all HTTP methods, headers, bodies, timeouts, streaming, and keep-alive connections.
 
 ## What's Next?
 
