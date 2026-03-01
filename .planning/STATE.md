@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-03-01T06:00:25.575Z"
+last_updated: "2026-03-01T06:01:27.291Z"
 progress:
   total_phases: 131
   completed_phases: 128
   total_plans: 339
-  completed_plans: 337
+  completed_plans: 338
 ---
 
 # Project State
@@ -49,6 +49,7 @@ Progress: [██████████] 99%  (13/13 plans)
 | Phase 140 P01 | 12 | 2 tasks | 19 files |
 | Phase 140 P02 | 3 | 2 tasks | 7 files |
 | Phase 141 P01 | 1 | 2 tasks | 2 files |
+| Phase 141 P02 | 5 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,8 @@ Recent decisions affecting current work:
 - [Phase 140]: extract_readme_from_tarball case-insensitive match (readme.md) for README.md/readme.md/Readme.md variants using flate2+tar
 - [Phase 140]: DefaultBodyLimit::max(50MB) applied via .layer() on publish route chain (not globally)
 - [Phase 141]: Crypto.uuid4() for Mesher tokens: API key format changes from 53 to 41 chars (mshr_+UUID4); session uses two stripped UUIDs for 64-char hex; bcrypt preserved via pgcrypto — no stdlib equivalent
+- [Phase 141]: validate_level exposed as pub fn in validation.mpl — required for direct import in test files; was private fn in source but plan interface spec listed it as pub
+- [Phase 141]: meshc test pure function pattern established: test files in mesher/tests/ import from Ingestion.* modules; Result variants tested via case expression
 
 ### Roadmap Evolution
 
