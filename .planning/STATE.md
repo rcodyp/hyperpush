@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-03-01T05:08:41.740Z"
+last_updated: "2026-03-01T05:18:50.589Z"
 progress:
   total_phases: 128
   completed_phases: 127
   total_plans: 336
-  completed_plans: 333
+  completed_plans: 334
 ---
 
 # Project State
@@ -46,6 +46,7 @@ Progress: [██████████] 99%  (13/13 plans)
 | 138. Testing Framework | 5 | Complete (incl. gap closure) |
 | 139. Package Manifest & meshpkg CLI | 2 | Complete |
 | 140. Package Registry Backend & Website | 4 | In Progress (1/4 summaries) |
+| Phase 140 P01 | 12 | 2 tasks | 19 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Recent decisions affecting current work:
 - [Phase 139 Plan 02]: meshpkg credentials stored as TOML at ~/.mesh/credentials with [registry] section; dirs crate for home_dir()
 - [Phase 140]: Query param ?name= for per-package pages — VitePress SSG cannot enumerate registry packages at build time; runtime URLSearchParams is the correct pattern
 - [Phase 140]: ClientOnly wrapping mandatory for packages components — components access window.location.search and fetch(), unavailable during VitePress SSG build
+- [Phase 140]: registry/ excluded from main Cargo workspace to avoid libsqlite3-sys links conflict with mesh-rt's bundled sqlite3; has own [workspace] root
+- [Phase 140]: Runtime sqlx::query() used over compile-time query\!() macros — no live DB available for cargo sqlx prepare during scaffold; upgrade deferred to runtime
 
 ### Pending Todos
 
