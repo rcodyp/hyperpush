@@ -352,10 +352,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 140-01-PLAN.md — Registry backend foundation: mesh-registry workspace crate, PostgreSQL migrations (users/tokens/packages/versions + tsvector FTS), AppState, AppConfig, AppError, R2Client storage abstraction, DB query layer
-- [ ] 140-02-PLAN.md — Core API routes: publish (POST with SHA-256 dedup + namespace enforcement), download (streaming from R2), search (FTS), metadata (package + version info); wired Axum 0.8 router
-- [ ] 140-03-PLAN.md — GitHub OAuth flow (login/callback), tower-sessions PostgreSQL store, token creation dashboard (argon2 hashed), .env.example
-- [ ] 140-04-PLAN.md — VitePress packages section: PackageBrowse (featured cards + search), PackagePage (metadata card + README + version history), nav integration
+- [x] 140-01-PLAN.md — Registry backend foundation: mesh-registry workspace crate, PostgreSQL migrations (users/tokens/packages/versions + tsvector FTS), AppState, AppConfig, AppError, R2Client storage abstraction, DB query layer
+- [x] 140-02-PLAN.md — Core API routes: publish (POST with SHA-256 dedup + namespace enforcement), download (streaming from R2), search (FTS), metadata (package + version info); wired Axum 0.8 router
+- [x] 140-03-PLAN.md — GitHub OAuth flow (login/callback), tower-sessions PostgreSQL store, token creation dashboard (argon2 hashed), .env.example
+- [x] 140-04-PLAN.md — VitePress packages section: PackageBrowse (featured cards + search), PackagePage (metadata card + README + version history), nav integration
 
 ## Progress
 
@@ -371,3 +371,35 @@ Plans:
 | 138. Testing Framework | 5/5 | Complete    | 2026-02-28 |
 | 139. Package Manifest & meshpkg CLI | 2/2 | Complete    | 2026-03-01 |
 | 140. Package Registry Backend & Website | 4/4 | Complete    | 2026-03-01 |
+
+### Phase 141: Dogfeed v14 changes to mesher
+
+**Goal:** Mesher uses v14.0 Crypto stdlib for token generation (replacing pgcrypto DB round-trips), declares itself as a Mesh package via mesh.toml, and has unit tests for its pure utility functions using the Testing Framework
+**Requirements**: DOGFEED-141
+**Depends on:** Phase 140
+**Plans:** 3 plans
+
+Plans:
+- [ ] 141-01-PLAN.md — Replace pgcrypto token generation with Crypto.uuid4() in create_api_key and create_session; add mesher/mesh.toml package manifest
+- [ ] 141-02-PLAN.md — Write unit tests for fingerprint and validation pure functions using meshc test
+- [ ] 141-03-PLAN.md — Build verification and human approval checkpoint
+
+### Phase 142: Update docs page with changes/additions from v14
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 141
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 142 to break down)
+
+### Phase 143: Deploy everything including new stuff from v14
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 142
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 143 to break down)
