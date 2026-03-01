@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Ecosystem & Standard Library
 status: unknown
-last_updated: "2026-03-01T04:15:11.784Z"
+last_updated: "2026-03-01T05:08:41.740Z"
 progress:
-  total_phases: 127
+  total_phases: 128
   completed_phases: 127
-  total_plans: 332
-  completed_plans: 332
+  total_plans: 336
+  completed_plans: 333
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Expressive, readable concurrency -- writing concurrent programs should feel as natural and clean as writing sequential code, with the safety net of supervision and fault tolerance built into the language.
-**Current focus:** v14.0 Phase 139 — Package Manifest & meshpkg CLI (phase complete, plan 02 done)
+**Current focus:** v14.0 Phase 140 — Package Registry Backend & Website (plan 04 of 04 done)
 
 ## Current Position
 
-Phase: 139 of 140 (Package Manifest & meshpkg CLI) — COMPLETE (2 of 2 plans complete)
-Plan: 2 of 2 in current phase — COMPLETE
-Status: Phase 139 complete — Phase 140 (Package Registry Backend & Website) is next
-Last activity: 2026-03-01 — Phase 139 Plan 02 complete: meshpkg CLI binary with login/publish/install/search subcommands; clap CLI, tarball creation, SHA-256 verification, ureq 3 HTTP, credentials at ~/.mesh/credentials; PKG-03 + PKG-04 + PKG-05 + PKG-06 satisfied; 30 mesh-pkg tests still pass
+Phase: 140 of 140 (Package Registry Backend & Website) — Plan 4 of 4 complete
+Plan: 4 of 4 in current phase — COMPLETE
+Status: Phase 140 Plan 04 complete — packages website section shipped; REG-02, REG-03, REG-04 satisfied
+Last activity: 2026-03-01 — Phase 140 Plan 04 complete: packages browse+search page and per-package detail page; PackageBrowse, PackageCard, PackageList, PackagePage Vue components; ClientOnly runtime fetch pattern; Packages nav entry in config.mts
 
-Progress: [██████████] 92%  (12/13 plans)
+Progress: [██████████] 99%  (13/13 plans)
 
 ## Performance Metrics
 
@@ -45,7 +45,7 @@ Progress: [██████████] 92%  (12/13 plans)
 | 137. HTTP Client Improvements | 2 | Complete |
 | 138. Testing Framework | 5 | Complete (incl. gap closure) |
 | 139. Package Manifest & meshpkg CLI | 2 | Complete |
-| 140. Package Registry Backend & Website | 2 | Not started |
+| 140. Package Registry Backend & Website | 4 | In Progress (1/4 summaries) |
 
 ## Accumulated Context
 
@@ -101,6 +101,8 @@ Recent decisions affecting current work:
 - [Phase 139 Plan 02]: ureq 3 Body does not implement std::io::Read — use body_mut().as_reader().read_to_end() for binary downloads (tarball bytes)
 - [Phase 139 Plan 02]: response.status() in ureq 3 returns StatusCode not u16 — match via status().as_u16() (consistent with mesh-rt/http/client.rs)
 - [Phase 139 Plan 02]: meshpkg credentials stored as TOML at ~/.mesh/credentials with [registry] section; dirs crate for home_dir()
+- [Phase 140]: Query param ?name= for per-package pages — VitePress SSG cannot enumerate registry packages at build time; runtime URLSearchParams is the correct pattern
+- [Phase 140]: ClientOnly wrapping mandatory for packages components — components access window.location.search and fetch(), unavailable during VitePress SSG build
 
 ### Pending Todos
 
@@ -115,5 +117,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-01
-Stopped at: Completed 139-02-PLAN.md — meshpkg CLI binary with login/publish/install/search; clap CLI, GzEncoder tarball, SHA-256 verify, ureq 3 HTTP; PKG-03 to PKG-06 satisfied; Phase 139 complete; ready for Phase 140 (Registry Backend & Website)
+Stopped at: Completed 140-04-PLAN.md — packages section on website: PackageBrowse, PackageCard, PackageList, PackagePage Vue 3 components; /packages and /packages/package?name= VitePress pages; Packages nav entry; REG-02 REG-03 REG-04 satisfied; VitePress build clean
 Resume file: None

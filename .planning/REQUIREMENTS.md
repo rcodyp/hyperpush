@@ -70,9 +70,9 @@
 ### Package Registry (REG)
 
 - [ ] **REG-01**: Registry accepts package publications via authenticated HTTP API with SHA-256 content addressing and rejects duplicate version uploads
-- [ ] **REG-02**: User can browse all published packages on the hosted site listed by recency and/or popularity
-- [ ] **REG-03**: User can search the hosted site for packages by name or keyword with relevant results
-- [ ] **REG-04**: User can view a per-package page with rendered README, version history, and the install command
+- [x] **REG-02**: User can browse all published packages on the hosted site listed by recency and/or popularity
+- [x] **REG-03**: User can search the hosted site for packages by name or keyword with relevant results
+- [x] **REG-04**: User can view a per-package page with rendered README, version history, and the install command
 
 ## Future Requirements (v14.1+)
 
@@ -158,9 +158,9 @@ Which phases cover which requirements.
 | PKG-05 | Phase 139 | Complete |
 | PKG-06 | Phase 139 | Complete |
 | REG-01 | Phase 140 | Pending |
-| REG-02 | Phase 140 | Pending |
-| REG-03 | Phase 140 | Pending |
-| REG-04 | Phase 140 | Pending |
+| REG-02 | Phase 140 | Complete |
+| REG-03 | Phase 140 | Complete |
+| REG-04 | Phase 140 | Complete |
 
 **Coverage:**
 - v14.0 requirements: 47 total
