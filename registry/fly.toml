@@ -1,0 +1,11 @@
+app = "mesh-registry"
+primary_region = "iad"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  min_machines_running = 1
