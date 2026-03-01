@@ -11,6 +11,7 @@ members = [
     "compiler/mesh-lsp",
     "compiler/mesh-fmt",
     "compiler/mesh-repl",
+    "compiler/meshpkg",
 ]
 resolver = "2"
 
@@ -31,3 +32,10 @@ git2 = "0.19"
 semver = "1"
 rustyline = "15"
 mimalloc = { version = "0.1", default-features = false }
+tar = "0.4"
+flate2 = "1"
+indicatif = "0.17"
+colored = "2"
+dirs = "5"
+ureq = { version = "3", features = ["gzip"] }
+sha2 = "0.10"
