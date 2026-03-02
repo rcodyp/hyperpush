@@ -22,13 +22,13 @@ pub fn router(state: Arc<AppState>) -> Router {
                 .get(search::handler)
                 .layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
-        // Metadata routes
-        .route("/api/v1/packages/{name}", get(metadata::package_handler))
-        .route("/api/v1/packages/{name}/versions", get(metadata::versions_handler))
-        .route("/api/v1/packages/{name}/{version}", get(metadata::version_handler))
+        // Metadata routes — {owner}/{package} captures scoped names like "snowdamiz/mesh-slug"
+        .route("/api/v1/packages/{owner}/{package}", get(metadata::package_handler))
+        .route("/api/v1/packages/{owner}/{package}/versions", get(metadata::versions_handler))
+        .route("/api/v1/packages/{owner}/{package}/{version}", get(metadata::version_handler))
         // Download — streaming
         .route(
-            "/api/v1/packages/{name}/{version}/download",
+            "/api/v1/packages/{owner}/{package}/{version}/download",
             get(download::handler),
         )
         // Auth routes (implemented in Plan 03)

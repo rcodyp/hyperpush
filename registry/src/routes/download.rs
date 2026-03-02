@@ -10,8 +10,9 @@ use crate::{db, error::AppError, state::AppState};
 
 pub async fn handler(
     State(state): State<Arc<AppState>>,
-    Path((name, version)): Path<(String, String)>,
+    Path((owner, package, version)): Path<(String, String, String)>,
 ) -> Result<Response, AppError> {
+    let name = format!("{}/{}", owner, package);
     // Get version record (for sha256 key)
     let ver = db::packages::get_version(&state.pool, &name, &version)
         .await

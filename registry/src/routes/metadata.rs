@@ -14,12 +14,13 @@ pub struct VersionListItem {
     pub size_bytes: i64,
 }
 
-/// GET /api/v1/packages/{name}/versions
+/// GET /api/v1/packages/{owner}/{package}/versions
 /// Returns all versions for a package ordered newest first.
 pub async fn versions_handler(
     State(state): State<Arc<AppState>>,
-    Path(name): Path<String>,
+    Path((owner, package)): Path<(String, String)>,
 ) -> Result<Json<Vec<VersionListItem>>, AppError> {
+    let name = format!("{}/{}", owner, package);
     // Ensure package exists (returns 404 if not)
     db::packages::get_package(&state.pool, &name)
         .await
@@ -47,12 +48,13 @@ pub struct LatestVersion {
     pub sha256: String,
 }
 
-/// GET /api/v1/packages/{name}/{version}
+/// GET /api/v1/packages/{owner}/{package}/{version}
 /// Returns {"sha256": "..."} — used by meshpkg install to verify
 pub async fn version_handler(
     State(state): State<Arc<AppState>>,
-    Path((name, version)): Path<(String, String)>,
+    Path((owner, package, version)): Path<(String, String, String)>,
 ) -> Result<Json<VersionMeta>, AppError> {
+    let name = format!("{}/{}", owner, package);
     let ver = db::packages::get_version(&state.pool, &name, &version)
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?
@@ -60,14 +62,15 @@ pub async fn version_handler(
     Ok(Json(VersionMeta { sha256: ver.sha256 }))
 }
 
-/// GET /api/v1/packages/{name}
+/// GET /api/v1/packages/{owner}/{package}
 /// Returns {latest: {version, sha256}, readme, description, owner, download_count}
 /// meshpkg install <name> uses .latest.version and .latest.sha256
 /// Website PackagePage.vue uses .readme for README rendering (REG-04)
 pub async fn package_handler(
     State(state): State<Arc<AppState>>,
-    Path(name): Path<String>,
+    Path((owner, package)): Path<(String, String)>,
 ) -> Result<Json<serde_json::Value>, AppError> {
+    let name = format!("{}/{}", owner, package);
     let pkg = db::packages::get_package(&state.pool, &name)
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?
