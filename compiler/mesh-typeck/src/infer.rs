@@ -2870,6 +2870,21 @@ fn infer_item(
                                     env.insert(name.clone(), scheme.clone());
                                     ctx.imported_functions.push(name.clone());
                                 }
+                                // Check arity-overloaded function variants (name__N mangled keys)
+                                else if mod_exports.functions.keys().any(|k| {
+                                    k.starts_with(&format!("{}__", name))
+                                        && k[name.len() + 2..].chars().all(|c| c.is_ascii_digit())
+                                }) {
+                                    let prefix = format!("{}__", name);
+                                    for (key, scheme) in mod_exports.functions.iter() {
+                                        if key.starts_with(&prefix)
+                                            && key[prefix.len()..].chars().all(|c| c.is_ascii_digit())
+                                        {
+                                            env.insert(key.clone(), scheme.clone());
+                                            ctx.imported_functions.push(key.clone());
+                                        }
+                                    }
+                                }
                                 // Check struct constructors
                                 else if let Some(struct_def) = mod_exports.struct_defs.get(&name) {
                                     let tycon = TyCon::with_module(&name, last_segment.as_str());
@@ -4350,8 +4365,17 @@ fn infer_fn_def(
         .unwrap_or_else(|| "<anonymous>".to_string());
 
     // Save any pre-registered mutual-recursion placeholder before we overwrite the env entry.
+    // For arity-overloaded fns, the placeholder is stored under the mangled name__arity key.
+    // Using the plain name for overloaded fns would pick up a previously-processed overload's
+    // real scheme and cause a spurious arity mismatch error on unification.
+    let pre_registered_key = if ctx.overloaded_pub_fn_names.contains(&fn_name) {
+        let arity = fn_.param_list().map(|pl| pl.params().count()).unwrap_or(0);
+        format!("{}__{}", fn_name, arity)
+    } else {
+        fn_name.clone()
+    };
     let pre_registered = env
-        .lookup(&fn_name)
+        .lookup(&pre_registered_key)
         .and_then(|s| if s.vars.is_empty() { Some(s.ty.clone()) } else { None });
 
     ctx.enter_level();
@@ -4490,6 +4514,13 @@ fn infer_fn_def(
     ctx.leave_level();
     let scheme = ctx.generalize(fn_ty.clone());
 
+    // For arity-overloaded pub fns, also insert with mangled name__arity key
+    // so the pre-registered placeholder gets updated and arity dispatch works.
+    if ctx.overloaded_pub_fn_names.contains(&fn_name) {
+        let arity = fn_.param_list().map(|pl| pl.params().count()).unwrap_or(0);
+        let mangled = format!("{}__{}", fn_name, arity);
+        env.insert(mangled, scheme.clone());
+    }
     env.insert(fn_name, scheme);
 
     let resolved = ctx.resolve(fn_ty);
@@ -4906,10 +4937,56 @@ fn infer_call(
         err
     })?;
 
+    // Arity dispatch: check for overloaded functions (name__N mangled keys) first.
+    // This handles both plain NameRef calls (slugify(str)) and qualified FieldAccess
+    // calls (Slug.slugify(str)) where the module exports overloaded variants.
+    let arg_count = call.arg_list().map(|al| al.args().count()).unwrap_or(0);
+    let mut arity_dispatched_ty: Option<Ty> = None;
+
+    // Plain NameRef: look up name__N in env
+    if let Expr::NameRef(ref nr) = callee_expr {
+        if let Some(fn_name) = nr.text() {
+            let mangled = format!("{}__{}", fn_name, arg_count);
+            if let Some(scheme) = env.lookup(&mangled) {
+                let scheme = scheme.clone();
+                let ty = ctx.instantiate(&scheme);
+                ctx.overloaded_call_targets.insert(call.syntax().text_range(), mangled);
+                arity_dispatched_ty = Some(ty);
+            }
+        }
+    }
+
+    // Qualified FieldAccess: Slug.slugify(str) → look for slugify__N in qualified_modules["Slug"]
+    if arity_dispatched_ty.is_none() {
+        if let Expr::FieldAccess(ref fa) = callee_expr {
+            if let Some(base) = fa.base() {
+                if let Expr::NameRef(ref nr) = base {
+                    if let Some(mod_name) = nr.text() {
+                        if let Some(field_name) = fa.field().map(|f| f.text().to_string()) {
+                            let mangled = format!("{}__{}", field_name, arg_count);
+                            let scheme_opt = ctx.qualified_modules
+                                .get(&mod_name)
+                                .and_then(|m| m.get(&mangled))
+                                .cloned();
+                            if let Some(scheme) = scheme_opt {
+                                let ty = ctx.instantiate(&scheme);
+                                ctx.overloaded_call_targets.insert(call.syntax().text_range(), mangled);
+                                arity_dispatched_ty = Some(ty);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Try normal callee inference first. For FieldAccess callees, this goes through
     // the standard infer_field_access path (modules, services, variants, struct fields).
     // If that fails AND the callee is a FieldAccess, retry in method-call context.
-    let callee_ty = match infer_expr(ctx, env, &callee_expr, types, type_registry, trait_registry, fn_constraints) {
+    let callee_ty = if let Some(ty) = arity_dispatched_ty {
+        ty
+    } else {
+    match infer_expr(ctx, env, &callee_expr, types, type_registry, trait_registry, fn_constraints) {
         Ok(ty) => ty,
         Err(first_err) => {
             // If callee is a FieldAccess and normal inference failed, try method resolution.
@@ -4959,7 +5036,8 @@ fn infer_call(
                 return Err(first_err);
             }
         }
-    };
+    }
+    }; // close else { match ... } and the let binding
 
     let mut arg_types = Vec::new();
     if let Some(arg_list) = call.arg_list() {

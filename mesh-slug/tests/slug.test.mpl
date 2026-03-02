@@ -1,7 +1,7 @@
 # Unit tests for mesh-slug package.
 # Run with: meshc test mesh-slug/tests/
 
-from Slug import slugify, slugify_with_sep, truncate, is_valid
+from Slug import slugify, truncate, is_valid
 
 describe("Slug.slugify — default separator") do
   test("basic: lowercases and hyphenates") do
@@ -27,15 +27,15 @@ describe("Slug.slugify — default separator") do
   end
 end
 
-describe("Slug.slugify_with_sep — custom separator") do
+describe("Slug.slugify — custom separator") do
   test("underscore separator") do
-    assert_eq(slugify_with_sep("Hello World!", "_"), "hello_world")
+    assert_eq(slugify("Hello World!", "_"), "hello_world")
   end
   test("double-hyphen separator") do
-    assert_eq(slugify_with_sep("Hello World!", "--"), "hello--world")
+    assert_eq(slugify("Hello World!", "--"), "hello--world")
   end
   test("custom sep with consecutive spaces") do
-    assert_eq(slugify_with_sep("foo  bar", "_"), "foo_bar")
+    assert_eq(slugify("foo  bar", "_"), "foo_bar")
   end
 end
 

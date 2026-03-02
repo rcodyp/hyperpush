@@ -1,14 +1,10 @@
 # Slug module — URL-safe slug generation for Mesh.
 #
 # API:
-#   Slug.slugify(str)                    -> String  (default separator: "-")
-#   Slug.slugify_with_sep(str, sep)      -> String  (custom separator)
-#   Slug.truncate(slug, max)             -> String  (cut at last separator boundary)
-#   Slug.is_valid(slug)                  -> Bool    (true if already a valid slug)
-#
-# NOTE: Mesh's module export system uses name-only keys (FxHashMap<String, Scheme>),
-# so two pub fns with the same name but different arity cannot both be exported.
-# slugify/2 is therefore named slugify_with_sep/2.
+#   Slug.slugify(str)          -> String  (default separator: "-")
+#   Slug.slugify(str, sep)     -> String  (custom separator)
+#   Slug.truncate(slug, max)   -> String  (cut at last separator boundary)
+#   Slug.is_valid(slug)        -> Bool    (true if already a valid slug)
 #
 # IMPLEMENTATION NOTES:
 # - Case arm bodies must appear on the same line as the -> arrow (Mesh parser limitation).
@@ -45,9 +41,9 @@ end
 # Convert a string to a URL-safe slug using a custom separator.
 #
 # Examples:
-#   slugify_with_sep("Hello World!", "_")  -> "hello_world"
-#   slugify_with_sep("Hello World!", "--") -> "hello--world"
-pub fn slugify_with_sep(str :: String, sep :: String) -> String do
+#   slugify("Hello World!", "_")  -> "hello_world"
+#   slugify("Hello World!", "--") -> "hello--world"
+pub fn slugify(str :: String, sep :: String) -> String do
   slugify_core(str, sep)
 end
 

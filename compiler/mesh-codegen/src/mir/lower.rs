@@ -616,6 +616,26 @@ impl<'a> Lowerer<'a> {
     // ── Top-level lowering ───────────────────────────────────────────
 
     fn lower_source_file(&mut self, sf: SourceFile) {
+        // Pre-pass: detect arity-overloaded pub fns (same name, multiple arities).
+        // Populate overloaded_pub_fn_names so lower_fn_def can emit mangled MIR names.
+        {
+            let mut pub_fn_counts: HashMap<String, usize> = HashMap::new();
+            for item in sf.items() {
+                if let Item::FnDef(fn_def) = &item {
+                    if fn_def.visibility().is_some() {
+                        if let Some(name) = fn_def.name().and_then(|n| n.text()) {
+                            *pub_fn_counts.entry(name).or_insert(0) += 1;
+                        }
+                    }
+                }
+            }
+            for (name, count) in pub_fn_counts {
+                if count > 1 {
+                    self.overloaded_pub_fn_names.insert(name);
+                }
+            }
+        }
+
         // First pass: register all function names so we know which are direct calls.
         // For multi-clause functions, only register the FIRST clause (which has the type).
         for item in sf.items() {
@@ -1583,15 +1603,19 @@ impl<'a> Lowerer<'a> {
         self.pop_scope();
 
         // Rename "main" to "mesh_main" to avoid collision with C main() entry point.
+        // For arity-overloaded pub fns, emit mangled name__arity MIR name.
         // Then apply module-qualified naming for private functions.
         let fn_name = if name == "main" {
             self.entry_function = Some("mesh_main".to_string());
             "mesh_main".to_string()
+        } else if self.overloaded_pub_fn_names.contains(&name) {
+            let arity = fn_def.param_list().map(|pl| pl.params().count()).unwrap_or(0);
+            format!("{}__{}", name, arity)
         } else {
             self.qualify_name(&name)
         };
 
-        // Register both original and qualified name in known_functions for
+        // Register both original and qualified/mangled name in known_functions for
         // intra-module call resolution (callers use unqualified name from AST).
         if fn_name != name {
             let fn_ty = MirType::FnPtr(
@@ -6668,8 +6692,19 @@ impl<'a> Lowerer<'a> {
             }
         }
 
-        // Non-method-call path: normal function calls (unchanged from before).
-        let callee = call.callee().map(|e| self.lower_expr(&e));
+        // Non-method-call path: normal function calls.
+        // Check overloaded_call_targets first: if this call was resolved to a mangled
+        // name__arity by the typechecker, emit the mangled name directly instead of
+        // delegating to lower_expr (which would look up the plain unmangled name).
+        let overloaded_target = self.overloaded_call_targets.get(&call.syntax().text_range()).cloned();
+        let callee = if let Some(ref mangled_name) = overloaded_target {
+            let callee_ty = call.callee()
+                .map(|e| self.resolve_range(e.syntax().text_range()))
+                .unwrap_or(MirType::Unit);
+            Some(MirExpr::Var(mangled_name.clone(), callee_ty))
+        } else {
+            call.callee().map(|e| self.lower_expr(&e))
+        };
         let args: Vec<MirExpr> = call
             .arg_list()
             .map(|al| al.args().map(|a| self.lower_expr(&a)).collect())
