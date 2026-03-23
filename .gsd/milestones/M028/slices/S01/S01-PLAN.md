@@ -46,7 +46,7 @@
   - Do: Create the top-level Mesh project, encode the `DATABASE_URL`/`PORT`/`JOB_POLL_MS` startup contract in package-local code, follow Mesher’s startup order (pool first, services next, HTTP serve last), and keep the initial HTTP surface to a real `GET /health` path wired through modules rather than a monolithic `main.mpl`.
   - Verify: `cargo build -p mesh-rt && cargo run -p meshc -- build reference-backend`
   - Done when: `reference-backend/` builds as a directory-based Mesh project, startup config is env-driven, and `/health` is reachable through package-local routing code.
-- [ ] **T02: Repair the non-empty `DATABASE_URL` startup path and land regression proof** `est:2h`
+- [x] **T02: Repair the non-empty `DATABASE_URL` startup path and land regression proof** `est:2h`
   - Why: T01 exposed a real runtime blocker: until a non-empty `DATABASE_URL` can reach the live startup path without crashing, every DB-backed follow-on task is built on unsafe ground.
   - Files: `reference-backend/main.mpl`, `reference-backend/config.mpl`, `reference-backend/api/health.mpl`, `compiler/meshc/tests/e2e_reference_backend.rs`
   - Do: Reproduce the segfault with the smallest DB-backed startup path, replace the crash-prone startup parsing/wiring with the safest working pattern available in-repo, preserve the explicit missing-env failure path, and add regression proof that a real `DATABASE_URL` no longer crashes before `/health`.

@@ -41,12 +41,7 @@ fn build_reference_backend() -> Output {
         .expect("failed to invoke meshc build for reference-backend")
 }
 
-fn reference_backend_binary() -> PathBuf {
-    repo_root().join("reference-backend").join("reference-backend")
-}
-
-#[test]
-fn e2e_reference_backend_builds() {
+fn assert_reference_backend_build_succeeds() {
     let output = build_reference_backend();
     assert!(
         output.status.success(),
@@ -54,28 +49,14 @@ fn e2e_reference_backend_builds() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-
-    let binary = reference_backend_binary();
-    assert!(
-        binary.exists(),
-        "compiled reference-backend binary not found at {}",
-        binary.display()
-    );
 }
 
-#[test]
-#[ignore]
-fn e2e_reference_backend_postgres_smoke() {
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set for e2e_reference_backend_postgres_smoke");
+fn reference_backend_binary() -> PathBuf {
+    repo_root().join("reference-backend").join("reference-backend")
+}
 
-    let build_output = build_reference_backend();
-    assert!(
-        build_output.status.success(),
-        "meshc build reference-backend failed:\nstdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&build_output.stdout),
-        String::from_utf8_lossy(&build_output.stderr)
-    );
+fn assert_reference_backend_runtime_starts(database_url: &str) {
+    assert_reference_backend_build_succeeds();
 
     let binary = reference_backend_binary();
     let mut child = Command::new(&binary)
@@ -119,25 +100,76 @@ fn e2e_reference_backend_postgres_smoke() {
     let output = child
         .wait_with_output()
         .expect("failed to collect reference-backend output");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    let combined = format!("{stdout}{stderr}");
 
     assert!(
         connected,
         "reference-backend never became reachable on :18080\nstdout: {}\nstderr: {}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+        stdout,
+        stderr
     );
     assert!(
         response.contains("200"),
         "expected HTTP 200 from /health, got: {}\nstdout: {}\nstderr: {}",
         response,
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+        stdout,
+        stderr
     );
     assert!(
         response.contains(r#"{"status":"ok"}"#),
         "expected JSON health payload, got: {}\nstdout: {}\nstderr: {}",
         response,
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
+        stdout,
+        stderr
     );
+    assert!(
+        combined.contains("[reference-backend] Config loaded port=18080 job_poll_ms=1000"),
+        "expected config-loaded log line, got:\n{}",
+        combined
+    );
+    assert!(
+        combined.contains("[reference-backend] PostgreSQL pool ready"),
+        "expected pool-ready log line, got:\n{}",
+        combined
+    );
+    assert!(
+        combined.contains("[reference-backend] HTTP server starting on :18080"),
+        "expected HTTP-bind log line, got:\n{}",
+        combined
+    );
+    assert!(
+        !combined.contains(database_url),
+        "startup logs must not echo DATABASE_URL\nlogs:\n{}",
+        combined
+    );
+}
+
+#[test]
+fn e2e_reference_backend_builds() {
+    assert_reference_backend_build_succeeds();
+
+    let binary = reference_backend_binary();
+    assert!(
+        binary.exists(),
+        "compiled reference-backend binary not found at {}",
+        binary.display()
+    );
+}
+
+#[test]
+#[ignore]
+fn e2e_reference_backend_runtime_starts() {
+    let database_url = std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set for e2e_reference_backend_runtime_starts");
+    assert_reference_backend_runtime_starts(&database_url);
+}
+
+#[test]
+#[ignore]
+fn e2e_reference_backend_postgres_smoke() {
+    let database_url = std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set for e2e_reference_backend_postgres_smoke");
+    assert_reference_backend_runtime_starts(&database_url);
 }
