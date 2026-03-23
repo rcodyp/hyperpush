@@ -1,7 +1,10 @@
 from Config import database_url_key, port_key, job_poll_ms_key, missing_required_env, invalid_positive_int
-from Api.Router import build_router
-from Runtime.Registry import start_registry
-from Jobs.Worker import start_worker
+
+from Api. Router import build_router
+
+from Runtime. Registry import start_registry
+
+from Jobs. Worker import start_worker
 
 fn log_config_error(message :: String) do
   println("[reference-backend] Config error: #{message}")
@@ -42,8 +45,8 @@ fn start_with_values(database_url :: String, port :: Int, job_poll_ms :: Int) do
   println("[reference-backend] Connecting to PostgreSQL pool...")
   let pool_result = Pool.open(database_url, 1, 4, 5000)
   case pool_result do
-    Ok(pool) -> on_pool_ready(port, job_poll_ms, pool)
-    Err(e) -> println("[reference-backend] PostgreSQL connect failed: #{e}")
+    Ok( pool) -> on_pool_ready(port, job_poll_ms, pool)
+    Err( e) -> println("[reference-backend] PostgreSQL connect failed: #{e}")
   end
 end
 

@@ -23,6 +23,7 @@
 - `cargo test -p meshc --test e2e_fmt -- --nocapture`
 - `cargo run -p meshc -- fmt --check reference-backend`
 - `cargo run -p meshc -- test reference-backend`
+- `! cargo run -p meshc -- test --coverage reference-backend`
 - `cargo test -p meshc --test tooling_e2e -- --nocapture`
 - `cargo test -p meshc --test e2e_lsp -- --nocapture`
 - `cargo test -p mesh-lsp -- --nocapture`
@@ -42,7 +43,7 @@
 
 ## Tasks
 
-- [ ] **T01: Harden formatter and format-on-save on the reference backend** `est:90m`
+- [x] **T01: Harden formatter and format-on-save on the reference backend** `est:90m`
   - Why: The highest-confidence live trust breaker is `meshc fmt --check reference-backend` panicking on `reference-backend/api/health.mpl`, and the same formatter path is reused by LSP formatting.
   - Files: `compiler/mesh-fmt/src/printer.rs`, `compiler/mesh-fmt/src/lib.rs`, `compiler/meshc/tests/e2e_fmt.rs`, `compiler/meshc/tests/tooling_e2e.rs`, `reference-backend/api/health.mpl`
   - Do: Reproduce the overflow against the real backend file, fix the flat-width/group-fit logic so `Hardline`/overflow cases choose broken rendering instead of panicking, add formatter regressions anchored to the backend reproducer or a reduced equivalent, and keep the shared `mesh_fmt::format_source(...)` path safe for later LSP transport proof.

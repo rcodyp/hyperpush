@@ -42,6 +42,14 @@ struct PrintCmd<'a> {
     ir: &'a FormatIR,
 }
 
+fn group_fits_on_line(col: usize, flat_width: usize, max_width: usize) -> bool {
+    if flat_width == usize::MAX || col > max_width {
+        return false;
+    }
+
+    flat_width <= max_width.saturating_sub(col)
+}
+
 /// Render a `FormatIR` tree as a formatted string respecting the given config.
 ///
 /// The algorithm uses a stack-based approach: at each `Group`, it measures
@@ -96,7 +104,7 @@ pub fn print(ir: &FormatIR, config: &FormatConfig) -> String {
             FormatIR::Group(child) => {
                 // Measure flat width of the group contents.
                 let flat_width = measure_flat(child);
-                if col + flat_width <= config.max_width {
+                if group_fits_on_line(col, flat_width, config.max_width) {
                     // Fits on one line: render flat.
                     stack.push(PrintCmd {
                         indent: cmd.indent,
@@ -338,5 +346,12 @@ mod tests {
     fn measure_flat_hardline_returns_max() {
         let ir = concat(vec![text("a"), hardline(), text("b")]);
         assert_eq!(measure_flat(&ir), usize::MAX);
+    }
+
+    #[test]
+    fn grouped_hardline_breaks_instead_of_overflowing() {
+        let ir = group(concat(vec![text("a"), hardline(), text("b")]));
+        let result = print(&ir, &default_config());
+        assert_eq!(result, "a\nb\n");
     }
 }

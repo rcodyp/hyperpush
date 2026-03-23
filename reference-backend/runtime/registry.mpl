@@ -4,10 +4,10 @@ end
 
 service RuntimeRegistry do
   fn init(pool :: PoolHandle) -> RegistryState do
-    RegistryState { pool: pool }
+    RegistryState { pool : pool }
   end
-
-  call GetPool() :: PoolHandle do |state|
+  
+  call GetPool() :: PoolHandle do|state|
     (state, state.pool)
   end
 end

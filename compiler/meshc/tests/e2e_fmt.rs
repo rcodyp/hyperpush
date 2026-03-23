@@ -16,6 +16,15 @@ fn find_meshc() -> PathBuf {
     path.join("meshc")
 }
 
+fn repo_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("compiler dir")
+        .parent()
+        .expect("repo root")
+        .to_path_buf()
+}
+
 #[test]
 fn fmt_formats_single_file_in_place() {
     let dir = tempfile::tempdir().unwrap();
@@ -97,6 +106,33 @@ fn fmt_check_exits_0_on_formatted() {
         output.status.success(),
         "Expected exit 0 for formatted file, got: {}",
         String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn fmt_check_reference_backend_directory_succeeds() {
+    let repo_root = repo_root();
+    let backend_dir = repo_root.join("reference-backend");
+    let health_file = backend_dir.join("api").join("health.mpl");
+    let before = std::fs::read_to_string(&health_file).unwrap();
+
+    let output = Command::new(find_meshc())
+        .current_dir(&repo_root)
+        .args(["fmt", "--check", backend_dir.to_str().unwrap()])
+        .output()
+        .expect("failed to run meshc fmt --check on reference-backend");
+
+    assert!(
+        output.status.success(),
+        "meshc fmt --check reference-backend failed:\nstdout:\n{}\nstderr:\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+
+    let after = std::fs::read_to_string(&health_file).unwrap();
+    assert_eq!(
+        after, before,
+        "fmt --check should not rewrite reference-backend/api/health.mpl"
     );
 }
 

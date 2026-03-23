@@ -285,6 +285,11 @@ mod idempotency_tests {
 mod edge_case_tests {
     use super::{format_source, FormatConfig};
 
+    const REFERENCE_BACKEND_HEALTH: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../reference-backend/api/health.mpl"
+    ));
+
     fn fmt(source: &str) -> String {
         format_source(source, &FormatConfig::default())
     }
@@ -402,6 +407,21 @@ mod edge_case_tests {
             !result.contains("end\n\n\nfn"),
             "Should not have double blank lines, got:\n{}",
             result
+        );
+    }
+
+    #[test]
+    fn reference_backend_health_file_formats_canonically() {
+        let result = fmt(REFERENCE_BACKEND_HEALTH);
+        let second = fmt(&result);
+
+        assert_eq!(
+            result, REFERENCE_BACKEND_HEALTH,
+            "reference-backend/api/health.mpl should stay canonically formatted"
+        );
+        assert_eq!(
+            result, second,
+            "Formatting the backend health module should remain idempotent"
         );
     }
 }

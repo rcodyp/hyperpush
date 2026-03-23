@@ -1,37 +1,22 @@
-from Types.Job import Job
+from Types. Job import Job
 
 fn jobs_table() -> String do
   "jobs"
 end
 
 fn job_from_row(row) -> Job do
-  Job {
-    id: Map.get(row, "id"),
-    status: Map.get(row, "status"),
-    attempts: Map.get(row, "attempts"),
-    last_error: Map.get(row, "last_error"),
-    payload: Map.get(row, "payload"),
-    created_at: Map.get(row, "created_at"),
-    updated_at: Map.get(row, "updated_at"),
-    processed_at: Map.get(row, "processed_at")
-  }
+  Job { id : Map.get(row, "id"), status : Map.get(row, "status"), attempts : Map.get(row,
+  "attempts"), last_error : Map.get(row, "last_error"), payload : Map.get(row, "payload"), created_at : Map.get(row,
+  "created_at"), updated_at : Map.get(row, "updated_at"), processed_at : Map.get(row,
+  "processed_at") }
 end
 
 fn job_select_query() do
   Query.from(jobs_table())
-    |> Query.select_raw([
-      "id::text",
-      "status",
-      "attempts::text",
-      "COALESCE(last_error, '') AS last_error",
-      "payload::text",
-      "created_at::text",
-      "updated_at::text",
-      "COALESCE(processed_at::text, '') AS processed_at"
-    ])
+    |> Query.select_raw(["id::text", "status", "attempts::text", "COALESCE(last_error, '') AS last_error", "payload::text", "created_at::text", "updated_at::text", "COALESCE(processed_at::text, '') AS processed_at"])
 end
 
-fn find_single_job(rows, missing_message :: String) -> Job!String do
+fn find_single_job(rows, missing_message :: String) -> Job ! String do
   if List.length(rows) > 0 do
     Ok(job_from_row(List.head(rows)))
   else
@@ -47,7 +32,7 @@ end
 fn parse_attempts(value :: String) -> Int do
   let parsed = String.to_int(value)
   case parsed do
-    Some(n) -> n
+    Some( n) -> n
     None -> 0
   end
 end
@@ -61,50 +46,44 @@ fn claim_pending_job_sql() -> String do
   "UPDATE " <> table <> " SET status = 'processing', attempts = attempts + 1, updated_at = now() WHERE id = (SELECT id FROM " <> table <> " WHERE status = 'pending' ORDER BY created_at ASC, id ASC FOR UPDATE SKIP LOCKED LIMIT 1) RETURNING id::text AS id, status, attempts::text AS attempts, COALESCE(last_error, '') AS last_error, payload::text AS payload, created_at::text AS created_at, updated_at::text AS updated_at, COALESCE(processed_at::text, '') AS processed_at"
 end
 
-pub fn create_job(pool :: PoolHandle, payload :: String) -> Job!String do
+pub fn create_job(pool :: PoolHandle, payload :: String) -> Job ! String do
   let now_ts = current_timestamp()
-  let row = Repo.insert(pool, jobs_table(), %{
-    "status" => "pending",
-    "attempts" => "0",
-    "payload" => payload,
-    "updated_at" => now_ts
-  })?
+  let row = Repo.insert(pool,
+  jobs_table(),
+  %{"status" => "pending", "attempts" => "0", "payload" => payload, "updated_at" => now_ts}) ?
   let job_id = Map.get(row, "id")
   get_job(pool, job_id)
 end
 
-pub fn get_job(pool :: PoolHandle, job_id :: String) -> Job!String do
+pub fn get_job(pool :: PoolHandle, job_id :: String) -> Job ! String do
   let q = job_query_by_id(job_id)
-  let rows = Repo.all(pool, q)?
+  let rows = Repo.all(pool, q) ?
   find_single_job(rows, "not found")
 end
 
-pub fn claim_next_pending_job(pool :: PoolHandle) -> Job!String do
-  let rows = Repo.query_raw(pool, claim_pending_job_sql(), [])?
+pub fn claim_next_pending_job(pool :: PoolHandle) -> Job ! String do
+  let rows = Repo.query_raw(pool, claim_pending_job_sql(), []) ?
   find_single_job(rows, "no pending jobs")
 end
 
-pub fn mark_job_processed(pool :: PoolHandle, job_id :: String) -> Job!String do
+pub fn mark_job_processed(pool :: PoolHandle, job_id :: String) -> Job ! String do
   let ts = current_timestamp()
   let q = Query.from(jobs_table())
     |> Query.where_raw("id = ?::uuid", [job_id])
-  let _ = Repo.update_where(pool, jobs_table(), %{
-    "status" => "processed",
-    "last_error" => "",
-    "processed_at" => ts,
-    "updated_at" => ts
-  }, q)?
+  let _ = Repo.update_where(pool,
+  jobs_table(),
+  %{"status" => "processed", "last_error" => "", "processed_at" => ts, "updated_at" => ts},
+  q) ?
   get_job(pool, job_id)
 end
 
-pub fn mark_job_failed(pool :: PoolHandle, job_id :: String, error_message :: String) -> Job!String do
+pub fn mark_job_failed(pool :: PoolHandle, job_id :: String, error_message :: String) -> Job ! String do
   let ts = current_timestamp()
   let q = Query.from(jobs_table())
     |> Query.where_raw("id = ?::uuid", [job_id])
-  let _ = Repo.update_where(pool, jobs_table(), %{
-    "status" => "failed",
-    "last_error" => error_message,
-    "updated_at" => ts
-  }, q)?
+  let _ = Repo.update_where(pool,
+  jobs_table(),
+  %{"status" => "failed", "last_error" => error_message, "updated_at" => ts},
+  q) ?
   get_job(pool, job_id)
 end
