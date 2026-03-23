@@ -8,12 +8,31 @@ Language support for [Mesh](https://meshlang.dev) -- an expressive, readable pro
 ## Features
 
 - **Syntax Highlighting** -- comprehensive TextMate grammar with scoping for keywords, types, literals, comments, and module-qualified calls
-- **Diagnostics** -- real-time error reporting from the Mesh compiler
-- **Hover Information** -- type information and documentation on hover
-- **Go to Definition** -- jump to definitions across files
-- **Completions** -- context-aware completion suggestions with snippet support for functions and types
-- **Signature Help** -- parameter hints for function calls showing argument types and names
-- **Document Symbols** -- Outline view with hierarchical symbols for functions, services, types, and more
+- **Language Configuration** -- bracket matching, auto-closing pairs, and Mesh-specific indentation for `do`/`end` blocks
+- **Verified LSP Diagnostics** -- real-time parse and type errors from the Mesh compiler
+- **Verified Hover** -- inferred type information on hover
+- **Verified Go to Definition** -- jump to definitions across files
+- **Verified Document Formatting** -- format the current Mesh document through `meshc lsp`
+- **Verified Signature Help** -- parameter hints with active-parameter tracking for function calls
+
+The current transport-level regression suite exercises the LSP path over real stdio JSON-RPC against `reference-backend/`, so the documented editor experience is tied to the same backend-shaped proof as the CLI tooling.
+
+## Installation
+
+Build and install the current packaged extension from source:
+
+```sh
+npm install
+npm run compile
+npm run package
+code --install-extension mesh-lang-0.3.0.vsix
+```
+
+For repeat local installs, you can also run:
+
+```sh
+npm run install-local
+```
 
 ## Requirements
 

@@ -41,7 +41,7 @@ Mesh compiles directly to a standalone native binary—no virtual machine to ins
   - **WebSocket** server support (actor-per-connection).
   - **JSON** serialization/deserialization.
   - **HTTP** server with routing and middleware.
-- **Modern Tooling:** Built-in package manager, formatter (`mesh fmt`), and Language Server Protocol (LSP) support for your editor.
+- **Modern Tooling:** Built-in project scaffolding (`meshc init`), formatter (`meshc fmt`), test runner (`meshc test <project-or-dir>`), and Language Server Protocol (LSP) support for your editor.
 - **String ergonomics:** `#{}` string interpolation, multiline heredocs, regex literals, and `Env.get`/`Env.get_int` for environment variables.
 - **Slot pipe operator:** Route piped values to any argument position with `|N>` syntax.
 
@@ -57,7 +57,16 @@ cd mesh
 cargo install --path compiler/meshc
 ```
 
-### 2. Hello World
+### 2. Optional: Scaffold a Project
+
+```bash
+meshc init hello_mesh
+cd hello_mesh
+```
+
+This creates a Mesh project directory with a `mesh.toml` manifest and `main.mpl` entrypoint.
+
+### 3. Hello World
 
 Create a file named `hello.mpl`:
 
@@ -84,7 +93,7 @@ meshc build hello.mpl
 ./hello
 ```
 
-### 3. A Web Server Example
+### 4. A Web Server Example
 
 ```elixir
 struct User do

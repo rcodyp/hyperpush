@@ -53,3 +53,10 @@ Once formatter, test-runner, and LSP behavior are mechanically proven, update th
 - `website/docs/docs/cheatsheet/index.md` — corrected command cheatsheet entries
 - `tools/editors/vscode-mesh/README.md` — current extension install/features guidance
 - `reference-backend/README.md` — canonical backend daily-driver tooling workflow
+
+## Observability Impact
+
+- Runtime/user-visible signals: the public docs, backend README, and VS Code README now name only commands and editor features that have live proof elsewhere in S03.
+- Inspection surfaces: `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, `cargo test -p meshc --test e2e_lsp -- --nocapture`, and the targeted stale-string sweep over the six edited doc surfaces.
+- Failure visibility: stale command drift is now detectable through named `rg` matches (`meshc new`, `mesh fmt`, `meshc test .`, old VSIX names, or stub-coverage wording) instead of relying on manual doc review.
+- Redaction constraints: verification must stay on source paths, safe command output, and editor/runtime metadata only; do not print secrets or `DATABASE_URL`.

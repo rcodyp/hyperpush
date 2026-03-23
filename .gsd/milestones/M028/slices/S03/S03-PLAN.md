@@ -27,12 +27,13 @@
 - `cargo test -p meshc --test tooling_e2e -- --nocapture`
 - `cargo test -p meshc --test e2e_lsp -- --nocapture`
 - `cargo test -p mesh-lsp -- --nocapture`
+- `! rg -n "meshc new|mesh fmt|meshc test \\.|mesh-lang-0\\.1\\.0\\.vsix|Coverage reporting is available as a stub" README.md website/docs/docs/tooling/index.md website/docs/docs/testing/index.md website/docs/docs/cheatsheet/index.md tools/editors/vscode-mesh/README.md reference-backend/README.md`
 
 ## Observability / Diagnostics
 
-- Runtime signals: formatter exits cleanly instead of panicking, test-runner output distinguishes passing backend tests from unsupported coverage requests, and LSP request/response assertions capture diagnostics plus formatting/navigation behavior at the JSON-RPC boundary.
-- Inspection surfaces: `compiler/meshc/tests/e2e_fmt.rs`, `compiler/meshc/tests/tooling_e2e.rs`, `compiler/meshc/tests/e2e_lsp.rs`, `cargo run -p meshc -- fmt --check reference-backend`, and `cargo run -p meshc -- test reference-backend`.
-- Failure visibility: formatter regressions fail with the backend file path instead of an overflow panic, coverage truth fails with an explicit unsupported/implemented contract instead of a green stub, and LSP transport mismatches fail with named request/response assertions.
+- Runtime signals: formatter exits cleanly instead of panicking, test-runner output distinguishes passing backend tests from unsupported coverage requests, LSP request/response assertions capture diagnostics plus formatting/navigation behavior at the JSON-RPC boundary, and doc drift fails with an inspectable stale-string match instead of silently shipping old commands.
+- Inspection surfaces: `compiler/meshc/tests/e2e_fmt.rs`, `compiler/meshc/tests/tooling_e2e.rs`, `compiler/meshc/tests/e2e_lsp.rs`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, and the targeted `rg` stale-string sweep over `README.md`, website docs, the VS Code README, and `reference-backend/README.md`.
+- Failure visibility: formatter regressions fail with the backend file path instead of an overflow panic, coverage truth fails with an explicit unsupported/implemented contract instead of a green stub, LSP transport mismatches fail with named request/response assertions, and stale docs fail with named offending files/lines.
 - Redaction constraints: do not print secrets or `DATABASE_URL`; tooling proof should stay on source paths, diagnostics, command output, and safe editor/runtime metadata.
 
 ## Integration Closure
@@ -61,7 +62,7 @@
   - Do: Create a Rust JSON-RPC harness that spawns `meshc lsp`, drives initialize/open/request/format flows against backend-shaped files, assert diagnostics plus hover/definition and formatting along with one assist surface such as completion or signature help, and fix any backend-shaped transport bug the harness exposes instead of narrowing the proof to toy snippets.
   - Verify: `cargo test -p mesh-lsp -- --nocapture && cargo test -p meshc --test e2e_lsp -- --nocapture`
   - Done when: a real `meshc lsp` process is mechanically proven against backend-shaped sources and formatting/navigation assist requests no longer depend on unit tests or help-text smoke checks for credibility.
-- [ ] **T04: Sync docs and editor instructions to the verified tooling contract** `est:90m`
+- [x] **T04: Sync docs and editor instructions to the verified tooling contract** `est:90m`
   - Why: S03 only helps R008 if public docs/examples/editor guidance stop advertising stale commands, stale VSIX versions, and unsupported coverage claims after the code path is fixed.
   - Files: `README.md`, `website/docs/docs/tooling/index.md`, `website/docs/docs/testing/index.md`, `website/docs/docs/cheatsheet/index.md`, `tools/editors/vscode-mesh/README.md`, `reference-backend/README.md`
   - Do: Update docs to the verified command truth (`meshc init`, `meshc fmt`, `meshc test reference-backend`, honest coverage wording, current VSIX/install command), align LSP/editor feature docs with the transport proof and extension metadata, and remove stale toy-only or placeholder wording that overstates the backend/tooling story.

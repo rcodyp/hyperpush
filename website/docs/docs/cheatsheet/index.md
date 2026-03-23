@@ -385,7 +385,7 @@ let n = length("test")
 
 ```mesh
 # File: my_module.test.mpl
-# Run with: meshc test .
+# Run with: meshc test my_app
 
 test("basic assertions") do
   assert(1 + 1 == 2)

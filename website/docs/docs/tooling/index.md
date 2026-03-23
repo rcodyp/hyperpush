@@ -15,10 +15,16 @@ The Mesh formatter canonically formats your source code, enforcing a consistent 
 meshc fmt main.mpl
 ```
 
-To format all files in the current directory:
+To format a project directory:
 
 ```bash
 meshc fmt .
+```
+
+To fail fast in CI or before committing if any file would change:
+
+```bash
+meshc fmt --check reference-backend
 ```
 
 The formatter uses the **Wadler-Lindig** pretty-printing algorithm with a CST-based approach. This means:
@@ -108,10 +114,10 @@ Mesh includes a built-in package manager for creating and managing projects.
 
 ### Creating a New Project
 
-Use `meshc new` to scaffold a new project:
+Use `meshc init` to scaffold a new project:
 
 ```bash
-meshc new my_app
+meshc init my_app
 ```
 
 This creates the following structure:
@@ -158,14 +164,15 @@ When dependencies are resolved, a lockfile (`mesh.lock`) is generated to ensure 
 
 ## Test Runner
 
-Run all `*.test.mpl` files in a project with `meshc test`:
+Run all `*.test.mpl` files from a project root, a tests directory, or a specific test file with `meshc test`:
 
 ```bash
-meshc test .              # all test files in current directory
-meshc test path/to/dir/  # specific directory
+meshc test reference-backend
+meshc test reference-backend/tests
+meshc test reference-backend/tests/config.test.mpl
 ```
 
-The test runner discovers all files ending in `.test.mpl`, compiles and executes each independently, and prints a per-test pass/fail summary:
+The test runner discovers all files ending in `.test.mpl` under the requested target, compiles and executes each independently, and prints a per-test pass/fail summary:
 
 ```
 test arithmetic is correct ... ok
@@ -176,6 +183,14 @@ test string operations/length ... FAIL
 ```
 
 Exit code is non-zero if any test fails, making `meshc test` suitable for CI pipelines.
+
+Coverage requests are intentionally honest today:
+
+```bash
+meshc test --coverage reference-backend
+```
+
+`--coverage` currently exits non-zero with an explicit unsupported message instead of claiming a stub report.
 
 See the [Testing guide](/docs/testing/) for the full assertion API, grouping, mock actors, and receive expectations.
 
@@ -254,11 +269,15 @@ This starts the language server on **stdin/stdout** using the **JSON-RPC** proto
 
 ### Features
 
+The transport-level regression suite for `meshc lsp` now exercises these editor-facing behaviors against `reference-backend/` over real stdio JSON-RPC:
+
 | Feature | Description |
 |---------|-------------|
 | **Diagnostics** | Parse errors and type errors displayed inline as you type |
-| **Hover** | Hover over any identifier to see its inferred type |
-| **Go-to-definition** | Jump to the definition of any variable, function, or type |
+| **Hover** | Hover over identifiers to see inferred type information |
+| **Go-to-definition** | Jump to definitions within backend-shaped project code |
+| **Document formatting** | Format the current document through the same formatter used by `meshc fmt` |
+| **Signature help** | Parameter hints for function calls, including active-parameter tracking |
 
 The language server runs the full Mesh compiler pipeline (lexer, parser, type checker) on every keystroke, so diagnostics are always accurate and up to date.
 
@@ -277,24 +296,30 @@ The LSP server is configured through your editor's settings. In VS Code, the Mes
 
 ### VS Code
 
-The official Mesh extension for VS Code provides syntax highlighting, diagnostics, hover, and go-to-definition. The extension is located in the `tools/editors/vscode-mesh/` directory of the Mesh repository.
+The official Mesh extension for VS Code provides syntax highlighting plus the `meshc lsp` features that now have transport-level proof on `reference-backend/`: diagnostics, hover, go-to-definition, document formatting, and signature help. The extension is located in the `tools/editors/vscode-mesh/` directory of the Mesh repository.
 
 #### Features
 
-- **Syntax highlighting** via a TextMate grammar that covers all Mesh keywords, operators, string interpolation, and comments
+- **Syntax highlighting** via a TextMate grammar that covers Mesh keywords, operators, string interpolation, and comments
 - **Language configuration** for bracket matching, auto-closing pairs, and automatic indentation of `do`/`end` blocks
-- **LSP integration** that starts `meshc lsp` automatically and provides diagnostics, hover, and go-to-definition
+- **Verified LSP integration** that starts `meshc lsp` automatically and exposes diagnostics, hover, go-to-definition, document formatting, and signature help
 
 #### Installation
 
-To install the extension from source:
+To build and install the current packaged extension from source:
 
 ```bash
 cd tools/editors/vscode-mesh
 npm install
 npm run compile
 npm run package
-code --install-extension mesh-lang-0.1.0.vsix
+code --install-extension mesh-lang-0.3.0.vsix
+```
+
+For repeat local installs, you can also run:
+
+```bash
+npm run install-local
 ```
 
 Or open the `tools/editors/vscode-mesh/` folder in VS Code and press F5 to launch an Extension Development Host with the extension loaded.
@@ -315,13 +340,13 @@ For editors that support LSP (Neovim, Emacs, Helix, Zed), configure `meshc lsp` 
 
 | Tool | Command | Description |
 |------|---------|-------------|
-| Formatter | `meshc fmt [file]` | Canonically format Mesh source code |
+| Formatter | `meshc fmt [path]` | Canonically format Mesh source code or use `--check` in CI |
 | REPL | `meshc repl` | Interactive evaluation with LLVM JIT |
-| Package Manager | `meshc new [name]` | Create a new Mesh project |
-| Test Runner | `meshc test [dir]` | Run `*.test.mpl` files with pass/fail summary |
+| Package Manager | `meshc init [name]` | Create a new Mesh project |
+| Test Runner | `meshc test [path]` | Run `*.test.mpl` files from a project root, tests directory, or specific test file |
 | Package CLI | `meshpkg <command>` | Publish, install, and search registry packages |
-| Language Server | `meshc lsp` | LSP server for editor integration |
-| VS Code Extension | -- | Syntax highlighting, diagnostics, hover, go-to-def |
+| Language Server | `meshc lsp` | JSON-RPC LSP server for diagnostics, hover, formatting, navigation, and signature help |
+| VS Code Extension | -- | Syntax highlighting plus verified Mesh LSP editor integration |
 
 ## Next Steps
 

@@ -228,6 +228,11 @@ mod idempotency_tests {
     }
 
     #[test]
+    fn idempotent_pub_type_alias() {
+        assert_idempotent("pub type alias", "pub type UserId = Int");
+    }
+
+    #[test]
     fn idempotent_field_access() {
         assert_idempotent("field access", "let l = String.length(s)");
     }
@@ -288,6 +293,10 @@ mod edge_case_tests {
     const REFERENCE_BACKEND_HEALTH: &str = include_str!(concat!(
         env!("CARGO_MANIFEST_DIR"),
         "/../../reference-backend/api/health.mpl"
+    ));
+    const REFERENCE_BACKEND_JOB_TYPES: &str = include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../reference-backend/types/job.mpl"
     ));
 
     fn fmt(source: &str) -> String {
@@ -422,6 +431,21 @@ mod edge_case_tests {
         assert_eq!(
             result, second,
             "Formatting the backend health module should remain idempotent"
+        );
+    }
+
+    #[test]
+    fn reference_backend_job_types_file_formats_canonically() {
+        let result = fmt(REFERENCE_BACKEND_JOB_TYPES);
+        let second = fmt(&result);
+
+        assert_eq!(
+            result, REFERENCE_BACKEND_JOB_TYPES,
+            "reference-backend/types/job.mpl should stay canonically formatted"
+        );
+        assert_eq!(
+            result, second,
+            "Formatting the backend job types module should remain idempotent"
         );
     }
 }

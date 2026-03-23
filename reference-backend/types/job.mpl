@@ -2,7 +2,7 @@
 
 # Database-backed job statuses move through pending -> processing -> processed/failed.
 
-pubtype JobStatus = String
+pub type JobStatus = String
 
 # Job row shape exposed across storage, worker, and HTTP modules.
 

@@ -34,6 +34,18 @@ set -a && source .env && set +a
 
 ## Canonical commands
 
+### Daily-driver edit loop
+
+These are the repo-level commands that now define the verified backend workflow:
+
+```bash
+cargo run -p meshc -- fmt --check reference-backend
+cargo run -p meshc -- test reference-backend
+cargo test -p meshc --test e2e_lsp -- --nocapture
+```
+
+Use `cargo run -p meshc -- lsp` as your editor's language-server command; the repo-level LSP regression suite above proves diagnostics, hover, go-to-definition, document formatting, and signature help against backend-shaped files.
+
 ### Build compiler/runtime prerequisites
 
 ```bash

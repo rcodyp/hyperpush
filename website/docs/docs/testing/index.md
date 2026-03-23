@@ -10,11 +10,12 @@ Mesh includes a first-class testing framework accessible via `meshc test`. Test 
 ## Running Tests
 
 ```bash
-meshc test .              # all *.test.mpl files in the current directory
-meshc test path/to/dir/  # specific directory
+meshc test reference-backend
+meshc test reference-backend/tests
+meshc test reference-backend/tests/config.test.mpl
 ```
 
-`meshc test` discovers all `*.test.mpl` files in the target directory, compiles and runs each independently, and prints a summary:
+`meshc test` discovers all `*.test.mpl` files under the requested project root or directory target, compiles and runs each independently, and prints a summary:
 
 ```
 test arithmetic is correct ... ok
@@ -140,13 +141,13 @@ assert_receive "done", 1000   # explicit timeout
 
 ## Coverage
 
-Pass `--coverage` to print a stub coverage report:
+Coverage requests are intentionally honest today:
 
 ```bash
-meshc test --coverage .
+meshc test --coverage reference-backend
 ```
 
-> Coverage reporting is available as a stub in v14.0 — full line-level coverage will be added in v14.1.
+`--coverage` currently exits non-zero with an explicit unsupported message instead of returning a stub report.
 
 ## What's Next?
 

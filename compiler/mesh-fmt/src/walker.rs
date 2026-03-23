@@ -1453,9 +1453,15 @@ fn walk_type_alias_def(node: &SyntaxNode) -> FormatIR {
                     parts.push(ir::text(tok.text()));
                 }
             },
-            NodeOrToken::Node(n) => {
-                parts.push(walk_node(&n));
-            }
+            NodeOrToken::Node(n) => match n.kind() {
+                SyntaxKind::VISIBILITY => {
+                    parts.push(walk_node(&n));
+                    parts.push(sp());
+                }
+                _ => {
+                    parts.push(walk_node(&n));
+                }
+            },
         }
     }
 
@@ -2149,6 +2155,12 @@ mod tests {
     fn let_with_type_annotation() {
         let result = fmt("let name :: String = \"hello\"");
         assert_eq!(result, "let name :: String = \"hello\"\n");
+    }
+
+    #[test]
+    fn pub_type_alias() {
+        let result = fmt("pub type UserId = Int");
+        assert_eq!(result, "pub type UserId = Int\n");
     }
 
     #[test]
