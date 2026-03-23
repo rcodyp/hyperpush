@@ -3571,7 +3571,9 @@ impl<'ctx> CodeGen<'ctx> {
         // Format: strategy(u8) + max_restarts(u32 LE) + max_seconds(u64 LE) +
         //         child_count(u32 LE) + for each child:
         //           id_len(u32 LE) + id_bytes + fn_ptr_placeholder(u64) +
-        //           restart_type(u8) + shutdown_ms(u64 LE) + child_type(u8)
+        //           start_args_ptr(u64 LE=0) + start_args_size(u64 LE=0) +
+        //           restart_type(u8) + shutdown_type(u8) +
+        //           shutdown_timeout_ms(u64 LE) + child_type(u8)
         let mut config_bytes: Vec<u8> = Vec::new();
 
         // Strategy (1 byte)
@@ -3603,11 +3605,24 @@ impl<'ctx> CodeGen<'ctx> {
             fn_ptr_offsets.push((fn_ptr_offset, child.start_fn.clone()));
             config_bytes.extend_from_slice(&0u64.to_le_bytes()); // placeholder
 
+            // start_args_ptr (8 bytes LE) -- supervisor children in source-level Mesh
+            // bootstrap through runtime lookups, so there are no captured start args.
+            config_bytes.extend_from_slice(&0u64.to_le_bytes());
+
+            // start_args_size (8 bytes LE)
+            config_bytes.extend_from_slice(&0u64.to_le_bytes());
+
             // restart_type (1 byte)
             config_bytes.push(child.restart_type);
 
-            // shutdown_ms (8 bytes LE)
-            config_bytes.extend_from_slice(&child.shutdown_ms.to_le_bytes());
+            // shutdown_type (1 byte) + shutdown_timeout_ms (8 bytes LE)
+            if child.shutdown_ms == 0 {
+                config_bytes.push(0); // brutal_kill
+                config_bytes.extend_from_slice(&0u64.to_le_bytes());
+            } else {
+                config_bytes.push(1); // timeout(ms)
+                config_bytes.extend_from_slice(&child.shutdown_ms.to_le_bytes());
+            }
 
             // child_type (1 byte)
             config_bytes.push(child.child_type);
