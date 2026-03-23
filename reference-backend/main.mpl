@@ -33,9 +33,9 @@ end
 
 fn on_pool_ready(port :: Int, job_poll_ms :: Int, pool :: PoolHandle) do
   println("[reference-backend] PostgreSQL pool ready")
-  let _ = start_registry(pool)
+  let _ = start_registry(pool, job_poll_ms)
   println("[reference-backend] Runtime registry ready")
-  let _ = start_worker(pool, job_poll_ms)
+  let _ = start_worker(job_poll_ms)
   println("[reference-backend] Job worker ready")
   start_runtime(port, job_poll_ms)
 end
