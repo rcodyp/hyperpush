@@ -132,10 +132,6 @@ fn current_timestamp() -> String do
   DateTime.to_iso8601(DateTime.utc_now())
 end
 
-fn log_worker_tick(job_poll_ms :: Int) do
-  println("[reference-backend] Job worker tick poll_ms=#{job_poll_ms}")
-end
-
 fn log_worker_idle() do
   println("[reference-backend] Job worker idle")
 end
@@ -200,8 +196,6 @@ end
 
 fn run_worker_iteration(pool :: PoolHandle, job_poll_ms :: Int, worker_state) do
   let tick_ts = current_timestamp()
-  let _ = JobWorkerState.note_tick(worker_state, tick_ts)
-  let _ = log_worker_tick(job_poll_ms)
 
   let claim_result = claim_next_pending_job(pool)
   case claim_result do

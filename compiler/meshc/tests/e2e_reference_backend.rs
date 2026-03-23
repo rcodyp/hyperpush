@@ -1,5 +1,5 @@
 use std::any::Any;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::{self, File};
 use std::io::{Read as _, Write as _};
 use std::net::{TcpListener, TcpStream};
@@ -25,6 +25,19 @@ struct SpawnedReferenceBackend {
     child: Child,
     stdout_path: PathBuf,
     stderr_path: PathBuf,
+}
+
+struct StoppedReferenceBackend {
+    stdout: String,
+    stderr: String,
+    combined: String,
+}
+
+struct SpawnedReferenceBackendPair {
+    config_a: ReferenceBackendConfig,
+    config_b: ReferenceBackendConfig,
+    backend_a: SpawnedReferenceBackend,
+    backend_b: SpawnedReferenceBackend,
 }
 
 struct HttpResponse {
@@ -183,6 +196,28 @@ fn spawn_reference_backend(
     }
 }
 
+fn spawn_reference_backend_pair(
+    database_url: &str,
+    job_poll_ms: u64,
+) -> SpawnedReferenceBackendPair {
+    let config_a = reference_backend_test_config(job_poll_ms);
+    let config_b = reference_backend_test_config(job_poll_ms);
+    assert_ne!(
+        config_a.port, config_b.port,
+        "two-instance harness must use unique ports"
+    );
+
+    let backend_a = spawn_reference_backend(database_url, config_a);
+    let backend_b = spawn_reference_backend(database_url, config_b);
+
+    SpawnedReferenceBackendPair {
+        config_a,
+        config_b,
+        backend_a,
+        backend_b,
+    }
+}
+
 fn send_http_request(
     config: &ReferenceBackendConfig,
     method: &str,
@@ -275,7 +310,7 @@ fn wait_for_reference_backend(config: &ReferenceBackendConfig) -> Value {
     );
 }
 
-fn stop_reference_backend(spawned: SpawnedReferenceBackend) -> (String, String, String) {
+fn stop_reference_backend(spawned: SpawnedReferenceBackend) -> StoppedReferenceBackend {
     let SpawnedReferenceBackend {
         mut child,
         stdout_path,
@@ -304,7 +339,26 @@ fn stop_reference_backend(spawned: SpawnedReferenceBackend) -> (String, String, 
     let _ = fs::remove_file(&stdout_path);
     let _ = fs::remove_file(&stderr_path);
     let combined = format!("{stdout}{stderr}");
-    (stdout, stderr, combined)
+
+    StoppedReferenceBackend {
+        stdout,
+        stderr,
+        combined,
+    }
+}
+
+fn stop_reference_backend_pair(
+    pair: SpawnedReferenceBackendPair,
+) -> (StoppedReferenceBackend, StoppedReferenceBackend) {
+    let SpawnedReferenceBackendPair {
+        backend_a,
+        backend_b,
+        ..
+    } = pair;
+    (
+        stop_reference_backend(backend_a),
+        stop_reference_backend(backend_b),
+    )
 }
 
 fn assert_startup_logs(combined: &str, config: &ReferenceBackendConfig, database_url: &str) {
@@ -366,15 +420,15 @@ fn assert_reference_backend_runtime_starts(database_url: &str) {
         assert_eq!(health["status"].as_str(), Some("ok"));
         assert_eq!(health["worker"]["poll_ms"].as_i64(), Some(1000));
     }));
-    let (stdout, stderr, combined) = stop_reference_backend(spawned);
+    let logs = stop_reference_backend(spawned);
 
     match run_result {
-        Ok(()) => assert_startup_logs(&combined, &config, database_url),
+        Ok(()) => assert_startup_logs(&logs.combined, &config, database_url),
         Err(payload) => panic!(
             "reference-backend runtime-starts assertions failed: {}\nstdout: {}\nstderr: {}",
             panic_payload_to_string(payload),
-            stdout,
-            stderr
+            logs.stdout,
+            logs.stderr
         ),
     }
 }
@@ -529,7 +583,7 @@ fn wait_for_jobs_processed_in_database(database_url: &str, expected_jobs: usize)
 
         let rows = query_database_rows(
             database_url,
-            "SELECT id::text, status, attempts::text, COALESCE(last_error, '') AS last_error, COALESCE(processed_at::text, '') AS processed_at FROM jobs ORDER BY created_at ASC, id ASC",
+            "SELECT id::text, status, attempts::text, COALESCE(last_error, '') AS last_error, payload::text AS payload, COALESCE(processed_at::text, '') AS processed_at FROM jobs ORDER BY created_at ASC, id ASC",
             &[],
         );
 
@@ -559,27 +613,52 @@ fn wait_for_jobs_processed_in_database(database_url: &str, expected_jobs: usize)
 fn wait_for_multi_instance_health(
     config_a: &ReferenceBackendConfig,
     config_b: &ReferenceBackendConfig,
-    expected_processed_jobs: i64,
 ) -> (Value, Value) {
     let mut last_health_a = Value::Null;
     let mut last_health_b = Value::Null;
+    let mut last_issue_a = String::new();
+    let mut last_issue_b = String::new();
 
     for attempt in 0..200 {
         if attempt > 0 {
             std::thread::sleep(Duration::from_millis(50));
         }
 
-        let health_a = get_json(config_a, "/health", 200);
-        let health_b = get_json(config_b, "/health", 200);
-        let processed_a = health_a["worker"]["processed_jobs"].as_i64().unwrap_or(-1);
-        let processed_b = health_b["worker"]["processed_jobs"].as_i64().unwrap_or(-1);
+        let health_a = match send_http_request(config_a, "GET", "/health", None) {
+            Ok(response) if response.status_code == 200 => {
+                last_issue_a.clear();
+                assert_json_response(response, 200, "/health")
+            }
+            Ok(response) => {
+                last_issue_a = format!("unexpected HTTP {} on :{}", response.status_code, config_a.port);
+                continue;
+            }
+            Err(e) => {
+                last_issue_a = format!("GET /health failed on {}: {}", config_a.port, e);
+                continue;
+            }
+        };
+        let health_b = match send_http_request(config_b, "GET", "/health", None) {
+            Ok(response) if response.status_code == 200 => {
+                last_issue_b.clear();
+                assert_json_response(response, 200, "/health")
+            }
+            Ok(response) => {
+                last_issue_b = format!("unexpected HTTP {} on :{}", response.status_code, config_b.port);
+                continue;
+            }
+            Err(e) => {
+                last_issue_b = format!("GET /health failed on {}: {}", config_b.port, e);
+                continue;
+            }
+        };
         let failed_a = health_a["worker"]["failed_jobs"].as_i64().unwrap_or(-1);
         let failed_b = health_b["worker"]["failed_jobs"].as_i64().unwrap_or(-1);
         let status_a = health_a["worker"]["status"].as_str().unwrap_or("");
         let status_b = health_b["worker"]["status"].as_str().unwrap_or("");
 
-        if processed_a + processed_b == expected_processed_jobs
-            && failed_a + failed_b == 0
+        if failed_a == 0
+            && failed_b == 0
             && health_a["worker"]["last_error"].is_null()
             && health_b["worker"]["last_error"].is_null()
             && matches!(status_a, "processed" | "idle")
@@ -593,8 +672,195 @@ fn wait_for_multi_instance_health(
     }
 
     panic!(
-        "two-instance health never settled cleanly; expected_processed_jobs={expected_processed_jobs}; last_health_a={last_health_a}; last_health_b={last_health_b}"
+        "two-instance health never settled cleanly; last_health_a={last_health_a}; last_health_b={last_health_b}; last_issue_a={last_issue_a}; last_issue_b={last_issue_b}"
     );
+}
+
+fn assert_reference_backend_multi_instance_exact_once(database_url: &str) {
+    reset_reference_backend_database(database_url);
+    assert_reference_backend_build_succeeds();
+    assert_reference_backend_migration_succeeds(database_url, "up");
+
+    let pair = spawn_reference_backend_pair(database_url, 100);
+    let config_a = pair.config_a;
+    let config_b = pair.config_b;
+    let test_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let startup_health_a = wait_for_reference_backend(&config_a);
+        let startup_health_b = wait_for_reference_backend(&config_b);
+        assert_eq!(startup_health_a["status"].as_str(), Some("ok"));
+        assert_eq!(startup_health_b["status"].as_str(), Some("ok"));
+        assert_eq!(startup_health_a["worker"]["failed_jobs"].as_i64(), Some(0));
+        assert_eq!(startup_health_b["worker"]["failed_jobs"].as_i64(), Some(0));
+
+        let job_count = 20usize;
+        let mut job_ids = Vec::with_capacity(job_count);
+        let mut expected_payloads: HashMap<String, Value> = HashMap::with_capacity(job_count);
+        for seq in 0..job_count {
+            let (creator_label, creator_config) = if seq % 2 == 0 {
+                ("a", &config_a)
+            } else {
+                ("b", &config_b)
+            };
+            let payload_body = format!(
+                r#"{{"kind":"exact-once-probe","seq":{},"source":"rust-harness","created_via":"{}"}}"#,
+                seq, creator_label
+            );
+            let payload_json: Value =
+                serde_json::from_str(&payload_body).expect("payload must be valid JSON");
+            let created_job = post_json(creator_config, "/jobs", &payload_body, 201);
+            let created_status = created_job["status"]
+                .as_str()
+                .expect("created job status must be a string");
+            assert!(
+                matches!(created_status, "pending" | "processing" | "processed"),
+                "unexpected created job status: {created_status}; body={created_job}"
+            );
+            assert_eq!(created_job["last_error"], Value::Null);
+            assert_eq!(created_job["payload"], payload_json);
+
+            let job_id = created_job["id"]
+                .as_str()
+                .expect("created job id must be a string")
+                .to_string();
+            assert!(
+                expected_payloads
+                    .insert(job_id.clone(), payload_json.clone())
+                    .is_none(),
+                "duplicate created job id returned from POST /jobs: {job_id}"
+            );
+            job_ids.push(job_id);
+        }
+
+        let db_rows = wait_for_jobs_processed_in_database(database_url, job_count);
+        let mut seen_db_ids = HashSet::with_capacity(job_count);
+        let mut rows_by_id: HashMap<String, DbRow> = HashMap::with_capacity(job_count);
+        for row in db_rows {
+            let job_id = row
+                .get("id")
+                .expect("jobs row must expose id")
+                .to_string();
+            assert!(
+                seen_db_ids.insert(job_id.clone()),
+                "duplicate jobs row observed for id={job_id}"
+            );
+            assert_eq!(row.get("status").map(String::as_str), Some("processed"));
+            assert_eq!(row.get("attempts").map(String::as_str), Some("1"));
+            assert_eq!(row.get("last_error").map(String::as_str), Some(""));
+            assert!(
+                row.get("processed_at")
+                    .map(|value| !value.is_empty())
+                    .unwrap_or(false),
+                "jobs row must expose processed_at for id={job_id}: {row:?}"
+            );
+            let db_payload = serde_json::from_str::<Value>(
+                row.get("payload").expect("jobs row must expose payload"),
+            )
+            .expect("DB payload must be valid JSON");
+            assert_eq!(
+                expected_payloads.get(&job_id),
+                Some(&db_payload),
+                "DB payload drifted for id={job_id}"
+            );
+            rows_by_id.insert(job_id, row);
+        }
+        assert_eq!(rows_by_id.len(), job_count, "expected one DB row per job id");
+
+        for (seq, job_id) in job_ids.iter().enumerate() {
+            let db_row = rows_by_id
+                .get(job_id)
+                .unwrap_or_else(|| panic!("missing DB row for job id={job_id}"));
+            let expected_payload = expected_payloads
+                .get(job_id)
+                .unwrap_or_else(|| panic!("missing expected payload for job id={job_id}"));
+            let db_processed_at = db_row
+                .get("processed_at")
+                .expect("jobs row must expose processed_at");
+            let (instance_label, config) = if seq % 2 == 0 {
+                ("b", &config_b)
+            } else {
+                ("a", &config_a)
+            };
+
+            let job_json = get_json(config, &format!("/jobs/{job_id}"), 200);
+            assert_eq!(
+                job_json["id"].as_str(),
+                Some(job_id.as_str()),
+                "instance {instance_label} returned wrong job id"
+            );
+            assert_eq!(
+                job_json["status"].as_str(),
+                Some("processed"),
+                "instance {instance_label} returned non-processed job state for id={job_id}"
+            );
+            assert_eq!(
+                job_json["attempts"].as_i64(),
+                Some(1),
+                "instance {instance_label} reported wrong attempts for id={job_id}"
+            );
+            assert_eq!(
+                job_json["last_error"],
+                Value::Null,
+                "instance {instance_label} reported last_error for id={job_id}"
+            );
+            assert_eq!(
+                job_json["payload"],
+                expected_payload.clone(),
+                "instance {instance_label} returned wrong payload for id={job_id}"
+            );
+            assert_eq!(
+                job_json["processed_at"].as_str(),
+                Some(db_processed_at.as_str()),
+                "instance {instance_label} disagreed with DB processed_at for id={job_id}"
+            );
+        }
+
+        let (health_a, health_b) = wait_for_multi_instance_health(&config_a, &config_b);
+        let failed_total = health_a["worker"]["failed_jobs"].as_i64().unwrap_or(-1)
+            + health_b["worker"]["failed_jobs"].as_i64().unwrap_or(-1);
+
+        assert_eq!(
+            failed_total, 0,
+            "claim contention must not inflate failed_jobs; health_a={health_a}; health_b={health_b}"
+        );
+        assert_eq!(health_a["worker"]["last_error"], Value::Null);
+        assert_eq!(health_b["worker"]["last_error"], Value::Null);
+    }));
+    let (logs_a, logs_b) = stop_reference_backend_pair(pair);
+
+    match test_result {
+        Ok(()) => {
+            assert_startup_logs(&logs_a.combined, &config_a, database_url);
+            assert_startup_logs(&logs_b.combined, &config_b, database_url);
+            assert!(
+                logs_a.combined.contains("Job worker processed id="),
+                "instance A never logged a processed job:\n{}",
+                logs_a.combined
+            );
+            assert!(
+                logs_b.combined.contains("Job worker processed id="),
+                "instance B never logged a processed job:\n{}",
+                logs_b.combined
+            );
+            assert!(
+                !logs_a.combined.contains("update_where: no rows matched"),
+                "instance A still logged claim-race failures:\n{}",
+                logs_a.combined
+            );
+            assert!(
+                !logs_b.combined.contains("update_where: no rows matched"),
+                "instance B still logged claim-race failures:\n{}",
+                logs_b.combined
+            );
+        }
+        Err(payload) => panic!(
+            "reference-backend multi-instance exact-once assertions failed: {}\nstdout_a: {}\nstderr_a: {}\nstdout_b: {}\nstderr_b: {}",
+            panic_payload_to_string(payload),
+            logs_a.stdout,
+            logs_a.stderr,
+            logs_b.stdout,
+            logs_b.stderr
+        ),
+    }
 }
 
 #[test]
@@ -799,15 +1065,15 @@ fn e2e_reference_backend_job_flow_updates_health_and_db() {
             "expected worker status to show a healthy post-processing state, got {worker_status}"
         );
     }));
-    let (stdout, stderr, combined) = stop_reference_backend(spawned);
+    let logs = stop_reference_backend(spawned);
 
     match test_result {
-        Ok(()) => assert_startup_logs(&combined, &config, &database_url),
+        Ok(()) => assert_startup_logs(&logs.combined, &config, &database_url),
         Err(payload) => panic!(
             "reference-backend job-flow assertions failed: {}\nstdout: {}\nstderr: {}",
             panic_payload_to_string(payload),
-            stdout,
-            stderr
+            logs.stdout,
+            logs.stderr
         ),
     }
 }
@@ -817,110 +1083,15 @@ fn e2e_reference_backend_job_flow_updates_health_and_db() {
 fn e2e_reference_backend_claim_contention_is_not_failure() {
     let database_url = std::env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set for e2e_reference_backend_claim_contention_is_not_failure");
+    assert_reference_backend_multi_instance_exact_once(&database_url);
+}
 
-    reset_reference_backend_database(&database_url);
-    assert_reference_backend_build_succeeds();
-    assert_reference_backend_migration_succeeds(&database_url, "up");
-
-    let config_a = reference_backend_test_config(25);
-    let config_b = reference_backend_test_config(25);
-    let spawned_a = spawn_reference_backend(&database_url, config_a);
-    let spawned_b = spawn_reference_backend(&database_url, config_b);
-    let test_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        let startup_health_a = wait_for_reference_backend(&config_a);
-        let startup_health_b = wait_for_reference_backend(&config_b);
-        assert_eq!(startup_health_a["status"].as_str(), Some("ok"));
-        assert_eq!(startup_health_b["status"].as_str(), Some("ok"));
-        assert_eq!(startup_health_a["worker"]["failed_jobs"].as_i64(), Some(0));
-        assert_eq!(startup_health_b["worker"]["failed_jobs"].as_i64(), Some(0));
-
-        let job_count = 20usize;
-        let mut job_ids = Vec::with_capacity(job_count);
-        for seq in 0..job_count {
-            let payload_body = format!(
-                r#"{{"kind":"contention-probe","seq":{},"source":"rust-harness"}}"#,
-                seq
-            );
-            let created_job = post_json(&config_a, "/jobs", &payload_body, 201);
-            let created_status = created_job["status"]
-                .as_str()
-                .expect("created job status must be a string");
-            assert!(
-                matches!(created_status, "pending" | "processing" | "processed"),
-                "unexpected created job status: {created_status}; body={created_job}"
-            );
-            job_ids.push(
-                created_job["id"]
-                    .as_str()
-                    .expect("created job id must be a string")
-                    .to_string(),
-            );
-        }
-
-        let db_rows = wait_for_jobs_processed_in_database(&database_url, job_count);
-        assert_eq!(db_rows.len(), job_count, "expected all jobs in DB");
-
-        for job_id in &job_ids {
-            let job_json = get_json(&config_a, &format!("/jobs/{job_id}"), 200);
-            assert_eq!(job_json["id"].as_str(), Some(job_id.as_str()));
-            assert_eq!(job_json["status"].as_str(), Some("processed"));
-            assert_eq!(job_json["attempts"].as_i64(), Some(1));
-            assert!(
-                job_json["processed_at"]
-                    .as_str()
-                    .map(|value| !value.is_empty())
-                    .unwrap_or(false),
-                "processed job must expose processed_at"
-            );
-            assert_eq!(job_json["last_error"], Value::Null);
-        }
-
-        let (health_a, health_b) =
-            wait_for_multi_instance_health(&config_a, &config_b, job_count as i64);
-        let processed_a = health_a["worker"]["processed_jobs"].as_i64().unwrap_or(-1);
-        let processed_b = health_b["worker"]["processed_jobs"].as_i64().unwrap_or(-1);
-        let failed_total = health_a["worker"]["failed_jobs"].as_i64().unwrap_or(-1)
-            + health_b["worker"]["failed_jobs"].as_i64().unwrap_or(-1);
-
-        assert_eq!(processed_a + processed_b, job_count as i64);
-        assert!(
-            processed_a > 0 && processed_b > 0,
-            "expected both backend instances to participate in processing; health_a={health_a}; health_b={health_b}"
-        );
-        assert_eq!(
-            failed_total, 0,
-            "claim contention must not inflate failed_jobs; health_a={health_a}; health_b={health_b}"
-        );
-        assert_eq!(health_a["worker"]["last_error"], Value::Null);
-        assert_eq!(health_b["worker"]["last_error"], Value::Null);
-    }));
-    let (stdout_a, stderr_a, combined_a) = stop_reference_backend(spawned_a);
-    let (stdout_b, stderr_b, combined_b) = stop_reference_backend(spawned_b);
-
-    match test_result {
-        Ok(()) => {
-            assert_startup_logs(&combined_a, &config_a, &database_url);
-            assert_startup_logs(&combined_b, &config_b, &database_url);
-            assert!(
-                !combined_a.contains("update_where: no rows matched"),
-                "instance A still logged claim-race failures:\n{}",
-                combined_a
-            );
-            assert!(
-                !combined_b.contains("update_where: no rows matched"),
-                "instance B still logged claim-race failures:\n{}",
-                combined_b
-            );
-        }
-        Err(payload) => panic!(
-            "reference-backend claim-contention assertions failed: {}\nstdout_a: {}\nstderr_a: {}\nstdout_b: {}\nstderr_b: {}",
-            panic_payload_to_string(payload),
-            stdout_a,
-            stderr_a,
-            stdout_b,
-            stderr_b
-        ),
-    }
+#[test]
+#[ignore]
+fn e2e_reference_backend_multi_instance_claims_once() {
+    let database_url = std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL must be set for e2e_reference_backend_multi_instance_claims_once");
+    assert_reference_backend_multi_instance_exact_once(&database_url);
 }
 
 #[test]

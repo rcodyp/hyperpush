@@ -51,7 +51,7 @@
   - Do: Add a focused two-instance contention regression to the Rust harness, replace the non-atomic pending-job claim with a single claim-and-return path at the storage layer, prefer `Repo.query_raw(...)` on the app side before touching runtime internals, and update worker error classification so benign claim misses become idle/no-work behavior while real processing failures still surface through `failed_jobs` and `last_error`.
   - Verify: `DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_claim_contention_is_not_failure -- --ignored --nocapture`
   - Done when: one job shared by two backend instances no longer triggers `update_where: no rows matched`-style worker failure accounting, and the storage claim path no longer has a read/update race window.
-- [ ] **T03: Prove multi-instance exact-once processing on the shared database** `est:90m`
+- [x] **T03: Prove multi-instance exact-once processing on the shared database** `est:90m`
   - Why: R003 is not retired until two real backend instances can share the same `jobs` table without duplicate work or false failure counters.
   - Files: `compiler/meshc/tests/e2e_reference_backend.rs`, `reference-backend/storage/jobs.mpl`, `reference-backend/jobs/worker.mpl`, `reference-backend/api/health.mpl`, `reference-backend/api/jobs.mpl`
   - Do: Extend the Rust harness with a two-process shared-DB scenario using unique ports, enqueue multiple jobs, wait for terminal state, and assert through HTTP plus direct DB reads that every job is processed once, no row lands in `failed`, and neither instance reports `failed_jobs` growth from claim contention.
