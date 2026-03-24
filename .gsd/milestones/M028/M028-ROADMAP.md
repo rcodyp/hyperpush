@@ -66,7 +66,7 @@ This milestone is complete only when all are true:
 - [x] **S05: Supervision, Recovery, and Failure Visibility** `risk:high` `depends:[S01,S02]`
   > After this: supervised jobs/services in the reference backend survive crashes predictably, and failures are visible instead of hiding in logs-only behavior.
 
-- [ ] **S06: Honest Production Proof and Documentation** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
+- [x] **S06: Honest Production Proof and Documentation** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
   > After this: Mesh has a production-style backend proof surface — reference app, docs, examples, and verification — rather than toy-only evidence.
 
 ## Boundary Map
