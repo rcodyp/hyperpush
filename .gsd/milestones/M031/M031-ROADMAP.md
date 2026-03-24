@@ -60,7 +60,7 @@ This milestone is complete only when all are true:
 - [x] **S02: Trailing Commas & Multiline Imports** `risk:medium` `depends:[S01]`
   > After this: `from Module import (\n  a,\n  b\n)` works; trailing commas in fn args accepted; proven by new e2e tests and formatter support.
 
-- [ ] **S03: Reference-Backend Dogfood Cleanup** `risk:low` `depends:[S01,S02]`
+- [x] **S03: Reference-Backend Dogfood Cleanup** `risk:low` `depends:[S01,S02]`
   > After this: `reference-backend/` builds with zero `let _ =`, zero `== true`, struct update syntax, idiomatic pipes; all existing e2e tests pass.
 
 - [ ] **S04: Mesher Dogfood Cleanup** `risk:low` `depends:[S01,S02]`

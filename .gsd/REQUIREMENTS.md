@@ -92,17 +92,6 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Single-line trailing commas already work in fn args and lists. The fix is specifically for multiline trailing commas in fn args.
 
-### R023 — `reference-backend/` should have zero `let _ =` for side effects, zero `== true` comparisons on booleans, struct update syntax instead of full reconstruction, and idiomatic pipe usage.
-- Class: quality-attribute
-- Status: active
-- Description: `reference-backend/` should have zero `let _ =` for side effects, zero `== true` comparisons on booleans, struct update syntax instead of full reconstruction, and idiomatic pipe usage.
-- Why it matters: The reference-backend is the primary proof target — it should exemplify good Mesh code, not workaround patterns.
-- Source: user
-- Primary owning slice: M031/S03
-- Supporting slices: none
-- Validation: unmapped
-- Notes: ~60 `let _ =`, ~15 `== true`, and full 18-field struct reconstruction in worker.mpl.
-
 ### R024 — `mesher/` should have zero `let _ =` for side effects, string interpolation replacing `<>` concatenation where appropriate, multiline imports for long lines, and pipe operators used idiomatically.
 - Class: quality-attribute
 - Status: active
@@ -248,6 +237,17 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: Validated by M031/S02 — parenthesized multiline imports parse into the same AST shape as flat imports; 3 parser snapshot tests and 3 e2e tests prove single-line, multiline, and trailing-comma paren imports compile and run correctly.
 - Notes: Parser fix in `parse_from_import_decl` — need to handle parenthesized groups where newlines are insignificant.
 
+### R023 — `reference-backend/` should have zero `let _ =` for side effects, zero `== true` comparisons on booleans, struct update syntax instead of full reconstruction, and idiomatic pipe usage.
+- Class: quality-attribute
+- Status: validated
+- Description: `reference-backend/` should have zero `let _ =` for side effects, zero `== true` comparisons on booleans, struct update syntax instead of full reconstruction, and idiomatic pipe usage.
+- Why it matters: The reference-backend is the primary proof target — it should exemplify good Mesh code, not workaround patterns.
+- Source: user
+- Primary owning slice: M031/S03
+- Supporting slices: none
+- Validation: Validated by M031/S03: `rg 'let _ =' reference-backend/ -g '*.mpl'` returns 0 matches, `rg '== true' reference-backend/ -g '*.mpl'` returns 0 matches, all 8 WorkerState full reconstructions replaced with struct update syntax, all nested if/else chains flattened to else if, long import converted to multiline. Build, formatter, project tests, and 313 e2e tests pass clean.
+- Notes: 53 `let _ =` removed (44 in worker.mpl, 9 in other files), 15 `== true` removed (11 in worker.mpl, 4 in health.mpl), 8 struct reconstructions replaced, 7 nested if/else chains flattened.
+
 ## Deferred
 
 ### R020 — Mesh eventually offers a stronger debugger/profiler/trace surface suitable for deeper production diagnostics.
@@ -366,7 +366,7 @@ This file is the explicit capability and coverage contract for the project.
 | R020 | operability | deferred | none | none | unmapped |
 | R021 | admin/support | deferred | none | none | unmapped |
 | R022 | operability | deferred | M027/S02 (provisional) | none | unmapped |
-| R023 | quality-attribute | active | M031/S03 | none | unmapped |
+| R023 | quality-attribute | validated | M031/S03 | none | Validated by M031/S03: `rg 'let _ =' reference-backend/ -g '*.mpl'` returns 0 matches, `rg '== true' reference-backend/ -g '*.mpl'` returns 0 matches, all 8 WorkerState full reconstructions replaced with struct update syntax, all nested if/else chains flattened to else if, long import converted to multiline. Build, formatter, project tests, and 313 e2e tests pass clean. |
 | R024 | quality-attribute | active | M031/S04 | none | unmapped |
 | R025 | quality-attribute | active | M031/S05 | M031/S01, M031/S02 | unmapped |
 | R030 | anti-feature | out-of-scope | none | none | n/a |
@@ -377,7 +377,7 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 11
-- Mapped to slices: 11
-- Validated: 11 (R001, R002, R003, R004, R005, R006, R008, R009, R015, R016, R018)
+- Active requirements: 10
+- Mapped to slices: 10
+- Validated: 12 (R001, R002, R003, R004, R005, R006, R008, R009, R015, R016, R018, R023)
 - Unmapped active requirements: 0
