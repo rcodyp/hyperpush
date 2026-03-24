@@ -63,7 +63,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Boring Native Deployment** `risk:medium` `depends:[S01,S02]`
   > After this: the reference backend can be built into a native binary and deployed with a boring documented path plus smoke verification closer to Go expectations.
 
-- [ ] **S05: Supervision, Recovery, and Failure Visibility** `risk:high` `depends:[S01,S02]`
+- [x] **S05: Supervision, Recovery, and Failure Visibility** `risk:high` `depends:[S01,S02]`
   > After this: supervised jobs/services in the reference backend survive crashes predictably, and failures are visible instead of hiding in logs-only behavior.
 
 - [ ] **S06: Honest Production Proof and Documentation** `risk:medium` `depends:[S01,S02,S03,S04,S05]`
