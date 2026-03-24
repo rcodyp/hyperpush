@@ -212,32 +212,40 @@ DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} PORT=18080 JOB_POLL_MS=500 ./refe
 DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} PORT=18080 JOB_POLL_MS=500 bash reference-backend/scripts/smoke.sh
 ```
 
-## Compiler-facing proof targets
+## Supervision and recovery
 
-These are the authoritative repo-level proofs for the package:
-
-### Build-only proof
+The public recovery contract for `reference-backend/` is not implied by the generic backend guides. It is the named S07 proof set below, and the public proof page plus `reference-backend/scripts/verify-production-proof-surface.sh` are expected to stay aligned with this exact command list.
 
 ```bash
-cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_builds -- --nocapture
-```
-
-### Staged deploy-artifact proof
-
-```bash
+cargo run -p meshc -- build reference-backend
+cargo run -p meshc -- fmt --check reference-backend
+cargo run -p meshc -- test reference-backend
+DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_migration_status_and_apply -- --ignored --nocapture
 DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_deploy_artifact_smoke -- --ignored --nocapture
+DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_worker_crash_recovers_job -- --ignored --nocapture
+DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_worker_restart_is_visible_in_health -- --ignored --nocapture
+DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_process_restart_recovers_inflight_job -- --ignored --nocapture
+bash reference-backend/scripts/verify-production-proof-surface.sh
 ```
 
-### Non-empty `DATABASE_URL` startup regression proof
+Run the ignored database-backed proofs serially against one `DATABASE_URL`. They reset and migrate shared state and are not safe to run in parallel against the same database.
 
-```bash
-DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_runtime_starts -- --ignored --nocapture
-```
+### `/health` fields that define recovery truth
 
-### Postgres smoke proof
+`GET /health` is the operator-facing recovery surface that the ignored proofs assert against.
 
-```bash
-DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_postgres_smoke -- --ignored --nocapture
-```
+- `restart_count` — worker-supervision restart counter. The worker-crash proofs expect it to increment to `1` after `worker_crash_after_claim`. The whole-process restart proof keeps this at `0` because the process was replaced rather than the in-process worker supervisor restarting the actor.
+- `last_exit_reason` — last worker-supervision exit reason. It must become `"worker_crash_after_claim"` for the worker-crash proofs and remain `null` for the whole-process restart proof.
+- `recovered_jobs` — count of jobs requeued from interrupted processing. It reaches `1` in both the worker-crash and whole-process restart proofs once the abandoned job has been recovered.
+- `last_recovery_at`, `last_recovery_job_id`, `last_recovery_count` — the most recent recovery event. The restart-visibility proof and the process restart proof both require these fields during the degraded recovery window and after the backend returns to healthy state.
+- `recovery_active` — `true` while the backend is still in the degraded/recovering window and `false` once the recovered job has been processed and the backend is healthy again.
 
-The ignored smoke proof runs the real migration commands and then delegates to `reference-backend/scripts/smoke.sh`, while the ignored deploy-artifact proof covers the staged bundle, staged SQL apply path, and staged `deploy-smoke.sh` contract outside the repo root.
+A degraded recovery window should therefore read as `status: "degraded"` with worker `liveness: "recovering"`. The final steady-state success case is `status: "ok"`, worker `liveness: "healthy"`, and the recovery fields above preserved as historical evidence.
+
+### How to interpret worker crash vs process restart proofs
+
+- **Worker crash proof** — `e2e_reference_backend_worker_crash_recovers_job` proves the worker crashes after claiming a job, the supervisor restarts it, the job is requeued to `pending` with one attempt and a recovery error marker, then the restarted worker processes that same job to `processed`. Expect `restart_count=1`, `last_exit_reason="worker_crash_after_claim"`, and `recovered_jobs=1`.
+- **Restart visibility proof** — `e2e_reference_backend_worker_restart_is_visible_in_health` proves the degraded `/health` window is visible instead of skipped. Expect a new `boot_id` / `started_at`, `recovery_active=true`, and populated `last_recovery_*` fields before the backend settles back to healthy.
+- **Process restart proof** — `e2e_reference_backend_process_restart_recovers_inflight_job` kills the whole backend while a job is still `processing`, starts a fresh process, and requires boot recovery to requeue that abandoned row. Expect a new `boot_id` / `started_at`, `recovered_jobs=1`, `recovery_active=true` during recovery, and `last_exit_reason=null` because this path is a process restart, not a worker-supervisor restart.
+
+If the migration and deploy proofs pass but one of the restart proofs fails, treat that as a real recovery regression. If the runtime proofs stay green but `bash reference-backend/scripts/verify-production-proof-surface.sh` fails, treat that as proof-surface drift in the docs rather than a backend runtime failure.

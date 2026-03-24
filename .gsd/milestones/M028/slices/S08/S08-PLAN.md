@@ -56,7 +56,7 @@ The final task is the seal. It reruns the full green proof set, then updates mil
 
 ## Tasks
 
-- [ ] **T01: Reconcile the public runbook and proof guard** `est:2h`
+- [x] **T01: Reconcile the public runbook and proof guard** `est:2h`
   - Why: The deepest public proof surfaces still drift from the now-green recovery contract, especially `reference-backend/README.md` and the verifier script that is supposed to keep public claims honest.
   - Files: `reference-backend/README.md`, `website/docs/docs/production-backend-proof/index.md`, `reference-backend/scripts/verify-production-proof-surface.sh`
   - Do: Add the missing supervision/recovery runbook section to `reference-backend/README.md`, align the proof page with the authoritative S07 command set, and strengthen the verifier so it fails when the runbook/proof page stop mentioning the green recovery-aware contract.

@@ -5,6 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
 PROOF_PAGE="website/docs/docs/production-backend-proof/index.md"
 README_FILE="README.md"
+RUNBOOK_FILE="reference-backend/README.md"
 SIDEBAR_FILE="website/docs/.vitepress/config.mts"
 GETTING_STARTED_FILE="website/docs/docs/getting-started/index.md"
 GENERIC_DOCS=(
@@ -18,6 +19,41 @@ GENERIC_DOCS=(
 PROOF_LINK="/docs/production-backend-proof/"
 RUNBOOK_REF="reference-backend/README.md"
 RUNBOOK_LINK="https://github.com/snowdamiz/mesh-lang/blob/main/reference-backend/README.md"
+CANONICAL_PUBLIC_PROOF_COMMANDS=(
+  'cargo run -p meshc -- build reference-backend'
+  'cargo run -p meshc -- fmt --check reference-backend'
+  'cargo run -p meshc -- test reference-backend'
+  'DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_migration_status_and_apply -- --ignored --nocapture'
+  'DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_deploy_artifact_smoke -- --ignored --nocapture'
+  'DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_worker_crash_recovers_job -- --ignored --nocapture'
+  'DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_worker_restart_is_visible_in_health -- --ignored --nocapture'
+  'DATABASE_URL=${DATABASE_URL:?set DATABASE_URL} cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_process_restart_recovers_inflight_job -- --ignored --nocapture'
+  'bash reference-backend/scripts/verify-production-proof-surface.sh'
+)
+RECOVERY_RUNBOOK_STRINGS=(
+  'Supervision and recovery'
+  'restart_count'
+  'last_exit_reason'
+  'recovered_jobs'
+  'last_recovery_at'
+  'last_recovery_job_id'
+  'last_recovery_count'
+  'recovery_active'
+  'Worker crash proof'
+  'Process restart proof'
+)
+PROOF_PAGE_RECOVERY_STRINGS=(
+  'restart_count'
+  'last_exit_reason'
+  'recovered_jobs'
+  'last_recovery_at'
+  'last_recovery_job_id'
+  'last_recovery_count'
+  'recovery_active'
+  'Worker crash recovery'
+  'Whole-process restart recovery'
+  'Recovery window visibility'
+)
 
 phase() {
   printf '[proof-docs] %s\n' "$*"
@@ -66,8 +102,8 @@ require_command rg
 phase "checking canonical files exist"
 require_file "$PROOF_PAGE"
 require_file "$README_FILE"
+require_file "$RUNBOOK_FILE"
 require_file "$SIDEBAR_FILE"
-require_file "reference-backend/README.md"
 
 for doc in "${GENERIC_DOCS[@]}"; do
   require_file "$doc"
@@ -87,8 +123,23 @@ require_contains "$SIDEBAR_FILE" "$PROOF_LINK" "production proof sidebar entry"
 phase "checking proof page points at the real runbook and verifier"
 require_contains "$PROOF_PAGE" "$RUNBOOK_REF" "reference backend runbook reference"
 require_contains "$PROOF_PAGE" "$RUNBOOK_LINK" "reference backend runbook link"
-require_contains "$PROOF_PAGE" "cargo run -p meshc -- build reference-backend" "backend build command"
 require_contains "$PROOF_PAGE" "bash reference-backend/scripts/verify-production-proof-surface.sh" "doc truth verification command"
+
+phase "checking the runbook exposes the recovery contract"
+for needle in "${RECOVERY_RUNBOOK_STRINGS[@]}"; do
+  require_contains "$RUNBOOK_FILE" "$needle" "recovery runbook wording"
+done
+
+phase "checking the proof page exposes the recovery-aware public contract"
+for needle in "${PROOF_PAGE_RECOVERY_STRINGS[@]}"; do
+  require_contains "$PROOF_PAGE" "$needle" "recovery proof wording"
+done
+
+phase "checking the runbook and proof page share the same authoritative command list"
+for needle in "${CANONICAL_PUBLIC_PROOF_COMMANDS[@]}"; do
+  require_contains "$RUNBOOK_FILE" "$needle" "canonical public proof command"
+  require_contains "$PROOF_PAGE" "$needle" "canonical public proof command"
+done
 
 phase "checking stale phrases are gone"
 require_not_contains "$GETTING_STARTED_FILE" "mesh-lang.org/install.sh" "stale install URL"
