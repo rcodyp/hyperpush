@@ -50,3 +50,7 @@ This is strictly behavior-preserving — same log messages, same JSON output, sa
 ## Expected Output
 
 - `reference-backend/jobs/worker.mpl` — cleaned up with zero `let _ =`, zero `== true`, struct update syntax, `else if` chains
+
+## Observability Impact
+
+No runtime signals change — this is a strictly behavior-preserving refactoring. All log messages, `/health` JSON fields, and error shapes remain identical. A future agent inspects this task by re-running the anti-pattern greps (`rg 'let _ =' ...`, `rg '== true' ...`, `rg 'WorkerState \{' ...`) and confirming the build succeeds.

@@ -87,34 +87,32 @@ service JobWorkerState do
   
   call NoteBoot(ts :: String, boot_id :: String) :: Int do|state|
     let had_boot = String.length(state.started_at) > 0
-    let next_status = if had_boot == true do
+    let next_status = if had_boot do
       "recovering"
     else
       "starting"
     end
-    let next_restart_count = if had_boot == true do
+    let next_restart_count = if had_boot do
       state.restart_count + 1
     else
       state.restart_count
     end
-    let next_exit_reason = if had_boot == true do
+    let next_exit_reason = if had_boot do
       if state.last_status == "crashing" do
         if String.length(state.last_error) > 0 do
           state.last_error
         else
           "worker crashed unexpectedly"
         end
+      else if state.last_status == "processing" do
+        "worker exited while processing"
       else
-        if state.last_status == "processing" do
-          "worker exited while processing"
-        else
-          "worker restarted unexpectedly"
-        end
+        "worker restarted unexpectedly"
       end
     else
       state.last_exit_reason
     end
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : boot_id, started_at : ts, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : next_restart_count, last_exit_reason : next_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | boot_id : boot_id, started_at : ts, last_tick_at : ts, last_status : next_status, last_error : "", restart_count : next_restart_count, last_exit_reason : next_exit_reason }
     (next_state, 0)
   end
   
@@ -134,37 +132,37 @@ service JobWorkerState do
     else
       state.last_recovery_job_id
     end
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : state.last_error, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs + recovery_count, last_recovery_at : next_recovery_at, last_recovery_job_id : next_recovery_job_id, last_recovery_count : recovery_count }
+    let next_state = % { state | last_tick_at : ts, last_status : next_status, recovered_jobs : state.recovered_jobs + recovery_count, last_recovery_at : next_recovery_at, last_recovery_job_id : next_recovery_job_id, last_recovery_count : recovery_count }
     (next_state, 0)
   end
   
   call NoteTick(ts :: String) :: Int do|state|
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : state.last_status, last_job_id : state.last_job_id, last_error : state.last_error, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | last_tick_at : ts }
     (next_state, 0)
   end
   
   call NoteIdle(ts :: String) :: Int do|state|
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "idle", last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | last_tick_at : ts, last_status : "idle", last_error : "" }
     (next_state, 0)
   end
   
   call NoteClaimed(ts :: String, job_id :: String) :: Int do|state|
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "processing", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | last_tick_at : ts, last_status : "processing", last_job_id : job_id, last_error : "" }
     (next_state, 0)
   end
   
   call NoteProcessed(ts :: String, job_id :: String) :: Int do|state|
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "processed", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs + 1, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | last_tick_at : ts, last_status : "processed", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs + 1 }
     (next_state, 0)
   end
   
   call NoteFailed(ts :: String, job_id :: String, error_message :: String) :: Int do|state|
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "failed", last_job_id : job_id, last_error : error_message, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs + 1, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | last_tick_at : ts, last_status : "failed", last_job_id : job_id, last_error : error_message, failed_jobs : state.failed_jobs + 1 }
     (next_state, 0)
   end
   
   call NoteCrashSoon(ts :: String, job_id :: String, error_message :: String) :: Int do|state|
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "crashing", last_job_id : job_id, last_error : error_message, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    let next_state = % { state | last_tick_at : ts, last_status : "crashing", last_job_id : job_id, last_error : error_message }
     (next_state, 0)
   end
 end
@@ -216,12 +214,10 @@ fn worker_needs_restart(worker_state) -> Bool do
   let tick_age_ms = worker_tick_age_ms(JobWorkerState.get_last_tick_at(worker_state))
   if last_status == "crashing" do
     worker_tick_is_stale(poll_ms, tick_age_ms)
+  else if last_status == "processing" do
+    worker_tick_is_stale(poll_ms, tick_age_ms)
   else
-    if last_status == "processing" do
-      worker_tick_is_stale(poll_ms, tick_age_ms)
-    else
-      false
-    end
+    false
   end
 end
 
@@ -269,7 +265,7 @@ fn hold_after_claim_ticks(worker_state, remaining_ms :: Int, step_ms :: Int) do
       step_ms
     end
     Timer.sleep(current_step_ms)
-    let _ = JobWorkerState.note_tick(worker_state, current_timestamp())
+    JobWorkerState.note_tick(worker_state, current_timestamp())
     hold_after_claim_ticks(worker_state, remaining_ms - current_step_ms, step_ms)
   else
     0
@@ -309,13 +305,13 @@ fn recovery_hint(restart_count :: Int) -> String do
 end
 
 fn log_worker_boot(boot_id :: String, restart_count :: Int) do
-  let _ = println("[reference-backend] Job worker boot id=#{boot_id} restart_count=#{restart_count}")
+  println("[reference-backend] Job worker boot id=#{boot_id} restart_count=#{restart_count}")
   0
 end
 
 fn log_worker_recovery(recovery_count :: Int, last_job_id :: String) do
   if recovery_count > 0 do
-    let _ = println("[reference-backend] Job worker recovered jobs=#{recovery_count} last_job_id=#{last_job_id}")
+    println("[reference-backend] Job worker recovered jobs=#{recovery_count} last_job_id=#{last_job_id}")
     0
   else
     0
@@ -323,65 +319,65 @@ fn log_worker_recovery(recovery_count :: Int, last_job_id :: String) do
 end
 
 fn log_worker_idle() do
-  let _ = println("[reference-backend] Job worker idle")
+  println("[reference-backend] Job worker idle")
   0
 end
 
 fn log_worker_claim_miss(error_message :: String) do
-  let _ = println("[reference-backend] Job worker contention miss treated as idle: #{error_message}")
+  println("[reference-backend] Job worker contention miss treated as idle: #{error_message}")
   0
 end
 
 fn log_worker_claimed(job :: Job) do
-  let _ = println("[reference-backend] Job worker claimed id=#{job.id} attempts=#{job.attempts}")
+  println("[reference-backend] Job worker claimed id=#{job.id} attempts=#{job.attempts}")
   0
 end
 
 fn log_worker_processed(job :: Job) do
-  let _ = println("[reference-backend] Job worker processed id=#{job.id} status=#{job.status} attempts=#{job.attempts}")
+  println("[reference-backend] Job worker processed id=#{job.id} status=#{job.status} attempts=#{job.attempts}")
   0
 end
 
 fn log_worker_failure(job_id :: String, error_message :: String) do
   if String.length(job_id) > 0 do
-    let _ = println("[reference-backend] Job worker failed id=#{job_id}: #{error_message}")
+    println("[reference-backend] Job worker failed id=#{job_id}: #{error_message}")
     0
   else
-    let _ = println("[reference-backend] Job worker failed: #{error_message}")
+    println("[reference-backend] Job worker failed: #{error_message}")
     0
   end
 end
 
 fn record_idle(worker_state, ts :: String) do
-  let _ = JobWorkerState.note_idle(worker_state, ts)
-  let _ = log_worker_idle()
+  JobWorkerState.note_idle(worker_state, ts)
+  log_worker_idle()
   0
 end
 
 fn record_idle_claim_miss(worker_state, ts :: String, error_message :: String) do
-  let _ = JobWorkerState.note_idle(worker_state, ts)
-  let _ = log_worker_claim_miss(error_message)
+  JobWorkerState.note_idle(worker_state, ts)
+  log_worker_claim_miss(error_message)
   0
 end
 
 fn record_failure(worker_state, job_id :: String, error_message :: String) do
   let ts = current_timestamp()
-  let _ = JobWorkerState.note_failed(worker_state, ts, job_id, error_message)
-  let _ = log_worker_failure(job_id, error_message)
+  JobWorkerState.note_failed(worker_state, ts, job_id, error_message)
+  log_worker_failure(job_id, error_message)
   0
 end
 
 fn record_processed(worker_state, job :: Job) do
   let ts = current_timestamp()
-  let _ = JobWorkerState.note_processed(worker_state, ts, job.id)
-  let _ = log_worker_processed(job)
+  JobWorkerState.note_processed(worker_state, ts, job.id)
+  log_worker_processed(job)
   0
 end
 
 fn record_recovery_result(worker_state, result :: RecoveryResult) do
   let ts = current_timestamp()
-  let _ = JobWorkerState.note_recovery(worker_state, ts, result.count, result.last_job_id)
-  let _ = log_worker_recovery(result.count, result.last_job_id)
+  JobWorkerState.note_recovery(worker_state, ts, result.count, result.last_job_id)
+  log_worker_recovery(result.count, result.last_job_id)
   0
 end
 
@@ -397,7 +393,7 @@ error_message :: String) do
 end
 
 fn handle_process_claim_error(pool :: PoolHandle, worker_state, job :: Job, error_message :: String) do
-  if String.contains(error_message, "no rows matched") == true do
+  if String.contains(error_message, "no rows matched") do
     record_idle_claim_miss(worker_state, current_timestamp(), error_message)
   else
     mark_failed_after_processing(pool, worker_state, job, error_message)
@@ -405,7 +401,7 @@ fn handle_process_claim_error(pool :: PoolHandle, worker_state, job :: Job, erro
 end
 
 fn should_crash_after_claim(job :: Job) -> Bool do
-  if String.contains(job.payload, "crash_after_claim_once") == true do
+  if String.contains(job.payload, "crash_after_claim_once") do
     job.attempts == "1"
   else
     false
@@ -413,11 +409,11 @@ fn should_crash_after_claim(job :: Job) -> Bool do
 end
 
 fn should_hold_after_claim(job :: Job) -> Bool do
-  String.contains(job.payload, "hold_after_claim_once") == true
+  String.contains(job.payload, "hold_after_claim_once")
 end
 
 fn log_worker_hold(job :: Job, hold_ms :: Int) do
-  let _ = println("[reference-backend] Job worker hold-after-claim id=#{job.id} attempts=#{job.attempts} hold_ms=#{hold_ms}")
+  println("[reference-backend] Job worker hold-after-claim id=#{job.id} attempts=#{job.attempts} hold_ms=#{hold_ms}")
   0
 end
 
@@ -425,7 +421,7 @@ fn hold_after_claim(worker_state, job :: Job) do
   let poll_ms = JobWorkerState.get_poll_ms(worker_state)
   let hold_ms = hold_after_claim_ms(poll_ms)
   let step_ms = hold_after_claim_step_ms(poll_ms)
-  let _ = log_worker_hold(job, hold_ms)
+  log_worker_hold(job, hold_ms)
   hold_after_claim_ticks(worker_state, hold_ms, step_ms)
 end
 
@@ -434,11 +430,11 @@ actor supervised_job_worker() do
   
   let boot_ts = current_timestamp()
   
-  let _ = JobWorkerState.note_boot(worker_state, boot_ts, boot_ts)
+  JobWorkerState.note_boot(worker_state, boot_ts, boot_ts)
   
   let restart_count = JobWorkerState.get_restart_count(worker_state)
   
-  let _ = log_worker_boot(boot_ts, restart_count)
+  log_worker_boot(boot_ts, restart_count)
   
   let database_url = Env.get("DATABASE_URL", "")
   
@@ -458,20 +454,20 @@ end
 fn crash_after_claim(worker_state, job :: Job) -> Bool do
   let crash_ts = current_timestamp()
   let reason = "worker_crash_after_claim"
-  let _ = JobWorkerState.note_crash_soon(worker_state, crash_ts, job.id, reason)
-  let _ = println("[reference-backend] Job worker crash injected id=#{job.id} attempts=#{job.attempts}")
+  JobWorkerState.note_crash_soon(worker_state, crash_ts, job.id, reason)
+  println("[reference-backend] Job worker crash injected id=#{job.id} attempts=#{job.attempts}")
   Timer.sleep(crash_restart_delay_ms(worker_state))
-  let _ = spawn(supervised_job_worker)
+  spawn(supervised_job_worker)
   false
 end
 
 fn finish_processed_job(worker_state, processed_job :: Job) -> Bool do
-  let _ = record_processed(worker_state, processed_job)
+  record_processed(worker_state, processed_job)
   true
 end
 
 fn finish_processing_error(pool :: PoolHandle, worker_state, job :: Job, error_message :: String) -> Bool do
-  let _ = handle_process_claim_error(pool, worker_state, job, error_message)
+  handle_process_claim_error(pool, worker_state, job, error_message)
   true
 end
 
@@ -485,14 +481,14 @@ end
 
 fn handle_claimed_job(pool :: PoolHandle, worker_state, job :: Job) -> Bool do
   let claim_ts = current_timestamp()
-  let _ = JobWorkerState.note_claimed(worker_state, claim_ts, job.id)
-  let _ = log_worker_claimed(job)
-  let _ = if should_hold_after_claim(job) == true do
+  JobWorkerState.note_claimed(worker_state, claim_ts, job.id)
+  log_worker_claimed(job)
+  if should_hold_after_claim(job) do
     hold_after_claim(worker_state, job)
   else
     0
   end
-  if should_crash_after_claim(job) == true do
+  if should_crash_after_claim(job) do
     crash_after_claim(worker_state, job)
   else
     process_claimed_job(pool, worker_state, job)
@@ -501,16 +497,14 @@ end
 
 fn handle_claim_error(worker_state, error_message :: String) -> Bool do
   if error_message == "no pending jobs" do
-    let _ = record_idle(worker_state, current_timestamp())
+    record_idle(worker_state, current_timestamp())
+    true
+  else if String.contains(error_message, "no rows matched") do
+    record_idle_claim_miss(worker_state, current_timestamp(), error_message)
     true
   else
-    if String.contains(error_message, "no rows matched") == true do
-      let _ = record_idle_claim_miss(worker_state, current_timestamp(), error_message)
-      true
-    else
-      let _ = record_failure(worker_state, "", error_message)
-      true
-    end
+    record_failure(worker_state, "", error_message)
+    true
   end
 end
 
@@ -522,14 +516,14 @@ fn handle_claim_result(pool :: PoolHandle, worker_state, claim_result) -> Bool d
 end
 
 fn process_next_job(pool :: PoolHandle, worker_state) -> Bool do
-  let _ = JobWorkerState.note_tick(worker_state, current_timestamp())
+  JobWorkerState.note_tick(worker_state, current_timestamp())
   let claim_result = claim_next_pending_job(pool)
   handle_claim_result(pool, worker_state, claim_result)
 end
 
 fn job_worker_loop(pool :: PoolHandle, worker_state) do
   let continue_loop = process_next_job(pool, worker_state)
-  if continue_loop == true do
+  if continue_loop do
     let poll_ms = JobWorkerState.get_poll_ms(worker_state)
     Timer.sleep(poll_ms)
     job_worker_loop(pool, worker_state)
@@ -539,18 +533,18 @@ fn job_worker_loop(pool :: PoolHandle, worker_state) do
 end
 
 fn handle_worker_recovery_success(pool :: PoolHandle, worker_state, result :: RecoveryResult) do
-  let _ = record_recovery_result(worker_state, result)
-  let _ = pause_after_recovery(worker_state, result.count)
+  record_recovery_result(worker_state, result)
+  pause_after_recovery(worker_state, result.count)
   job_worker_loop(pool, worker_state)
 end
 
 fn handle_worker_recovery_failure(pool :: PoolHandle, worker_state, error_message :: String) do
-  let _ = record_failure(worker_state, "", error_message)
+  record_failure(worker_state, "", error_message)
   job_worker_loop(pool, worker_state)
 end
 
 fn handle_worker_pool_open(worker_state, restart_count :: Int, pool :: PoolHandle) do
-  let _ = wait_for_reclaim_window(worker_state)
+  wait_for_reclaim_window(worker_state)
   let stale_cutoff_unix_ms = recovery_stale_cutoff_unix_ms(worker_state)
   let recovery_result = reclaim_processing_jobs(pool,
   recovery_hint(restart_count),
@@ -562,7 +556,7 @@ fn handle_worker_pool_open(worker_state, restart_count :: Int, pool :: PoolHandl
 end
 
 fn handle_worker_pool_open_error(worker_state, error_message :: String) do
-  let _ = record_failure(worker_state, "", error_message)
+  record_failure(worker_state, "", error_message)
   let poll_ms = JobWorkerState.get_poll_ms(worker_state)
   Timer.sleep(poll_ms)
   0
@@ -575,8 +569,8 @@ actor job_worker_supervisor_loop() do
   
   Timer.sleep(poll_ms)
   
-  let _ = if worker_needs_restart(worker_state) == true do
-    let _ = spawn(supervised_job_worker)
+  if worker_needs_restart(worker_state) do
+    spawn(supervised_job_worker)
     0
   else
     0
@@ -587,8 +581,8 @@ end
 
 pub fn start_worker(job_poll_ms :: Int) do
   let worker_state = JobWorkerState.start(job_poll_ms)
-  let _ = Process.register("reference_backend_worker_state", worker_state)
-  let _ = spawn(supervised_job_worker)
+  Process.register("reference_backend_worker_state", worker_state)
+  spawn(supervised_job_worker)
   0
 end
 
