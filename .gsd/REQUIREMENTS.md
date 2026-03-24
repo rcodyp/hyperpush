@@ -15,11 +15,11 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: mapped
 - Notes: This sits after the M028 trust baseline but is already part of the capability contract.
 
-### R010 — The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is “better than Elixir.”
+### R010 — The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is "better than Elixir."
 - Class: differentiator
 - Status: active
-- Description: The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is “better than Elixir.”
-- Why it matters: The user’s comparison target is clear, but the comparison needs to be grounded in measurable strengths instead of ecosystem parity rhetoric.
+- Description: The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is "better than Elixir."
+- Why it matters: The user's comparison target is clear, but the comparison needs to be grounded in measurable strengths instead of ecosystem parity rhetoric.
 - Source: user
 - Primary owning slice: M029/S01 (provisional)
 - Supporting slices: M028/S04, M028/S06, M029/S02 (provisional)
@@ -33,15 +33,15 @@ This file is the explicit capability and coverage contract for the project.
 - Why it matters: This keeps the project from chasing clever language features that do not improve the target use case.
 - Source: user
 - Primary owning slice: M029/S02 (provisional)
-- Supporting slices: M029/S03 (provisional)
+- Supporting slices: M029/S03 (provisional), M031/S01
 - Validation: mapped
-- Notes: This is the guardrail against speculative feature churn.
+- Notes: M031 is a direct manifestation of this requirement — every fix originates from dogfood friction.
 
 ### R012 — After the canonical API + DB + migrations + jobs path is proven, Mesh continues toward the broader backend space the user wants: long-running supervised services, realtime systems, and distributed backends.
 - Class: core-capability
 - Status: active
 - Description: After the canonical API + DB + migrations + jobs path is proven, Mesh continues toward the broader backend space the user wants: long-running supervised services, realtime systems, and distributed backends.
-- Why it matters: The long-term vision is “all types of backend code,” not only one app shape.
+- Why it matters: The long-term vision is "all types of backend code," not only one app shape.
 - Source: user
 - Primary owning slice: M031/S01 (provisional)
 - Supporting slices: M031/S02 (provisional), M031/S03 (provisional)
@@ -55,9 +55,9 @@ This file is the explicit capability and coverage contract for the project.
 - Why it matters: This app is also a Mesh dogfooding vehicle.
 - Source: user
 - Primary owning slice: M023/S01
-- Supporting slices: M027/S01 (provisional)
+- Supporting slices: M027/S01 (provisional), M031/S01
 - Validation: mapped
-- Notes: User instruction was explicit: stop and fix the language if a real limitation blocks the app.
+- Notes: M031 fixes workarounds that accumulated across reference-backend and mesher.
 
 ### R014 — The first product loop focuses on existing creator tokens joining the fund before adding token-launch convenience.
 - Class: constraint
@@ -70,18 +70,106 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: mapped
 - Notes: Launch-through-app remains desirable if Bags support proves smooth enough later.
 
+### R015 — `else if` chains produce correct values for all types (Int, String, Bool).
+- Class: core-capability
+- Status: active
+- Description: `else if` chains must produce the correct branch value. Currently they compile without error but return wrong values (garbage integers, misaligned pointer crashes for strings).
+- Why it matters: Silent wrong-value bugs in basic control flow undermine all language trust.
+- Source: execution
+- Primary owning slice: M031/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: The MIR lowering recurses correctly; the bug is likely in `resolve_range` type resolution for chained if-expressions.
+
+### R016 — `if/while/case/for fn_call() do` parses correctly instead of being eaten by trailing-closure heuristic.
+- Class: core-capability
+- Status: active
+- Description: When a control-flow condition ends with a function call (`if is_valid(x) do`), the `do` keyword must be parsed as the block opener, not as a trailing closure on the call.
+- Why it matters: This forces every condition with a function call to use workarounds (temp variable binding, extra parens, `== true`). Nobody in the test suite uses `if fn_call() do` — everyone silently avoids it.
+- Source: execution
+- Primary owning slice: M031/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Must not break trailing closures used by test framework (`test("name") do ... end`, `describe("name") do ... end`).
+
+### R017 — Multiline function calls typecheck correctly.
+- Class: core-capability
+- Status: active
+- Description: Function calls with arguments on separate lines must resolve to the correct return type. Currently the parser produces correct trees (formatter round-trips them) but the typechecker resolves multiline calls as `()`.
+- Why it matters: Prevents formatting long function calls across multiple lines — a basic code readability need.
+- Source: execution
+- Primary owning slice: M031/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Bug is in typechecker span resolution, not parsing. Single-line calls with same args work.
+
+### R018 — Multiline and parenthesized imports are supported.
+- Class: quality-attribute
+- Status: active
+- Description: `from Module import (\n  a,\n  b,\n  c\n)` must parse correctly. Currently the import parser breaks on newline after comma, forcing all imports onto single lines (up to 310 characters in mesher).
+- Why it matters: 310-character import lines are unreadable and unfriendly to code review.
+- Source: user
+- Primary owning slice: M031/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Parser fix in `parse_from_import_decl` — need to handle parenthesized groups where newlines are insignificant.
+
+### R019 — Trailing commas accepted in function call arguments.
+- Class: quality-attribute
+- Status: active
+- Description: `fn_call(a, b, c,)` and multiline call formatting with trailing commas must parse correctly.
+- Why it matters: Standard ergonomic expectation for multiline code; reduces diff noise when adding/removing arguments.
+- Source: inferred
+- Primary owning slice: M031/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Single-line trailing commas already work in fn args and lists. The fix is specifically for multiline trailing commas in fn args.
+
+### R023 — Reference-backend uses idiomatic Mesh patterns instead of workarounds.
+- Class: quality-attribute
+- Status: active
+- Description: `reference-backend/` should have zero `let _ =` for side effects, zero `== true` comparisons on booleans, struct update syntax instead of full reconstruction, and idiomatic pipe usage.
+- Why it matters: The reference-backend is the primary proof target — it should exemplify good Mesh code, not workaround patterns.
+- Source: user
+- Primary owning slice: M031/S03
+- Supporting slices: none
+- Validation: unmapped
+- Notes: ~60 `let _ =`, ~15 `== true`, and full 18-field struct reconstruction in worker.mpl.
+
+### R024 — Mesher uses idiomatic Mesh patterns instead of workarounds.
+- Class: quality-attribute
+- Status: active
+- Description: `mesher/` should have zero `let _ =` for side effects, string interpolation replacing `<>` concatenation where appropriate, multiline imports for long lines, and pipe operators used idiomatically.
+- Why it matters: Mesher is the larger dogfood app — its code quality reflects language usability.
+- Source: user
+- Primary owning slice: M031/S04
+- Supporting slices: none
+- Validation: unmapped
+- Notes: ~72 `let _ =`, ~32 `<>` (some legitimately needed for raw SQL/JSON), 310-char import lines.
+
+### R025 — E2e test coverage for all fixed language patterns.
+- Class: quality-attribute
+- Status: active
+- Description: New e2e tests must cover: bare expression statements, `else if` chains (Int/String/Bool), `if fn_call() do`, `while fn_call() do`, `case fn_call() do`, `for x in fn_call() do`, `not fn_call()` in conditions, multiline fn calls, multiline imports, trailing commas, struct update in service handlers, pipe chains.
+- Why it matters: These patterns had zero test coverage — they must not regress.
+- Source: user
+- Primary owning slice: M031/S05
+- Supporting slices: M031/S01, M031/S02
+- Validation: unmapped
+- Notes: Current suite has 216 e2e tests and 6 test.mpl files.
+
 ## Validated
 
-### R001 — Mesh has an explicit definition of what “production ready language needs to have” means for this repo, and that baseline can be checked through concrete proof rather than vague claims.
+### R001 — Mesh has an explicit definition of what "production ready language needs to have" means for this repo, and that baseline can be checked through concrete proof rather than vague claims.
 - Class: launchability
 - Status: validated
-- Description: Mesh has an explicit definition of what “production ready language needs to have” means for this repo, and that baseline can be checked through concrete proof rather than vague claims.
+- Description: Mesh has an explicit definition of what "production ready language needs to have" means for this repo, and that baseline can be checked through concrete proof rather than vague claims.
 - Why it matters: Without a baseline contract, the work turns into an endless feature list and nobody can tell whether Mesh actually became more trustworthy.
 - Source: inferred
 - Primary owning slice: M028/S01
 - Supporting slices: M028/S06
 - Validation: Validated by M028/S01 through the shipped `reference-backend/` package, canonical startup contract (`DATABASE_URL`, `PORT`, `JOB_POLL_MS`), package README/.env example, compiler e2e proof (`e2e_reference_backend_builds`, `e2e_reference_backend_runtime_starts`, `e2e_reference_backend_postgres_smoke`), migration status/up commands, and the package-local smoke path proving the baseline with concrete commands instead of abstract claims.
-- Notes: S01 established the repo’s first concrete backend trust baseline around one auditable API + DB + migrations + jobs workflow.
+- Notes: S01 established the repo's first concrete backend trust baseline around one auditable API + DB + migrations + jobs workflow.
 
 ### R002 — Mesh can power a real backend shape with an HTTP API, persistent database state, migrations, and background jobs in one coherent flow.
 - Class: core-capability
@@ -91,76 +179,87 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M028/S01
 - Supporting slices: M028/S02, M028/S04, M028/S05, M028/S06
-- Validation: Validated by M028/S01 through live end-to-end verification of `reference-backend/`: compiler/runtime build, explicit missing-env failure, Postgres-backed startup, migration status and apply, `GET /health`, `POST /jobs`, `GET /jobs/:id`, timer-driven worker transition from `pending` to `processed`, package-local `reference-backend/scripts/smoke.sh`, and compiler-facing ignored smoke coverage in `e2e_reference_backend_postgres_smoke`.
-- Notes: S01 closed the first real backend proof path by wiring API, DB, migrations, and background jobs into one auditable package and by fixing Mesh runtime issues instead of leaving them as app-level workarounds.
+- Validation: Validated by M028/S01 through live end-to-end verification of `reference-backend/`.
+- Notes: S01 closed the first real backend proof path.
 
-### R003 — The runtime path behind the canonical backend flow is exercised by automated verification strongly enough that the path is not just “implemented,” but trusted.
+### R003 — The runtime path behind the canonical backend flow is exercised by automated verification strongly enough that the path is not just "implemented," but trusted.
 - Class: quality-attribute
 - Status: validated
-- Description: The runtime path behind the canonical backend flow is exercised by automated verification strongly enough that the path is not just “implemented,” but trusted.
+- Description: The runtime path behind the canonical backend flow is exercised by automated verification strongly enough that the path is not just "implemented," but trusted.
 - Why it matters: A backend language loses credibility quickly if its basic runtime surfaces only work in isolated or manual scenarios.
 - Source: inferred
 - Primary owning slice: M028/S02
 - Supporting slices: M028/S06
-- Validation: Validated by M028/S02 through live Postgres-backed compiler e2e coverage in `compiler/meshc/tests/e2e_reference_backend.rs`: `e2e_reference_backend_runtime_starts`, `e2e_reference_backend_migration_status_and_apply`, `e2e_reference_backend_job_flow_updates_health_and_db`, `e2e_reference_backend_claim_contention_is_not_failure`, and `e2e_reference_backend_multi_instance_claims_once` proving migration pending→applied truth, HTTP/DB/health agreement for job lifecycle state, and two-instance exact-once shared-DB processing without benign claim contention inflating `failed_jobs` or `last_error`.
-- Notes: S02 kept runtime-correctness proof on the canonical reference-backend harness and moved exact-once truth to direct `jobs` reads, cross-instance `/jobs/:id`, and per-instance processed-job logs while treating `/health.failed_jobs` + `/health.last_error` as the stable contention signal.
+- Validation: Validated by M028/S02 through live Postgres-backed compiler e2e coverage.
+- Notes: S02 kept runtime-correctness proof on the canonical reference-backend harness.
 
 ### R004 — Mesh concurrency and supervision are proven under crash, restart, and failure-reporting scenarios instead of only being advertised as features.
 - Class: quality-attribute
 - Status: validated
 - Description: Mesh concurrency and supervision are proven under crash, restart, and failure-reporting scenarios instead of only being advertised as features.
-- Why it matters: The user explicitly said “concurrency exists but isn’t trustworthy” would be a failure state for the project.
+- Why it matters: The user explicitly said "concurrency exists but isn't trustworthy" would be a failure state for the project.
 - Source: user
 - Primary owning slice: M028/S05
 - Supporting slices: M028/S02, M028/S06, M028/S07
-- Validation: Validated by M028/S07 through live recovery proof on `reference-backend/`: `cargo run -p meshc -- build reference-backend`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, and ignored compiler e2e proofs `e2e_reference_backend_worker_crash_recovers_job`, `e2e_reference_backend_worker_restart_is_visible_in_health`, `e2e_reference_backend_process_restart_recovers_inflight_job`, `e2e_reference_backend_migration_status_and_apply`, and `e2e_reference_backend_deploy_artifact_smoke`. The proof shows a real degraded/recovering window, restart-count and exit metadata on `/health`, stale-cutoff reclaim of abandoned `processing` rows, and exact-once completion after both worker crash and whole-process restart on the canonical backend path.
-- Notes: S07 closed the remaining concurrency-trust gap by moving recovery ownership onto the restarted worker boundary, exposing restart evidence on `/health`, and proving crash/process restart recovery against the same reference backend used for the rest of M028. Closeout note (2026-03-24): the serial acceptance rerun still flaked on `e2e_reference_backend_worker_crash_recovers_job` because `/health` went stale before processed-state accounting aligned after recovery, so milestone closure is not sealed on this evidence alone.
+- Validation: Validated by M028/S07 through live recovery proof on `reference-backend/`.
+- Notes: Closeout note (2026-03-24): the serial acceptance rerun still flaked on `e2e_reference_backend_worker_crash_recovers_job`.
 
-### R009 — Mesh proves itself through a real reference backend that exercises the language as a backend platform instead of proving subsystems only in isolation.
-- Class: differentiator
-- Status: validated
-- Description: Mesh proves itself through a real reference backend that exercises the language as a backend platform instead of proving subsystems only in isolation.
-- Why it matters: Dogfooding is how the project turns “all types of backend code” from ambition into grounded engineering pressure.
-- Source: inferred
-- Primary owning slice: M028/S06
-- Supporting slices: M028/S01, M028/S02, M028/S05, M028/S07
-- Validation: Validated by M028/S07 on top of the existing S01-S06 proof surface. The `reference-backend/` package now has green end-to-end build/fmt/test, migration/deploy smoke, worker-crash recovery, restart-visibility, and whole-process restart proofs in `compiler/meshc/tests/e2e_reference_backend.rs`, so Mesh is being judged through one real backend that exercises compiler, runtime, HTTP, Postgres, migrations, background jobs, and recovery instead of isolated subsystem demos.
-- Notes: The reference backend is now a genuinely recovery-aware end-to-end proof target, and S08 has reconciled the promoted README/docs/UAT/validation surfaces to point only at that green recovery-aware path.
-
-### R005 — Mesh’s native-binary workflow is proven through a deployment path that feels closer to shipping a Go app than to assembling a fragile language stack.
+### R005 — Mesh's native-binary workflow is proven through a deployment path that feels closer to shipping a Go app than to assembling a fragile language stack.
 - Class: launchability
 - Status: validated
-- Description: Mesh’s native-binary workflow is proven through a deployment path that feels closer to shipping a Go app than to assembling a fragile language stack.
+- Description: Mesh's native-binary workflow is proven through a deployment path that feels closer to shipping a Go app than to assembling a fragile language stack.
 - Why it matters: Easier deployment is one of the first ways the user wants Mesh to beat Elixir.
 - Source: user
 - Primary owning slice: M028/S04
 - Supporting slices: M028/S06
-- Validation: Validated by M028/S04 through live native-deployment proof for `reference-backend/`: `cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_builds -- --nocapture`, staged bundle verification via `reference-backend/scripts/stage-deploy.sh`, `cargo test -p meshc e2e_self_contained_binary -- --nocapture`, ignored operational proof `cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_deploy_artifact_smoke -- --ignored --nocapture`, missing-artifact diagnostics in `apply-deploy-migrations.sh`, and operator-facing docs/env contract in `reference-backend/README.md` and `reference-backend/.env.example`. Proof covers build-host staging, runtime-host `psql` migration apply without `meshc`, staged binary startup outside the repo root, `/health`, job creation + processing, `_mesh_migrations` recording, and log redaction of `DATABASE_URL`.
-- Notes: S04 proves one honest boring deployment path for `reference-backend/` with staged native binary + checked-in SQL artifact + thin runtime scripts. It does not claim broader platform packaging or supervision/recovery guarantees; those remain for later slices.
+- Validation: Validated by M028/S04 through live native-deployment proof for `reference-backend/`.
+- Notes: S04 proves one honest boring deployment path.
 
 ### R006 — Diagnostics, formatter, LSP, tests, and the coverage story are credible enough that a backend engineer can use Mesh daily without fighting the toolchain.
 - Class: quality-attribute
 - Status: validated
 - Description: Diagnostics, formatter, LSP, tests, and the coverage story are credible enough that a backend engineer can use Mesh daily without fighting the toolchain.
-- Why it matters: Better DX is part of the explicit comparison target against Elixir, and weak tooling would erase gains from static typing or native binaries.
+- Why it matters: Better DX is part of the explicit comparison target against Elixir.
 - Source: user
 - Primary owning slice: M028/S03
 - Supporting slices: M030/S01 (provisional), M030/S02 (provisional)
-- Validation: S03 closure reran the full tooling trust gate on `reference-backend/`: `cargo test -p mesh-fmt -- --nocapture`, `cargo test -p meshc --test e2e_fmt -- --nocapture`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, `! cargo run -p meshc -- test --coverage reference-backend`, `cargo test -p meshc --test tooling_e2e -- --nocapture`, `cargo test -p meshc --test e2e_lsp -- --nocapture`, `cargo test -p mesh-lsp -- --nocapture`, and the stale-string sweep over README/website/VS Code/reference-backend docs all passed.
+- Validation: S03 closure reran the full tooling trust gate on `reference-backend/`.
 - Notes: The toolchain should be judged against the real reference backend, not only tiny fixtures.
 
 ### R008 — Mesh documentation and examples show a production-style backend path and do not rely mainly on toy examples to make the language look ready.
 - Class: launchability
 - Status: validated
 - Description: Mesh documentation and examples show a production-style backend path and do not rely mainly on toy examples to make the language look ready.
-- Why it matters: The user explicitly said “docs/examples don’t prove real use” would be a failure.
+- Why it matters: The user explicitly said "docs/examples don't prove real use" would be a failure.
 - Source: user
 - Primary owning slice: M028/S06
 - Supporting slices: M028/S01, M028/S03, M028/S04, M028/S05, M028/S07, M028/S08
-- Validation: Validated by M028/S08 through the reconciled production-proof surface: `bash reference-backend/scripts/verify-production-proof-surface.sh`, `npm --prefix website ci`, `npm --prefix website run build`, `cargo run -p meshc -- build reference-backend`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, ignored compiler e2e proofs `e2e_reference_backend_worker_crash_recovers_job`, `e2e_reference_backend_worker_restart_is_visible_in_health`, `e2e_reference_backend_process_restart_recovers_inflight_job`, `e2e_reference_backend_migration_status_and_apply`, and `e2e_reference_backend_deploy_artifact_smoke`, plus the stale-claim sweep over `.gsd/milestones/M028/M028-VALIDATION.md` and the reconciled S05/S06 closure artifacts. The public proof page, package runbook, verifier, internal closure artifacts, milestone validation, and requirement tracking now all point at the same green recovery-aware `reference-backend/` path.
-- Notes: S06 built the canonical proof-surface hierarchy, S07 made the backend recovery proof green, and S08 sealed every promoted docs/examples surface onto that same passing command set.
+- Validation: Validated by M028/S08 through the reconciled production-proof surface.
+- Notes: S06 built the canonical proof-surface hierarchy.
+
+### R009 — Mesh proves itself through a real reference backend that exercises the language as a backend platform instead of proving subsystems only in isolation.
+- Class: differentiator
+- Status: validated
+- Description: Mesh proves itself through a real reference backend that exercises the language as a backend platform instead of proving subsystems only in isolation.
+- Why it matters: Dogfooding is how the project turns "all types of backend code" from ambition into grounded engineering pressure.
+- Source: inferred
+- Primary owning slice: M028/S06
+- Supporting slices: M028/S01, M028/S02, M028/S05, M028/S07
+- Validation: Validated by M028/S07 on top of the existing S01-S06 proof surface.
+- Notes: The reference backend is now a genuinely recovery-aware end-to-end proof target.
 
 ## Deferred
+
+### R012_old — Trailing closure syntax documentation/guidance
+- Class: quality-attribute
+- Status: deferred
+- Description: Document when and how to use trailing closures vs parenthesized closures, especially after the disambiguation fix changes the parsing rules.
+- Why it matters: Users need to know the idiom for passing closures to functions.
+- Source: inferred
+- Primary owning slice: none
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Deferred until after M031 fixes land and the pattern stabilizes.
 
 ### R020 — Mesh eventually offers a stronger debugger/profiler/trace surface suitable for deeper production diagnostics.
 - Class: operability
@@ -173,10 +272,10 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: unmapped
 - Notes: Deferred until the canonical backend path and boring deploy story are proven.
 
-### R021 — Registry, publishing flow, package trust, and ecosystem polish rise from “credible enough” to “mature ecosystem experience.”
+### R021 — Registry, publishing flow, package trust, and ecosystem polish rise from "credible enough" to "mature ecosystem experience."
 - Class: admin/support
 - Status: deferred
-- Description: Registry, publishing flow, package trust, and ecosystem polish rise from “credible enough” to “mature ecosystem experience.”
+- Description: Registry, publishing flow, package trust, and ecosystem polish rise from "credible enough" to "mature ecosystem experience."
 - Why it matters: It matters for adoption, but the first milestone should not stall on ecosystem breadth.
 - Source: research
 - Primary owning slice: none
@@ -241,35 +340,55 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: n/a
 - Notes: Web is the primary surface for the planned milestones.
 
+### R034 — M031 does not add new language features — it fixes existing broken patterns and cleans up dogfood code.
+- Class: anti-feature
+- Status: out-of-scope
+- Description: No new keywords, control flow forms, type system features, or stdlib functions. Only fix what's broken and clean up what's workaround-heavy.
+- Why it matters: Prevents scope creep from turning a DX fix pass into a feature sprint.
+- Source: inferred
+- Primary owning slice: none
+- Supporting slices: none
+- Validation: n/a
+- Notes: Multiline imports and trailing commas are parser ergonomics, not new features.
+
 ## Traceability
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
 |---|---|---|---|---|---|
-| R001 | launchability | validated | M028/S01 | M028/S06 | Validated by M028/S01 through the shipped `reference-backend/` package, canonical startup contract (`DATABASE_URL`, `PORT`, `JOB_POLL_MS`), package README/.env example, compiler e2e proof (`e2e_reference_backend_builds`, `e2e_reference_backend_runtime_starts`, `e2e_reference_backend_postgres_smoke`), migration status/up commands, and the package-local smoke path proving the baseline with concrete commands instead of abstract claims. |
-| R002 | core-capability | validated | M028/S01 | M028/S02, M028/S04, M028/S05, M028/S06 | Validated by M028/S01 through live end-to-end verification of `reference-backend/`: compiler/runtime build, explicit missing-env failure, Postgres-backed startup, migration status and apply, `GET /health`, `POST /jobs`, `GET /jobs/:id`, timer-driven worker transition from `pending` to `processed`, package-local `reference-backend/scripts/smoke.sh`, and compiler-facing ignored smoke coverage in `e2e_reference_backend_postgres_smoke`. |
-| R003 | quality-attribute | validated | M028/S02 | M028/S06 | Validated by M028/S02 through live Postgres-backed compiler e2e coverage in `compiler/meshc/tests/e2e_reference_backend.rs`: `e2e_reference_backend_runtime_starts`, `e2e_reference_backend_migration_status_and_apply`, `e2e_reference_backend_job_flow_updates_health_and_db`, `e2e_reference_backend_claim_contention_is_not_failure`, and `e2e_reference_backend_multi_instance_claims_once` proving migration pending→applied truth, HTTP/DB/health agreement for job lifecycle state, and two-instance exact-once shared-DB processing without benign claim contention inflating `failed_jobs` or `last_error`. |
-| R004 | quality-attribute | validated | M028/S05 | M028/S02, M028/S06, M028/S07 | Validated by M028/S07 through live recovery proof on `reference-backend/`: `cargo run -p meshc -- build reference-backend`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, and ignored compiler e2e proofs `e2e_reference_backend_worker_crash_recovers_job`, `e2e_reference_backend_worker_restart_is_visible_in_health`, `e2e_reference_backend_process_restart_recovers_inflight_job`, `e2e_reference_backend_migration_status_and_apply`, and `e2e_reference_backend_deploy_artifact_smoke`. The proof shows a real degraded/recovering window, restart-count and exit metadata on `/health`, stale-cutoff reclaim of abandoned `processing` rows, and exact-once completion after both worker crash and whole-process restart on the canonical backend path. |
-| R005 | launchability | validated | M028/S04 | M028/S06 | Validated by M028/S04 through live native-deployment proof for `reference-backend/`: `cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_builds -- --nocapture`, staged bundle verification via `reference-backend/scripts/stage-deploy.sh`, `cargo test -p meshc e2e_self_contained_binary -- --nocapture`, ignored operational proof `cargo test -p meshc --test e2e_reference_backend e2e_reference_backend_deploy_artifact_smoke -- --ignored --nocapture`, missing-artifact diagnostics in `apply-deploy-migrations.sh`, and operator-facing docs/env contract in `reference-backend/README.md` and `reference-backend/.env.example`. Proof covers build-host staging, runtime-host `psql` migration apply without `meshc`, staged binary startup outside the repo root, `/health`, job creation + processing, `_mesh_migrations` recording, and log redaction of `DATABASE_URL`. |
-| R006 | quality-attribute | validated | M028/S03 | M030/S01 (provisional), M030/S02 (provisional) | S03 closure reran the full tooling trust gate on `reference-backend/`: `cargo test -p mesh-fmt -- --nocapture`, `cargo test -p meshc --test e2e_fmt -- --nocapture`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, `! cargo run -p meshc -- test --coverage reference-backend`, `cargo test -p meshc --test tooling_e2e -- --nocapture`, `cargo test -p meshc --test e2e_lsp -- --nocapture`, `cargo test -p mesh-lsp -- --nocapture`, and the stale-string sweep over README/website/VS Code/reference-backend docs all passed. |
-| R007 | launchability | active | M030/S01 (provisional) | M030/S02 (provisional) | mapped |
-| R008 | launchability | validated | M028/S06 | M028/S01, M028/S03, M028/S04, M028/S05, M028/S07, M028/S08 | Validated by M028/S08 through the reconciled production-proof surface: `bash reference-backend/scripts/verify-production-proof-surface.sh`, `npm --prefix website ci`, `npm --prefix website run build`, `cargo run -p meshc -- build reference-backend`, `cargo run -p meshc -- fmt --check reference-backend`, `cargo run -p meshc -- test reference-backend`, ignored compiler e2e proofs `e2e_reference_backend_worker_crash_recovers_job`, `e2e_reference_backend_worker_restart_is_visible_in_health`, `e2e_reference_backend_process_restart_recovers_inflight_job`, `e2e_reference_backend_migration_status_and_apply`, and `e2e_reference_backend_deploy_artifact_smoke`, plus the stale-claim sweep over `.gsd/milestones/M028/M028-VALIDATION.md` and the reconciled S05/S06 closure artifacts. |
-| R009 | differentiator | validated | M028/S06 | M028/S01, M028/S02, M028/S05, M028/S07 | Validated by M028/S07 on top of the existing S01-S06 proof surface. The `reference-backend/` package now has green end-to-end build/fmt/test, migration/deploy smoke, worker-crash recovery, restart-visibility, and whole-process restart proofs in `compiler/meshc/tests/e2e_reference_backend.rs`, so Mesh is being judged through one real backend that exercises compiler, runtime, HTTP, Postgres, migrations, background jobs, and recovery instead of isolated subsystem demos. |
-| R010 | differentiator | active | M029/S01 (provisional) | M028/S04, M028/S06, M029/S02 (provisional) | mapped |
-| R011 | differentiator | active | M029/S02 (provisional) | M029/S03 (provisional) | mapped |
-| R012 | core-capability | active | M031/S01 (provisional) | M031/S02 (provisional), M031/S03 (provisional) | mapped |
-| R013 | constraint | active | M023/S01 | M027/S01 (provisional) | mapped |
+| R001 | launchability | validated | M028/S01 | M028/S06 | validated |
+| R002 | core-capability | validated | M028/S01 | M028/S02, M028/S04, M028/S05, M028/S06 | validated |
+| R003 | quality-attribute | validated | M028/S02 | M028/S06 | validated |
+| R004 | quality-attribute | validated | M028/S05 | M028/S02, M028/S06, M028/S07 | validated |
+| R005 | launchability | validated | M028/S04 | M028/S06 | validated |
+| R006 | quality-attribute | validated | M028/S03 | M030/S01, M030/S02 | validated |
+| R007 | launchability | active | M030/S01 | M030/S02 | mapped |
+| R008 | launchability | validated | M028/S06 | M028/S01, M028/S03-S05, M028/S07-S08 | validated |
+| R009 | differentiator | validated | M028/S06 | M028/S01, M028/S02, M028/S05, M028/S07 | validated |
+| R010 | differentiator | active | M029/S01 | M028/S04, M028/S06, M029/S02 | mapped |
+| R011 | differentiator | active | M029/S02 | M029/S03, M031/S01 | mapped |
+| R012 | core-capability | active | M031/S01 | M031/S02, M031/S03 | mapped |
+| R013 | constraint | active | M023/S01 | M027/S01, M031/S01 | mapped |
 | R014 | constraint | active | M023/S02 | M023/S06 | mapped |
+| R015 | core-capability | active | M031/S01 | none | unmapped |
+| R016 | core-capability | active | M031/S01 | none | unmapped |
+| R017 | core-capability | active | M031/S01 | none | unmapped |
+| R018 | quality-attribute | active | M031/S02 | none | unmapped |
+| R019 | quality-attribute | active | M031/S02 | none | unmapped |
 | R020 | operability | deferred | none | none | unmapped |
 | R021 | admin/support | deferred | none | none | unmapped |
-| R022 | operability | deferred | M027/S02 (provisional) | none | unmapped |
+| R022 | operability | deferred | M027/S02 | none | unmapped |
+| R023 | quality-attribute | active | M031/S03 | none | unmapped |
+| R024 | quality-attribute | active | M031/S04 | none | unmapped |
+| R025 | quality-attribute | active | M031/S05 | M031/S01, M031/S02 | unmapped |
 | R030 | anti-feature | out-of-scope | none | none | n/a |
 | R031 | anti-feature | out-of-scope | none | none | n/a |
 | R032 | constraint | out-of-scope | none | none | n/a |
 | R033 | constraint | out-of-scope | none | none | n/a |
+| R034 | anti-feature | out-of-scope | none | none | n/a |
 
 ## Coverage Summary
 
-- Active requirements: 6
-- Mapped to slices: 6
+- Active requirements: 13
+- Mapped to slices: 13
 - Validated: 8 (R001, R002, R003, R004, R005, R006, R008, R009)
 - Unmapped active requirements: 0

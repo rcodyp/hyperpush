@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Mesh is a programming language and application platform repository focused on becoming a production-trustworthy general-purpose language with a lean toward server/backend code. It already contains the compiler, runtime, standard library, formatter, LSP, REPL, package tooling, registry, docs site, benchmarks, and dogfooded applications. The current priority is not to keep adding features blindly; it is to make Mesh trustworthy for real backend use.
+Mesh is a programming language and application platform repository focused on becoming a production-trustworthy general-purpose language with a lean toward server/backend code. It already contains the compiler, runtime, standard library, formatter, LSP, REPL, package tooling, registry, docs site, benchmarks, and dogfooded applications. The current priority is fixing syntax rough edges and DX friction discovered through real backend dogfooding, then cleaning up both dogfood codebases to use idiomatic Mesh.
 
 ## Core Value
 
@@ -10,22 +10,22 @@ Mesh should be something you can trust for a real production app backend in any 
 
 ## Current State
 
-The repository already ships a broad backend-oriented language platform:
+The repository ships a broad backend-oriented language platform:
 - Rust workspace crates for lexing, parsing, type checking, code generation, runtime, formatter, LSP, REPL, package resolution, and CLI tooling
 - native LLVM code generation to standalone binaries
 - runtime support for actors, supervision, HTTP, WebSocket, JSON, database access, migrations, files, env, crypto, datetime, and collections
 - package and registry infrastructure plus a docs/website surface
-- dogfooded backend applications and benchmarks inside the repo
+- dogfooded backend applications: `reference-backend/` (API + DB + jobs) and `mesher/` (error monitoring platform)
 
-The current gap is not feature count. The current gap is still trust, although M028 materially improved the repo’s baseline. The repo now contains a real `reference-backend/` package that builds, starts, migrates, serves HTTP, persists jobs in Postgres, and runs durable background jobs; the compiler-facing Rust harness now covers migration truth, HTTP/DB/health agreement, multi-instance exact-once processing, worker-crash recovery, restart visibility, whole-process restart recovery, and deploy smoke; the same backend now has materially stronger formatter, test-runner, LSP, and doc/editor proof surfaces; and the public README/docs/runbook surface now points at this backend instead of relying on toy examples. But M028 is not sealed yet: closeout reruns reconfirmed build/fmt/test/migrate/smoke, docs proof-surface verification, website build, and multi-instance exact-once behavior, while the serial recovery gate still flakes on `e2e_reference_backend_worker_crash_recovers_job` because `/health` can go stale before processed-state accounting aligns after recovery. The immediate project gap is therefore to stabilize that recovery proof in the full serial acceptance sequence, then continue with post-baseline backend ergonomics and differentiators.
+M028 established the backend trust baseline with recovery proof, deployment proof, tooling trust, and documentation. The current gap is DX friction: both dogfood codebases are littered with workaround patterns (`let _ =`, `== true`, full struct reconstruction, `<>` instead of interpolation, 310-char import lines) forced by parser bugs (`if fn_call() do` broken), codegen bugs (`else if` returns wrong values), and missing ergonomics (no multiline imports, broken multiline fn calls).
 
 ## Architecture / Key Patterns
 
 - Rust workspace under `compiler/` with distinct crates for lexer, parser, type checker, codegen, runtime, formatter, LSP, REPL, package tooling, and CLI
 - native-binary compilation via LLVM rather than a VM runtime requirement
 - runtime centered on actors, supervision, HTTP, WebSocket, DB, migrations, and other backend primitives
-- dogfooding through repo-local applications such as `mesher/` and benchmark fixtures
-- proof-first rule for this phase: if a baseline/backend trust gap is exposed, fix Mesh at the source and prove it through a real backend workflow rather than a toy-only demo
+- dogfooding through `reference-backend/` and `mesher/`
+- proof-first rule: if a language limitation blocks the app, fix Mesh at the source and prove it through a real backend workflow
 
 ## Capability Contract
 
@@ -33,7 +33,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 ## Milestone Sequence
 
-- [ ] M028: Language Baseline Audit & Hardening — slice work landed, but closure is still blocked by a serial recovery-proof instability in `e2e_reference_backend_worker_crash_recovers_job`
+- [ ] M028: Language Baseline Audit & Hardening — slice work landed, closure blocked by serial recovery-proof instability
 - [ ] M029: Backend Ergonomics — improve the language/runtime/DX where real backend pressure exposes friction
 - [ ] M030: Tooling & Package Trust — make fmt/LSP/tests/coverage/dependency flow credible for daily backend work
-- [ ] M031: Production Backend Maturity — extend proof to long-running services, realtime, and distributed backends credibly
+- [ ] M031: Language DX Audit & Rough Edge Fixes — fix parser/codegen bugs, clean up dogfood code, expand test coverage
