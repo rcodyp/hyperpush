@@ -55,7 +55,7 @@ This milestone is complete only when all are true:
 - [x] **S01: Formatter dot-path and multiline import fix** `risk:high` `depends:[]`
   > After this: `meshc fmt` no longer inserts spaces into module dot-paths; parenthesized multiline imports survive round-trip formatting. Proven by `cargo test -p mesh-fmt --lib` passing and a new formatter test for dot-path + multiline import preservation.
 
-- [ ] **S02: Mesher JSON serialization and pipe cleanup** `risk:medium` `depends:[]`
+- [x] **S02: Mesher JSON serialization and pipe cleanup** `risk:medium` `depends:[]`
   > After this: mesher `<>` chains in alerts/search/detail replaced with `json {}` or `#{}` interpolation; `List.map(rows, fn)` patterns converted to pipe style; obvious non-SQL `<>` in queries.mpl converted to interpolation. `meshc build mesher` succeeds.
 
 - [ ] **S03: Multiline imports and final formatter compliance** `risk:low` `depends:[S01]`

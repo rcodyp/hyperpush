@@ -79,7 +79,7 @@ This file is the explicit capability and coverage contract for the project.
 - Primary owning slice: M029/S02
 - Supporting slices: M029/S01, M029/S03
 - Validation: Partially validated by M031/S04: zero `let _ =` (72 removed). Remaining: `<>` JSON serialization → `json {}` macro + interpolation, pipe operator adoption, multiline imports.
-- Notes: Partially validated by M031/S04: zero `let _ =` (72 removed). M029/S01 removed the formatter blocker by validating dot-path preservation and parenthesized multiline import round-tripping. Remaining for M029: json macro adoption for JSON serializers, remaining `<>` → interpolation, pipe cleanup, and broad multiline-import rollout across mesher.
+- Notes: M029/S02 closed the mesher JSON/interpolation and pipe-style portion of the requirement: `mesher/api/{alerts,detail,search}.mpl` now have zero `<>` serializer chains, `mesher/storage/queries.mpl` keeps only the designated SQL/DDL `<>` sites, and the authoritative `rg -n 'List\.map\(rows,|Ok\(List\.map\(' mesher -g '*.mpl'` gate now returns 0. Remaining R024 work is S03 multiline-import adoption plus final `meshc fmt --check mesher` compliance.
 
 ## Validated
 
