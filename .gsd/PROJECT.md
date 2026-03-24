@@ -17,7 +17,7 @@ The repository ships a broad backend-oriented language platform:
 - package and registry infrastructure plus a docs/website surface
 - dogfooded backend applications: `reference-backend/` (API + DB + jobs) and `mesher/` (error monitoring platform)
 
-M028 established the backend trust baseline with recovery proof, deployment proof, tooling trust, and documentation. M031 fixed syntax rough edges and bad DX patterns discovered through dogfooding: S01 fixed three compiler bugs (trailing-closure disambiguation, else-if chain values, multiline fn call types), S02 added multiline imports and trailing commas, S03–S04 cleaned both dogfood codebases to idiomatic Mesh, and S05 expanded e2e test coverage to 328 tests covering all 12 pattern categories from R025. All M031 slices are complete.
+M028 established the backend trust baseline with recovery proof, deployment proof, tooling trust, and documentation. M031 completed the language DX audit: fixed three compiler bugs (trailing-closure disambiguation in control-flow conditions, else-if chain value correctness, multiline fn call type resolution), added parenthesized multiline imports and trailing-comma support, cleaned both dogfood codebases to idiomatic Mesh (125 `let _ =` removed, 15 `== true` removed, struct update syntax, else-if chains, interpolation), and expanded the e2e test suite to 328 tests covering all 12 pattern categories. Both `reference-backend/` and `mesher/` now exemplify idiomatic Mesh code rather than workaround patterns.
 
 ## Architecture / Key Patterns
 
@@ -33,7 +33,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 ## Milestone Sequence
 
-- [ ] M028: Language Baseline Audit & Hardening — slice work landed, closure blocked by serial recovery-proof instability
+- [x] M028: Language Baseline Audit & Hardening — backend trust baseline established; serial recovery-proof has residual flake
 - [ ] M029: Backend Ergonomics — improve the language/runtime/DX where real backend pressure exposes friction
 - [ ] M030: Tooling & Package Trust — make fmt/LSP/tests/coverage/dependency flow credible for daily backend work
-- [ ] M031: Language DX Audit & Rough Edge Fixes — fix parser/codegen bugs, clean up dogfood code, expand test coverage
+- [x] M031: Language DX Audit & Rough Edge Fixes — 3 compiler bugs fixed, multiline imports/trailing commas added, both dogfood codebases cleaned, 328 e2e tests

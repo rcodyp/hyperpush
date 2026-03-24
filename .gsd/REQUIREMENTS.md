@@ -70,28 +70,6 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: mapped
 - Notes: Launch-through-app remains desirable if Bags support proves smooth enough later.
 
-### R017 — Function calls with arguments on separate lines must resolve to the correct return type. Currently the parser produces correct trees (formatter round-trips them) but the typechecker resolves multiline calls as `()`.
-- Class: core-capability
-- Status: active
-- Description: Function calls with arguments on separate lines must resolve to the correct return type. Currently the parser produces correct trees (formatter round-trips them) but the typechecker resolves multiline calls as `()`.
-- Why it matters: Prevents formatting long function calls across multiple lines — a basic code readability need.
-- Source: execution
-- Primary owning slice: M031/S01
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Bug is in typechecker span resolution, not parsing. Single-line calls with same args work.
-
-### R019 — `fn_call(a, b, c,)` and multiline call formatting with trailing commas must parse correctly.
-- Class: quality-attribute
-- Status: active
-- Description: `fn_call(a, b, c,)` and multiline call formatting with trailing commas must parse correctly.
-- Why it matters: Standard ergonomic expectation for multiline code; reduces diff noise when adding/removing arguments.
-- Source: inferred
-- Primary owning slice: M031/S02
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Single-line trailing commas already work in fn args and lists. The fix is specifically for multiline trailing commas in fn args.
-
 ### R024 — `mesher/` should have zero `let _ =` for side effects, string interpolation replacing `<>` concatenation where appropriate, multiline imports for long lines, and pipe operators used idiomatically.
 - Class: quality-attribute
 - Status: active
@@ -215,6 +193,17 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: Validated by M031/S01/T01: added `suppress_trailing_closure` flag to parser with save/restore in all 4 control-flow condition sites. 5 e2e tests pass (if/while/case/for with fn-call conditions, plus trailing-closure regression).
 - Notes: Must not break trailing closures used by test framework (`test("name") do ... end`, `describe("name") do ... end`).
 
+### R017 — Function calls with arguments on separate lines must resolve to the correct return type. Currently the parser produces correct trees (formatter round-trips them) but the typechecker resolves multiline calls as `()`.
+- Class: core-capability
+- Status: validated
+- Description: Function calls with arguments on separate lines must resolve to the correct return type. Currently the parser produces correct trees (formatter round-trips them) but the typechecker resolves multiline calls as `()`.
+- Why it matters: Prevents formatting long function calls across multiple lines — a basic code readability need.
+- Source: execution
+- Primary owning slice: M031/S01
+- Supporting slices: none
+- Validation: Validated by M031/S01/T03: changed `Literal::token()` from `.next()` to `.find(|t| !t.kind().is_trivia())` to skip NEWLINE trivia in multiline arg lists. 5 e2e tests pass (Int return, String return, 3-arg, mixed single/multi, let binding). String-return test serves as crash sentinel for misaligned pointer dereference.
+- Notes: Bug was in AST layer: LITERAL CST nodes inside multiline arg lists had NEWLINE trivia as leading children, and `.next()` returned the trivia token instead of the meaningful literal. Fix protects all downstream callers (infer_literal, lower_literal, etc.).
+
 ### R018 — `from Module import (\n  a,\n  b,\n  c\n)` must parse correctly. Currently the import parser breaks on newline after comma, forcing all imports onto single lines (up to 310 characters in mesher).
 - Class: quality-attribute
 - Status: validated
@@ -225,6 +214,17 @@ This file is the explicit capability and coverage contract for the project.
 - Supporting slices: none
 - Validation: Validated by M031/S02 — parenthesized multiline imports parse into the same AST shape as flat imports; 3 parser snapshot tests and 3 e2e tests prove single-line, multiline, and trailing-comma paren imports compile and run correctly.
 - Notes: Parser fix in `parse_from_import_decl` — need to handle parenthesized groups where newlines are insignificant.
+
+### R019 — `fn_call(a, b, c,)` and multiline call formatting with trailing commas must parse correctly.
+- Class: quality-attribute
+- Status: validated
+- Description: `fn_call(a, b, c,)` and multiline call formatting with trailing commas must parse correctly.
+- Why it matters: Standard ergonomic expectation for multiline code; reduces diff noise when adding/removing arguments.
+- Source: inferred
+- Primary owning slice: M031/S02
+- Supporting slices: none
+- Validation: Validated by M031/S02: trailing commas in fn call args already parsed correctly before S02; S02 added e2e test coverage (`e2e_trailing_comma_call_single_line`, `e2e_trailing_comma_call_multiline`) and formatter handling (trailing-comma space suppression in `walk_paren_list`). 2 dedicated e2e tests pass.
+- Notes: Single-line trailing commas already worked at the parser level pre-M031. S02 added explicit e2e coverage and formatter support for clean formatting with trailing commas.
 
 ### R023 — `reference-backend/` should have zero `let _ =` for side effects, zero `== true` comparisons on booleans, struct update syntax instead of full reconstruction, and idiomatic pipe usage.
 - Class: quality-attribute
@@ -360,9 +360,9 @@ This file is the explicit capability and coverage contract for the project.
 | R014 | constraint | active | M023/S02 | M023/S06 | mapped |
 | R015 | core-capability | validated | M031/S01 | none | Validated by M031/S01/T02: added `types.insert` in `infer_if` for both return paths. 5 e2e tests pass (Int, String, Bool, 3-level chain, let binding). String-return test serves as crash sentinel. |
 | R016 | core-capability | validated | M031/S01 | none | Validated by M031/S01/T01: added `suppress_trailing_closure` flag to parser with save/restore in all 4 control-flow condition sites. 5 e2e tests pass (if/while/case/for with fn-call conditions, plus trailing-closure regression). |
-| R017 | core-capability | active | M031/S01 | none | unmapped |
+| R017 | core-capability | validated | M031/S01 | none | Validated by M031/S01/T03: changed `Literal::token()` from `.next()` to `.find(|t| !t.kind().is_trivia())` to skip NEWLINE trivia in multiline arg lists. 5 e2e tests pass (Int return, String return, 3-arg, mixed single/multi, let binding). String-return test serves as crash sentinel for misaligned pointer dereference. |
 | R018 | quality-attribute | validated | M031/S02 | none | Validated by M031/S02 — parenthesized multiline imports parse into the same AST shape as flat imports; 3 parser snapshot tests and 3 e2e tests prove single-line, multiline, and trailing-comma paren imports compile and run correctly. |
-| R019 | quality-attribute | active | M031/S02 | none | unmapped |
+| R019 | quality-attribute | validated | M031/S02 | none | Validated by M031/S02: trailing commas in fn call args already parsed correctly before S02; S02 added e2e test coverage (`e2e_trailing_comma_call_single_line`, `e2e_trailing_comma_call_multiline`) and formatter handling (trailing-comma space suppression in `walk_paren_list`). 2 dedicated e2e tests pass. |
 | R020 | operability | deferred | none | none | unmapped |
 | R021 | admin/support | deferred | none | none | unmapped |
 | R022 | operability | deferred | M027/S02 (provisional) | none | unmapped |
@@ -377,7 +377,7 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 9
-- Mapped to slices: 9
-- Validated: 13 (R001, R002, R003, R004, R005, R006, R008, R009, R015, R016, R018, R023, R025)
+- Active requirements: 7
+- Mapped to slices: 7
+- Validated: 15 (R001, R002, R003, R004, R005, R006, R008, R009, R015, R016, R017, R018, R019, R023, R025)
 - Unmapped active requirements: 0
