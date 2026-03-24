@@ -48,3 +48,9 @@ Write the slice artifact that later executors can actually use. The tests and sc
 ## Expected Output
 
 - `.gsd/milestones/M032/slices/S01/S01-SUMMARY.md` — authoritative limitation matrix and handoff for S02/S03/S05
+
+## Observability Impact
+
+- Primary inspection surface becomes `.gsd/milestones/M032/slices/S01/S01-SUMMARY.md`: future agents should be able to map any retained or stale mesher comment directly to a named `e2e_m032_*` test, a `scripts/verify-m032-s01.sh` replay step, or a source-proof note.
+- No new runtime signals are introduced, but this task must preserve the existing failure-path visibility from T02 by recording the exact failing test names and runtime symptoms for `xmod_identity`, nested `&&`, route closures, timer-service cast mismatch, and single-expression `case` arms.
+- If the matrix drifts from reality, the failure should be inspectable through one of three surfaces: the summary entry’s proof command no longer passes, the named Rust test fails, or `bash scripts/verify-m032-s01.sh` stops on the exact repro family and leaves logs under `.tmp/m032-s01/verify/`.

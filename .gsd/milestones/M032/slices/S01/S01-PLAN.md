@@ -21,6 +21,7 @@
 - `cargo test -p meshc --test e2e m032_ -- --nocapture`
 - `cargo test -p meshc --test e2e m032_limit -- --nocapture`
 - `cargo test -p meshc --test e2e_stdlib m032_ -- --nocapture`
+- `cargo test -p meshc --test e2e_stdlib e2e_m032_route_closure_runtime_failure -- --nocapture`
 - `bash scripts/verify-m032-s01.sh`
 - `cargo run -q -p meshc -- fmt --check mesher`
 - `cargo run -q -p meshc -- build mesher`
@@ -53,7 +54,7 @@
   - Do: Add `e2e_m032_limit_*` tests for the real blocker/failure paths: `xmod_identity` must fail with the imported-polymorphic LLVM call-signature mismatch, nested `&&` must fail with the LLVM PHI mismatch, and the timer-to-service-cast repro must still print `0`. Add a stdlib runtime test that proves bare HTTP handlers succeed while closure handlers still crash or return an empty reply on a live request. Create `scripts/verify-m032-s01.sh` to replay the audited `.tmp/m032-s01` matrix from repo root and fail with the exact drifted command or symptom.
   - Verify: `cargo test -p meshc --test e2e m032_limit -- --nocapture`; `cargo test -p meshc --test e2e_stdlib m032_route -- --nocapture`; `bash scripts/verify-m032-s01.sh`
   - Done when: the live blocker and retained-limit families are reproducible by automation instead of only by research notes.
-- [ ] **T03: Publish the mesher limitation matrix and handoff** `est:1h`
+- [x] **T03: Publish the mesher limitation matrix and handoff** `est:1h`
   - Why: The slice demo is the classified audit itself, not just a pile of tests; later slices need a precise map of which mesher comments are stale, which are still truthful, and who owns the fix.
   - Files: `.gsd/milestones/M032/slices/S01/S01-SUMMARY.md`, `compiler/meshc/tests/e2e.rs`, `compiler/meshc/tests/e2e_stdlib.rs`, `scripts/verify-m032-s01.sh`, `mesher/ingestion/routes.mpl`, `mesher/services/event_processor.mpl`, `mesher/services/stream_manager.mpl`, `mesher/storage/writer.mpl`, `mesher/storage/queries.mpl`, `mesher/services/writer.mpl`, `mesher/ingestion/pipeline.mpl`
   - Do: Write `S01-SUMMARY.md` as the authoritative audit matrix. For each audited family, record the mesher site(s), status (`stale`, `real blocker`, `real keep`), concrete proof command or test name, likely owning subsystem, and the next slice that should act on it. Call out the mixed-truth files (`storage/writer.mpl`, `storage/queries.mpl`), the route-closure runtime trap, and `xmod_identity` as the S02 root-cause target. Use `rg` over `mesher/` to pull in any remaining single-expression case-arm or timer keep-sites so the matrix is complete rather than illustrative.
