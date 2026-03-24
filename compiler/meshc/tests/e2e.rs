@@ -6821,3 +6821,47 @@ end
     ]);
     assert_eq!(output, "1\n2\n2\nupdated\n");
 }
+
+// ── M032/S01: supported mesher-folklore proofs ─────────────────────────
+
+/// Retires the stale `Request.query(...)` workaround comment in
+/// `mesher/ingestion/routes.mpl`.
+#[test]
+fn e2e_m032_supported_request_query() {
+    let output = compile_and_run(include_str!("../../../.tmp/m032-s01/request_query/main.mpl"));
+    assert_eq!(output, "request_query_ok\n");
+}
+
+/// Retires the stale cross-module `from_json` workaround comments in
+/// `mesher/services/event_processor.mpl`, `mesher/storage/queries.mpl`, and
+/// `mesher/storage/writer.mpl`.
+#[test]
+fn e2e_m032_supported_cross_module_from_json() {
+    let output = compile_multifile_and_run(&[
+        (
+            "main.mpl",
+            include_str!("../../../.tmp/m032-s01/xmod_from_json/main.mpl"),
+        ),
+        (
+            "models.mpl",
+            include_str!("../../../.tmp/m032-s01/xmod_from_json/models.mpl"),
+        ),
+    ]);
+    assert_eq!(output, "Scout 7\n");
+}
+
+/// Retires the stale "extract helper instead of inline case in service call body"
+/// workaround comment in `mesher/services/user.mpl`.
+#[test]
+fn e2e_m032_supported_service_call_case() {
+    let output = compile_and_run(include_str!("../../../.tmp/m032-s01/service_call_case/main.mpl"));
+    assert_eq!(output, "yes\nno\n");
+}
+
+/// Retires the stale "extract helper instead of inline if/else in cast handler"
+/// workaround comment in `mesher/services/stream_manager.mpl`.
+#[test]
+fn e2e_m032_supported_cast_if_else() {
+    let output = compile_and_run(include_str!("../../../.tmp/m032-s01/cast_if_else/main.mpl"));
+    assert_eq!(output, "1\n2\n");
+}

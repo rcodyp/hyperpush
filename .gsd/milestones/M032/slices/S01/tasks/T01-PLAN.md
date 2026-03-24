@@ -45,3 +45,9 @@ Turn the "already supported" side of the audit into durable compiler evidence. T
 ## Expected Output
 
 - `compiler/meshc/tests/e2e.rs` — `e2e_m032_supported_*` tests covering the four stale-supported folklore families
+
+## Observability Impact
+
+- New inspectable signals: `cargo test -p meshc --test e2e m032_supported -- --nocapture` must expose four named `e2e_m032_supported_*` proofs whose stdout assertions fail loudly if the supposedly-supported behavior drifts.
+- Future-agent inspection path: read `compiler/meshc/tests/e2e.rs` for the folklore-retirement comments and rerun the targeted `m032_supported` filter instead of redoing the ad hoc `.tmp/m032-s01` investigation.
+- Failure visibility added by this task: query access, cross-module `from_json`, service-call `case`, and cast-handler `if/else` each get their own test name plus exact stdout expectation so regressions point at the stale comment family that became false again.

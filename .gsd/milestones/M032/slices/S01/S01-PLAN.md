@@ -19,6 +19,7 @@
 ## Verification
 
 - `cargo test -p meshc --test e2e m032_ -- --nocapture`
+- `cargo test -p meshc --test e2e m032_limit -- --nocapture`
 - `cargo test -p meshc --test e2e_stdlib m032_ -- --nocapture`
 - `bash scripts/verify-m032-s01.sh`
 - `cargo run -q -p meshc -- fmt --check mesher`
@@ -40,7 +41,7 @@
 
 ## Tasks
 
-- [ ] **T01: Encode stale-folklore paths as CLI e2e proofs** `est:1.5h`
+- [x] **T01: Encode stale-folklore paths as CLI e2e proofs** `est:1.5h`
   - Why: S01 cannot hand later slices a prose-only claim that the folklore is stale; the supported patterns need durable tests on the real `meshc` path.
   - Files: `compiler/meshc/tests/e2e.rs`, `.tmp/m032-s01/request_query/main.mpl`, `.tmp/m032-s01/xmod_from_json/main.mpl`, `.tmp/m032-s01/xmod_from_json/models.mpl`, `.tmp/m032-s01/service_call_case/main.mpl`, `.tmp/m032-s01/cast_if_else/main.mpl`
   - Do: Add `e2e_m032_supported_*` tests in `compiler/meshc/tests/e2e.rs` using the audited fixture shapes as the source of truth. Cover `Request.query(...)`, cross-module `User.from_json`, inline `case` inside a service call body, and inline `if/else` inside a cast handler. Assert real build/run behavior or exact stdout, not just parse success, and keep the test names/comments tied to the mesher folklore they retire.
