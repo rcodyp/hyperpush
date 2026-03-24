@@ -114,7 +114,7 @@ service JobWorkerState do
     else
       state.last_exit_reason
     end
-    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : boot_id, started_at : ts, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : next_restart_count, last_exit_reason : next_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : 0 }
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : boot_id, started_at : ts, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : next_restart_count, last_exit_reason : next_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
     (next_state, 0)
   end
   
@@ -349,8 +349,7 @@ fn crash_after_claim(worker_state, job :: Job) -> Bool do
   let reason = "worker_crash_after_claim"
   let _ = JobWorkerState.note_crash_soon(worker_state, crash_ts, job.id, reason)
   let _ = println("[reference-backend] Job worker crash injected id=#{job.id} attempts=#{job.attempts}")
-  let _ = crash_worker(1)
-  true
+  false
 end
 
 fn finish_processed_job(worker_state, processed_job :: Job) -> Bool do
@@ -435,7 +434,9 @@ end
 fn handle_worker_pool_open(worker_state, restart_count :: Int, pool :: PoolHandle) do
   let _ = wait_for_reclaim_window(worker_state)
   let stale_cutoff_unix_ms = recovery_stale_cutoff_unix_ms(worker_state)
-  let recovery_result = reclaim_processing_jobs(pool, recovery_hint(restart_count), stale_cutoff_unix_ms)
+  let recovery_result = reclaim_processing_jobs(pool,
+  recovery_hint(restart_count),
+  stale_cutoff_unix_ms)
   case recovery_result do
     Ok( result) -> handle_worker_recovery_success(pool, worker_state, result)
     Err( error_message) -> handle_worker_recovery_failure(pool, worker_state, error_message)
@@ -534,6 +535,4 @@ end
 
 pub fn get_worker_last_recovery_count() -> Int do
   JobWorkerState.get_last_recovery_count(worker_state_pid())
-end
-))
 end

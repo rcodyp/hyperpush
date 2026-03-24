@@ -321,6 +321,8 @@ fn post_json(
 }
 
 fn wait_for_reference_backend(config: &ReferenceBackendConfig) -> Value {
+    let mut last_health = Value::Null;
+
     for attempt in 0..40 {
         if attempt > 0 {
             std::thread::sleep(Duration::from_millis(250));
@@ -328,15 +330,24 @@ fn wait_for_reference_backend(config: &ReferenceBackendConfig) -> Value {
 
         match send_http_request(config, "GET", "/health", None) {
             Ok(response) if response.status_code == 200 => {
-                return assert_json_response(response, 200, "/health")
+                let health = assert_json_response(response, 200, "/health");
+                let overall_status = health["status"].as_str().unwrap_or("");
+                let liveness = health["worker"]["liveness"].as_str().unwrap_or("");
+                let recovery_active = health["worker"]["recovery_active"].as_bool().unwrap_or(true);
+
+                if overall_status == "ok" && liveness == "healthy" && !recovery_active {
+                    return health;
+                }
+
+                last_health = health;
             }
             Ok(_) | Err(_) => continue,
         }
     }
 
     panic!(
-        "reference-backend never became reachable on :{}",
-        config.port
+        "reference-backend never reached healthy startup on :{}; last_health={}",
+        config.port, last_health
     );
 }
 
@@ -725,12 +736,18 @@ fn wait_for_processed_job_and_health(
 
         let job_status = job["status"].as_str().unwrap_or("");
         let processed_at = job["processed_at"].as_str().unwrap_or("");
+        let health_status = health["status"].as_str().unwrap_or("");
+        let health_liveness = health["worker"]["liveness"].as_str().unwrap_or("");
+        let health_recovery_active = health["worker"]["recovery_active"].as_bool().unwrap_or(true);
         let health_last_job_id = health["worker"]["last_job_id"].as_str().unwrap_or("");
         let health_processed_jobs = health["worker"]["processed_jobs"].as_i64().unwrap_or(-1);
         let health_failed_jobs = health["worker"]["failed_jobs"].as_i64().unwrap_or(-1);
 
         if job_status == "processed"
             && !processed_at.is_empty()
+            && health_status == "ok"
+            && health_liveness == "healthy"
+            && !health_recovery_active
             && health_last_job_id == job_id
             && health_processed_jobs >= 1
             && health_failed_jobs == 0
@@ -747,13 +764,17 @@ fn wait_for_processed_job_and_health(
     );
 }
 
-fn wait_for_worker_recovery_health(
+fn wait_for_worker_recovery_window(
     config: &ReferenceBackendConfig,
+    database_url: &str,
+    job_id: &str,
     expected_exit_reason: &str,
     min_restart_count: i64,
     min_recovered_jobs: i64,
-) -> Value {
+) -> (Value, Value, DbRow) {
     let mut last_health = Value::Null;
+    let mut last_job = Value::Null;
+    let mut last_db_row: Option<DbRow> = None;
     let mut last_issue = String::new();
 
     for attempt in 0..120 {
@@ -777,12 +798,42 @@ fn wait_for_worker_recovery_health(
             }
         };
 
+        let job = match send_http_request(config, "GET", &format!("/jobs/{job_id}"), None) {
+            Ok(response) if response.status_code == 200 => {
+                last_issue.clear();
+                assert_json_response(response, 200, &format!("/jobs/{job_id}"))
+            }
+            Ok(response) => {
+                last_issue = format!(
+                    "unexpected HTTP {} for /jobs/{} on :{}",
+                    response.status_code, job_id, config.port
+                );
+                continue;
+            }
+            Err(e) => {
+                last_issue = format!("GET /jobs/{} failed on {}: {}", job_id, config.port, e);
+                continue;
+            }
+        };
+
+        let db_row = query_single_row(
+            database_url,
+            "SELECT id::text, status, attempts::text, COALESCE(last_error, '') AS last_error FROM jobs WHERE id = $1::uuid",
+            &[job_id],
+        );
+
         let overall_status = health["status"].as_str().unwrap_or("");
         let liveness = health["worker"]["liveness"].as_str().unwrap_or("");
         let restart_count = health["worker"]["restart_count"].as_i64().unwrap_or(-1);
         let recovered_jobs = health["worker"]["recovered_jobs"].as_i64().unwrap_or(-1);
         let recovery_active = health["worker"]["recovery_active"].as_bool().unwrap_or(false);
         let last_exit_reason = health["worker"]["last_exit_reason"].as_str().unwrap_or("");
+        let job_status = job["status"].as_str().unwrap_or("");
+        let job_attempts = job["attempts"].as_i64().unwrap_or(-1);
+        let job_last_error = job["last_error"].as_str().unwrap_or("");
+        let db_status = db_row.get("status").map(String::as_str).unwrap_or("");
+        let db_attempts = db_row.get("attempts").map(String::as_str).unwrap_or("");
+        let db_last_error = db_row.get("last_error").map(String::as_str).unwrap_or("");
 
         if overall_status == "degraded"
             && liveness == "recovering"
@@ -790,15 +841,23 @@ fn wait_for_worker_recovery_health(
             && restart_count >= min_restart_count
             && recovered_jobs >= min_recovered_jobs
             && last_exit_reason == expected_exit_reason
+            && job_status == "pending"
+            && job_attempts == 1
+            && job_last_error == "requeued after worker restart"
+            && db_status == "pending"
+            && db_attempts == "1"
+            && db_last_error == "requeued after worker restart"
         {
-            return health;
+            return (health, job, db_row);
         }
 
         last_health = health;
+        last_job = job;
+        last_db_row = Some(db_row);
     }
 
     panic!(
-        "worker health never exposed degraded recovery state; last_health={last_health}; last_issue={last_issue}"
+        "worker never exposed degraded recovery window with pending job visibility; last_health={last_health}; last_job={last_job}; last_db_row={last_db_row:?}; last_issue={last_issue}"
     );
 }
 
@@ -1661,10 +1720,14 @@ fn e2e_reference_backend_worker_crash_recovers_job() {
             .expect("created job id must be a string")
             .to_string();
 
-        let degraded_health =
-            wait_for_worker_recovery_health(&config, "worker_crash_after_claim", 1, 1);
-        let degraded_job = get_json(&config, &format!("/jobs/{job_id}"), 200);
-        let degraded_db_row = wait_for_job_row(&database_url, &job_id, "pending", "1");
+        let (degraded_health, degraded_job, degraded_db_row) = wait_for_worker_recovery_window(
+            &config,
+            &database_url,
+            &job_id,
+            "worker_crash_after_claim",
+            1,
+            1,
+        );
         assert_eq!(degraded_health["status"].as_str(), Some("degraded"));
         assert_eq!(degraded_health["worker"]["liveness"].as_str(), Some("recovering"));
         assert!(
@@ -1769,8 +1832,19 @@ fn e2e_reference_backend_worker_restart_is_visible_in_health() {
     let spawned = spawn_reference_backend(&database_url, config);
     let test_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         let startup_health = wait_for_reference_backend(&config);
-        assert_eq!(startup_health["status"].as_str(), Some("ok"));
-        assert_eq!(startup_health["worker"]["restart_count"].as_i64(), Some(0));
+        let startup_boot_id = startup_health["worker"]["boot_id"]
+            .as_str()
+            .expect("startup health must expose boot_id")
+            .to_string();
+        let startup_started_at = startup_health["worker"]["started_at"]
+            .as_str()
+            .expect("startup health must expose started_at")
+            .to_string();
+        assert!(!startup_boot_id.is_empty(), "startup boot_id must be non-empty");
+        assert!(
+            !startup_started_at.is_empty(),
+            "startup started_at must be non-empty"
+        );
 
         let payload_body = r#"{"kind":"crash_after_claim_once","source":"rust-harness"}"#;
         let created_job = post_json(&config, "/jobs", payload_body, 201);
@@ -1779,10 +1853,14 @@ fn e2e_reference_backend_worker_restart_is_visible_in_health() {
             .expect("created job id must be a string")
             .to_string();
 
-        let degraded_health =
-            wait_for_worker_recovery_health(&config, "worker_crash_after_claim", 1, 1);
-        let degraded_job = get_json(&config, &format!("/jobs/{job_id}"), 200);
-        let degraded_db_row = wait_for_job_row(&database_url, &job_id, "pending", "1");
+        let (degraded_health, degraded_job, degraded_db_row) = wait_for_worker_recovery_window(
+            &config,
+            &database_url,
+            &job_id,
+            "worker_crash_after_claim",
+            1,
+            1,
+        );
 
         assert_eq!(degraded_health["status"].as_str(), Some("degraded"));
         assert_eq!(degraded_health["worker"]["liveness"].as_str(), Some("recovering"));
@@ -1793,6 +1871,27 @@ fn e2e_reference_backend_worker_restart_is_visible_in_health() {
             Some("worker_crash_after_claim")
         );
         assert_eq!(degraded_health["worker"]["recovery_active"].as_bool(), Some(true));
+        let degraded_boot_id = degraded_health["worker"]["boot_id"]
+            .as_str()
+            .expect("degraded health must expose boot_id")
+            .to_string();
+        let degraded_started_at = degraded_health["worker"]["started_at"]
+            .as_str()
+            .expect("degraded health must expose started_at")
+            .to_string();
+        assert!(!degraded_boot_id.is_empty(), "degraded boot_id must be non-empty");
+        assert!(
+            !degraded_started_at.is_empty(),
+            "degraded started_at must be non-empty"
+        );
+        assert_ne!(
+            degraded_boot_id, startup_boot_id,
+            "boot_id should change after the worker restarts"
+        );
+        assert_ne!(
+            degraded_started_at, startup_started_at,
+            "started_at should change after the worker restarts"
+        );
         assert!(
             degraded_health["worker"]["last_recovery_at"]
                 .as_str()
@@ -1833,6 +1932,30 @@ fn e2e_reference_backend_worker_restart_is_visible_in_health() {
         assert_eq!(final_health["worker"]["restart_count"].as_i64(), Some(1));
         assert_eq!(final_health["worker"]["recovered_jobs"].as_i64(), Some(1));
         assert_eq!(final_health["worker"]["recovery_active"].as_bool(), Some(false));
+        assert_eq!(
+            final_health["worker"]["boot_id"].as_str(),
+            Some(degraded_boot_id.as_str())
+        );
+        assert_eq!(
+            final_health["worker"]["started_at"].as_str(),
+            Some(degraded_started_at.as_str())
+        );
+        assert_eq!(
+            final_health["worker"]["last_recovery_job_id"].as_str(),
+            Some(job_id.as_str())
+        );
+        assert_eq!(
+            final_health["worker"]["last_recovery_count"].as_i64(),
+            Some(1)
+        );
+        assert!(
+            final_health["worker"]["last_recovery_at"]
+                .as_str()
+                .map(|value| !value.is_empty())
+                .unwrap_or(false),
+            "final health should preserve last_recovery_at: {}",
+            final_health
+        );
     }));
     let logs = stop_reference_backend(spawned);
 

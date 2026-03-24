@@ -76,7 +76,9 @@ pub fn claim_next_pending_job(pool :: PoolHandle) -> Job ! String do
   find_single_job(rows, "no pending jobs")
 end
 
-pub fn reclaim_processing_jobs(pool :: PoolHandle, error_message :: String, stale_before_unix_ms :: Int) -> RecoveryResult ! String do
+pub fn reclaim_processing_jobs(pool :: PoolHandle,
+error_message :: String,
+stale_before_unix_ms :: Int) -> RecoveryResult ! String do
   let params = [error_message, String.from(stale_before_unix_ms)]
   let rows = Repo.query_raw(pool, reclaim_processing_jobs_sql(), params) ?
   Ok(RecoveryResult { count : List.length(rows), last_job_id : recovery_last_job_id(rows) })

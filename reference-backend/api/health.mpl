@@ -25,15 +25,48 @@ fn worker_tick_age_ms(last_tick_at :: String) -> Int do
   end
 end
 
-fn worker_liveness(last_status :: String) -> String do
-  if last_status == "recovering" do
-    "recovering"
+fn worker_tick_stale_threshold_ms(poll_ms :: Int) -> Int do
+  let tripled_poll_ms = poll_ms * 3
+  if tripled_poll_ms < 1000 do
+    1000
   else
-    if last_status == "crashing" do
-      "recovering"
+    tripled_poll_ms
+  end
+end
+
+fn worker_tick_is_stale(poll_ms :: Int, tick_age_ms :: Int) -> Bool do
+  if tick_age_ms < 0 do
+    true
+  else
+    tick_age_ms > worker_tick_stale_threshold_ms(poll_ms)
+  end
+end
+
+fn is_recovering_status(status :: String) -> Bool do
+  if status == "recovering" do
+    true
+  else
+    if status == "crashing" do
+      true
     else
-      if last_status == "failed" do
-        "failed"
+      if status == "starting" do
+        true
+      else
+        false
+      end
+    end
+  end
+end
+
+fn worker_liveness(last_status :: String, poll_ms :: Int, tick_age_ms :: Int) -> String do
+  if last_status == "failed" do
+    "failed"
+  else
+    if worker_tick_is_stale(poll_ms, tick_age_ms) == true do
+      "stale"
+    else
+      if is_recovering_status(last_status) == true do
+        "recovering"
       else
         "healthy"
       end
@@ -45,11 +78,19 @@ fn health_status(liveness :: String) -> String do
   if liveness == "healthy" do
     "ok"
   else
-    if liveness == "recovering" do
-      "degraded"
-    else
+    if liveness == "failed" do
       "error"
+    else
+      "degraded"
     end
+  end
+end
+
+fn recovery_active(last_status :: String, poll_ms :: Int, tick_age_ms :: Int) -> Bool do
+  if worker_tick_is_stale(poll_ms, tick_age_ms) == true do
+    false
+  else
+    is_recovering_status(last_status)
   end
 end
 
@@ -58,14 +99,6 @@ fn bool_json(value :: Bool) -> String do
     "true"
   else
     "false"
-  end
-end
-
-fn is_recovering_status(status :: String) -> Bool do
-  if status == "recovering" do
-    true
-  else
-    false
   end
 end
 
@@ -86,10 +119,10 @@ fn health_json() -> String do
   let worker_last_recovery_job_id = get_worker_last_recovery_job_id()
   let worker_last_recovery_count = get_worker_last_recovery_count()
   let worker_tick_age = worker_tick_age_ms(worker_last_tick_at)
-  let worker_liveness_value = worker_liveness(worker_last_status)
+  let worker_liveness_value = worker_liveness(worker_last_status, worker_poll_ms, worker_tick_age)
   let overall_status = health_status(worker_liveness_value)
-  let recovery_active = is_recovering_status(worker_liveness_value)
-  "{\"status\":\"" <> overall_status <> "\",\"worker\":{\"status\":\"" <> worker_last_status <> "\",\"liveness\":\"" <> worker_liveness_value <> "\",\"poll_ms\":" <> String.from(worker_poll_ms) <> ",\"tick_age_ms\":" <> String.from(worker_tick_age) <> ",\"boot_id\":" <> encode_optional_string(worker_boot_id) <> ",\"started_at\":" <> encode_optional_string(worker_started_at) <> ",\"last_tick_at\":" <> encode_optional_string(worker_last_tick_at) <> ",\"restart_count\":" <> String.from(worker_restart_count) <> ",\"last_exit_reason\":" <> encode_optional_string(worker_last_exit_reason) <> ",\"last_job_id\":" <> encode_optional_string(worker_last_job_id) <> ",\"last_error\":" <> encode_optional_string(worker_last_error) <> ",\"processed_jobs\":" <> String.from(worker_processed_jobs) <> ",\"failed_jobs\":" <> String.from(worker_failed_jobs) <> ",\"recovered_jobs\":" <> String.from(worker_recovered_jobs) <> ",\"last_recovery_at\":" <> encode_optional_string(worker_last_recovery_at) <> ",\"last_recovery_job_id\":" <> encode_optional_string(worker_last_recovery_job_id) <> ",\"last_recovery_count\":" <> String.from(worker_last_recovery_count) <> ",\"recovery_active\":" <> bool_json(recovery_active) <> "}}"
+  let recovery_active_value = recovery_active(worker_last_status, worker_poll_ms, worker_tick_age)
+  "{\"status\":\"" <> overall_status <> "\",\"worker\":{\"status\":\"" <> worker_last_status <> "\",\"liveness\":\"" <> worker_liveness_value <> "\",\"poll_ms\":" <> String.from(worker_poll_ms) <> ",\"tick_age_ms\":" <> String.from(worker_tick_age) <> ",\"boot_id\":" <> encode_optional_string(worker_boot_id) <> ",\"started_at\":" <> encode_optional_string(worker_started_at) <> ",\"last_tick_at\":" <> encode_optional_string(worker_last_tick_at) <> ",\"restart_count\":" <> String.from(worker_restart_count) <> ",\"last_exit_reason\":" <> encode_optional_string(worker_last_exit_reason) <> ",\"last_job_id\":" <> encode_optional_string(worker_last_job_id) <> ",\"last_error\":" <> encode_optional_string(worker_last_error) <> ",\"processed_jobs\":" <> String.from(worker_processed_jobs) <> ",\"failed_jobs\":" <> String.from(worker_failed_jobs) <> ",\"recovered_jobs\":" <> String.from(worker_recovered_jobs) <> ",\"last_recovery_at\":" <> encode_optional_string(worker_last_recovery_at) <> ",\"last_recovery_job_id\":" <> encode_optional_string(worker_last_recovery_job_id) <> ",\"last_recovery_count\":" <> String.from(worker_last_recovery_count) <> ",\"recovery_active\":" <> bool_json(recovery_active_value) <> "}}"
 end
 
 pub fn handle_health(request) do
