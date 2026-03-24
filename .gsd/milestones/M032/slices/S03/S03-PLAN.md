@@ -47,7 +47,7 @@
   - Do: Replace the hardcoded `"unresolved"` path in `handle_list_issues(...)` with direct inline `Request.query(request, "status")` defaulting to `"unresolved"`; remove only the stale query-parsing comment; preserve the top-of-file bare-function route keep-site and existing handler response semantics.
   - Verify: `cargo test -q -p meshc --test e2e e2e_m032_supported_request_query -- --nocapture && cargo test -q -p meshc --test e2e_stdlib e2e_m032_route_closure_runtime_failure -- --nocapture && ! rg -n "query string parsing not available in Mesh" mesher/ingestion/routes.mpl && rg -n "HTTP routing does not support closures" mesher/ingestion/routes.mpl && cargo run -q -p meshc -- build mesher`
   - Done when: `handle_list_issues(...)` reads the optional `status` query with a `"unresolved"` fallback, the stale comment is gone, the route-closure keep-site remains, and mesher still builds.
-- [ ] **T02: Inline supported control flow in user and stream services** `est:1h`
+- [x] **T02: Inline supported control flow in user and stream services** `est:1h`
   - Why: This retires the remaining stale handler/control-flow folklore in real mesher services without disturbing the verified nested-`&&` keep-site that still belongs to S05.
   - Files: `mesher/services/user.mpl`, `mesher/services/stream_manager.mpl`, `compiler/meshc/tests/e2e.rs`, `mesher/services/writer.mpl`, `mesher/ingestion/pipeline.mpl`
   - Do: Inline the `authenticate_user(...)` case directly inside `UserService.Login`, delete `login_user(...)` if it becomes unused, inline the `is_stream_client(...)` branch directly inside `StreamManager.BufferMessage`, delete `buffer_if_client(...)` if it becomes unused, and preserve `both_match(...)` plus the timer keep-sites untouched.

@@ -121,18 +121,6 @@ fn buffer_message_for_conn(state :: StreamState, conn :: Int, msg :: String) -> 
   StreamState { connections : new_conns }
 end
 
-# buffer_if_client: Guards BufferMessage cast -- only buffers if conn is a registered streaming client.
-# Extracted from cast body to avoid parser limitation with if/else in cast handlers.
-
-fn buffer_if_client(state :: StreamState, conn :: Int, msg :: String) -> StreamState do
-  let has = is_stream_client(state, conn)
-  if has do
-    buffer_message_for_conn(state, conn, msg)
-  else
-    state
-  end
-end
-
 # --- Buffer drain helpers (STREAM-05 backpressure) ---
 # Drain all connection buffers by iterating connections and sending buffered messages via Ws.send.
 # On send failure (Ws.send returns -1), the connection is removed.
@@ -238,7 +226,11 @@ service StreamManager do
   # Buffer a message for a slow client with drop-oldest backpressure (STREAM-05)
   
   cast BufferMessage(conn :: Int, msg :: String) do|state|
-    buffer_if_client(state, conn, msg)
+    if is_stream_client(state, conn) do
+      buffer_message_for_conn(state, conn, msg)
+    else
+      state
+    end
   end
   
   # Drain all connection buffers -- called by stream_drain_ticker periodically

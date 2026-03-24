@@ -14,19 +14,6 @@ from Storage.Queries import (
 )
 from Types.User import User, Session, OrgMembership
 
-# Helper function for two-step login: authenticate then create session.
-# Extracted from UserService.Login handler to avoid complex case expressions
-# inside service call bodies (LLVM codegen limitation with Result pattern
-# matching inside service dispatch handlers).
-
-fn login_user(pool :: PoolHandle, email :: String, password :: String) -> String ! String do
-  let auth_result = authenticate_user(pool, email, password)
-  case auth_result do
-    Ok( user) -> create_session(pool, user.id)
-    Err( _) -> Err("authentication failed")
-  end
-end
-
 service UserService do
   fn init(pool :: PoolHandle) -> PoolHandle do
     pool
@@ -38,8 +25,11 @@ service UserService do
   end
   
   call Login(email :: String, password :: String) do|pool|
-    let result = login_user(pool, email, password)
-    (pool, result)
+    (pool,
+    case authenticate_user(pool, email, password) do
+      Ok( user) -> create_session(pool, user.id)
+      Err( _) -> Err("authentication failed")
+    end)
   end
   
   call ValidateSession(token :: String) do|pool|
