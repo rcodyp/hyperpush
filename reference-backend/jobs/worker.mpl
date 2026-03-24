@@ -87,7 +87,7 @@ service JobWorkerState do
     (state, state.last_recovery_count)
   end
   
-  cast NoteBoot(ts :: String, boot_id :: String) do|state|
+  call NoteBoot(ts :: String, boot_id :: String) :: Int do|state|
     let had_boot = String.length(state.started_at) > 0
     let next_status = if had_boot == true do
       "recovering"
@@ -116,10 +116,11 @@ service JobWorkerState do
     else
       state.last_exit_reason
     end
-    WorkerState { poll_ms : state.poll_ms, boot_id : boot_id, started_at : ts, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : next_restart_count, last_exit_reason : next_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : 0 }
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : boot_id, started_at : ts, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : next_restart_count, last_exit_reason : next_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : 0 }
+    (next_state, 0)
   end
   
-  cast NoteRecovery(ts :: String, recovery_count :: Int, last_job_id :: String) do|state|
+  call NoteRecovery(ts :: String, recovery_count :: Int, last_job_id :: String) :: Int do|state|
     let next_status = if recovery_count > 0 do
       "recovering"
     else
@@ -135,31 +136,38 @@ service JobWorkerState do
     else
       state.last_recovery_job_id
     end
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : state.last_error, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs + recovery_count, last_recovery_at : next_recovery_at, last_recovery_job_id : next_recovery_job_id, last_recovery_count : recovery_count }
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : next_status, last_job_id : state.last_job_id, last_error : state.last_error, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs + recovery_count, last_recovery_at : next_recovery_at, last_recovery_job_id : next_recovery_job_id, last_recovery_count : recovery_count }
+    (next_state, 0)
   end
   
-  cast NoteTick(ts :: String) do|state|
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : state.last_status, last_job_id : state.last_job_id, last_error : state.last_error, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+  call NoteTick(ts :: String) :: Int do|state|
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : state.last_status, last_job_id : state.last_job_id, last_error : state.last_error, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    (next_state, 0)
   end
   
-  cast NoteIdle(ts :: String) do|state|
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "idle", last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+  call NoteIdle(ts :: String) :: Int do|state|
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "idle", last_job_id : state.last_job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    (next_state, 0)
   end
   
-  cast NoteClaimed(ts :: String, job_id :: String) do|state|
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "processing", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+  call NoteClaimed(ts :: String, job_id :: String) :: Int do|state|
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "processing", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    (next_state, 0)
   end
   
-  cast NoteProcessed(ts :: String, job_id :: String) do|state|
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "processed", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs + 1, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+  call NoteProcessed(ts :: String, job_id :: String) :: Int do|state|
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "processed", last_job_id : job_id, last_error : "", processed_jobs : state.processed_jobs + 1, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    (next_state, 0)
   end
   
-  cast NoteFailed(ts :: String, job_id :: String, error_message :: String) do|state|
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "failed", last_job_id : job_id, last_error : error_message, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs + 1, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+  call NoteFailed(ts :: String, job_id :: String, error_message :: String) :: Int do|state|
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "failed", last_job_id : job_id, last_error : error_message, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs + 1, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    (next_state, 0)
   end
   
-  cast NoteCrashSoon(ts :: String, job_id :: String, error_message :: String) do|state|
-    WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "crashing", last_job_id : job_id, last_error : error_message, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+  call NoteCrashSoon(ts :: String, job_id :: String, error_message :: String) :: Int do|state|
+    let next_state = WorkerState { poll_ms : state.poll_ms, boot_id : state.boot_id, started_at : state.started_at, last_tick_at : ts, last_status : "crashing", last_job_id : job_id, last_error : error_message, processed_jobs : state.processed_jobs, failed_jobs : state.failed_jobs, restart_count : state.restart_count, last_exit_reason : state.last_exit_reason, recovered_jobs : state.recovered_jobs, last_recovery_at : state.last_recovery_at, last_recovery_job_id : state.last_recovery_job_id, last_recovery_count : state.last_recovery_count }
+    (next_state, 0)
   end
 end
 
@@ -233,25 +241,25 @@ fn log_worker_failure(job_id :: String, error_message :: String) do
   end
 end
 
-fn note_idle(worker_state, ts :: String) do
-  let _ = JobWorkerState.note_idle(worker_state, ts)
+fn record_idle(worker_state, ts :: String) do
+  JobWorkerState.note_idle(worker_state, ts)
   log_worker_idle()
 end
 
-fn note_idle_claim_miss(worker_state, ts :: String, error_message :: String) do
-  let _ = JobWorkerState.note_idle(worker_state, ts)
+fn record_idle_claim_miss(worker_state, ts :: String, error_message :: String) do
+  JobWorkerState.note_idle(worker_state, ts)
   log_worker_claim_miss(error_message)
 end
 
-fn note_failed(worker_state, job_id :: String, error_message :: String) do
+fn record_failure(worker_state, job_id :: String, error_message :: String) do
   let ts = current_timestamp()
-  let _ = JobWorkerState.note_failed(worker_state, ts, job_id, error_message)
+  JobWorkerState.note_failed(worker_state, ts, job_id, error_message)
   log_worker_failure(job_id, error_message)
 end
 
-fn note_processed(worker_state, job :: Job) do
+fn record_processed(worker_state, job :: Job) do
   let ts = current_timestamp()
-  let _ = JobWorkerState.note_processed(worker_state, ts, job.id)
+  JobWorkerState.note_processed(worker_state, ts, job.id)
   log_worker_processed(job)
 end
 
@@ -261,20 +269,18 @@ job :: Job,
 error_message :: String) do
   let failed_result = mark_job_failed(pool, job.id, error_message)
   case failed_result do
-    Ok( failed_job) -> note_failed(worker_state, failed_job.id, error_message)
-    Err( mark_failed_error) -> note_failed(worker_state, job.id, mark_failed_error)
+    Ok( failed_job) -> record_failure(worker_state, failed_job.id, error_message)
+    Err( mark_failed_error) -> record_failure(worker_state, job.id, mark_failed_error)
   end
 end
 
 fn handle_process_claim_error(pool :: PoolHandle, worker_state, job :: Job, error_message :: String) do
   if String.contains(error_message, "no rows matched") == true do
-    note_idle_claim_miss(worker_state, current_timestamp(), error_message)
+    record_idle_claim_miss(worker_state, current_timestamp(), error_message)
   else
     mark_failed_after_processing(pool, worker_state, job, error_message)
   end
 end
-
-fn do_crash(0) = 0
 
 fn should_crash_after_claim(job :: Job) -> Bool do
   if String.contains(job.payload, "crash_after_claim_once") == true do
@@ -284,24 +290,27 @@ fn should_crash_after_claim(job :: Job) -> Bool do
   end
 end
 
+fn do_crash(0) = 0
+
 fn crash_after_claim(worker_state, job :: Job) do
   let ts = current_timestamp()
   let reason = "worker_crash_after_claim"
-  let _ = JobWorkerState.note_crash_soon(worker_state, ts, job.id, reason)
+  JobWorkerState.note_crash_soon(worker_state, ts, job.id, reason)
   println("[reference-backend] Job worker crash injected id=#{job.id} attempts=#{job.attempts}")
   do_crash(42)
+  Timer.sleep(0)
 end
 
 fn process_claimed_job(pool :: PoolHandle, worker_state, job :: Job) do
   let claim_ts = current_timestamp()
-  let _ = JobWorkerState.note_claimed(worker_state, claim_ts, job.id)
-  let _ = log_worker_claimed(job)
+  JobWorkerState.note_claimed(worker_state, claim_ts, job.id)
+  log_worker_claimed(job)
   if should_crash_after_claim(job) == true do
     crash_after_claim(worker_state, job)
   else
     let processed_result = mark_job_processed(pool, job.id)
     case processed_result do
-      Ok( processed_job) -> note_processed(worker_state, processed_job)
+      Ok( processed_job) -> record_processed(worker_state, processed_job)
       Err( error_message) -> handle_process_claim_error(pool, worker_state, job, error_message)
     end
   end
@@ -309,19 +318,19 @@ end
 
 fn handle_claim_error(worker_state, tick_ts :: String, error_message :: String) do
   if error_message == "no pending jobs" do
-    note_idle(worker_state, tick_ts)
+    record_idle(worker_state, tick_ts)
   else
     if String.contains(error_message, "no rows matched") == true do
-      note_idle_claim_miss(worker_state, tick_ts, error_message)
+      record_idle_claim_miss(worker_state, tick_ts, error_message)
     else
-      note_failed(worker_state, "", error_message)
+      record_failure(worker_state, "", error_message)
     end
   end
 end
 
 fn process_next_job(pool :: PoolHandle, worker_state) do
   let tick_ts = current_timestamp()
-  let _ = JobWorkerState.note_tick(worker_state, tick_ts)
+  JobWorkerState.note_tick(worker_state, tick_ts)
   let claim_result = claim_next_pending_job(pool)
   case claim_result do
     Ok( job) -> process_claimed_job(pool, worker_state, job)
@@ -329,9 +338,9 @@ fn process_next_job(pool :: PoolHandle, worker_state) do
   end
 end
 
-fn note_recovery_result(worker_state, result) do
+fn record_recovery_result(worker_state, result) do
   let ts = current_timestamp()
-  let _ = JobWorkerState.note_recovery(worker_state, ts, result.count, result.last_job_id)
+  JobWorkerState.note_recovery(worker_state, ts, result.count, result.last_job_id)
   log_worker_recovery(result.count, result.last_job_id)
 end
 
@@ -339,8 +348,8 @@ fn recover_abandoned_jobs(pool :: PoolHandle, worker_state) do
   let restart_count = JobWorkerState.get_restart_count(worker_state)
   let recovery_result = reclaim_processing_jobs(pool, recovery_hint(restart_count))
   case recovery_result do
-    Ok( result) -> note_recovery_result(worker_state, result)
-    Err( error_message) -> note_failed(worker_state, "", error_message)
+    Ok( result) -> record_recovery_result(worker_state, result)
+    Err( error_message) -> record_failure(worker_state, "", error_message)
   end
 end
 
@@ -353,7 +362,7 @@ end
 actor supervised_job_worker() do
   let worker_state = worker_state_pid()
   let boot_ts = current_timestamp()
-  let _ = JobWorkerState.note_boot(worker_state, boot_ts, boot_ts)
+  JobWorkerState.note_boot(worker_state, boot_ts, boot_ts)
   let restart_count = JobWorkerState.get_restart_count(worker_state)
   log_worker_boot(boot_ts, restart_count)
   let pool = get_pool()
@@ -364,7 +373,7 @@ end
 
 pub fn start_worker(poll_ms :: Int) do
   let worker_state = JobWorkerState.start(poll_ms)
-  let _ = Process.register("reference_backend_worker_state", worker_state)
+  Process.register("reference_backend_worker_state", worker_state)
   spawn(JobWorkerSupervisor)
 end
 
