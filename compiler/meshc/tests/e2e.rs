@@ -6828,7 +6828,9 @@ end
 /// `mesher/ingestion/routes.mpl`.
 #[test]
 fn e2e_m032_supported_request_query() {
-    let output = compile_and_run(include_str!("../../../.tmp/m032-s01/request_query/main.mpl"));
+    let output = compile_and_run(include_str!(
+        "../../../.tmp/m032-s01/request_query/main.mpl"
+    ));
     assert_eq!(output, "request_query_ok\n");
 }
 
@@ -6854,7 +6856,9 @@ fn e2e_m032_supported_cross_module_from_json() {
 /// workaround comment in `mesher/services/user.mpl`.
 #[test]
 fn e2e_m032_supported_service_call_case() {
-    let output = compile_and_run(include_str!("../../../.tmp/m032-s01/service_call_case/main.mpl"));
+    let output = compile_and_run(include_str!(
+        "../../../.tmp/m032-s01/service_call_case/main.mpl"
+    ));
     assert_eq!(output, "yes\nno\n");
 }
 
@@ -6864,4 +6868,51 @@ fn e2e_m032_supported_service_call_case() {
 fn e2e_m032_supported_cast_if_else() {
     let output = compile_and_run(include_str!("../../../.tmp/m032-s01/cast_if_else/main.mpl"));
     assert_eq!(output, "1\n2\n");
+}
+
+// ── M032/S01: retained-limit proofs ────────────────────────────────────
+
+/// Freezes the real inferred-polymorphic export blocker behind
+/// `mesher/storage/writer.mpl` on the actual CLI build path.
+#[test]
+fn e2e_m032_limit_xmod_identity() {
+    let error = compile_multifile_expect_error(&[
+        (
+            "main.mpl",
+            include_str!("../../../.tmp/m032-s01/xmod_identity/main.mpl"),
+        ),
+        (
+            "utils.mpl",
+            include_str!("../../../.tmp/m032-s01/xmod_identity/utils.mpl"),
+        ),
+    ]);
+    assert!(
+        error.contains("Call parameter type does not match function signature!")
+            && error.contains("@identity"),
+        "Expected imported polymorphic export LLVM call-signature mismatch, got: {}",
+        error
+    );
+}
+
+/// Freezes the nested-`&&` codegen blocker still masked by
+/// `mesher/services/stream_manager.mpl`.
+#[test]
+fn e2e_m032_limit_nested_and() {
+    let error = compile_expect_error(include_str!("../../../.tmp/m032-s01/nested_and/main.mpl"));
+    assert!(
+        error.contains("PHI node entries do not match predecessors!")
+            && error.contains("%and_result = phi i1"),
+        "Expected nested-&& LLVM PHI mismatch, got: {}",
+        error
+    );
+}
+
+/// Freezes the timer-to-service-cast no-op still shaping
+/// `mesher/services/writer.mpl` and `mesher/ingestion/pipeline.mpl`.
+#[test]
+fn e2e_m032_limit_timer_service_cast() {
+    let output = compile_and_run(include_str!(
+        "../../../.tmp/m032-s01/timer_service_cast/main.mpl"
+    ));
+    assert_eq!(output, "0\n");
 }

@@ -731,8 +731,8 @@ impl Drop for ServerGuard {
 /// Compile a Mesh source file and spawn the resulting binary as a server.
 /// Returns a ServerGuard that kills the process on drop.
 ///
-/// Waits for the server to emit its "[mesh-rt] HTTP server listening on"
-/// message on stderr before returning, ensuring the server is ready.
+/// The caller is responsible for waiting on the stderr readiness signal before
+/// sending requests.
 fn compile_and_start_server(source: &str) -> ServerGuard {
     let temp_dir = tempfile::tempdir().expect("failed to create temp dir");
     // Leak the temp dir so it persists for the lifetime of the server process.
@@ -770,6 +770,48 @@ fn compile_and_start_server(source: &str) -> ServerGuard {
         .unwrap_or_else(|e| panic!("failed to spawn server binary: {}", e));
 
     ServerGuard(child)
+}
+
+/// Wait for a spawned Mesh HTTP server to emit its runtime listening log.
+fn wait_for_server_ready(guard: &mut ServerGuard) {
+    let stderr = guard.0.stderr.take().expect("no stderr pipe");
+    let stderr_reader = BufReader::new(stderr);
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        for line in stderr_reader.lines() {
+            if let Ok(line) = line {
+                if line.contains("HTTP server listening on") {
+                    let _ = tx.send(true);
+                    return;
+                }
+            }
+        }
+        let _ = tx.send(false);
+    });
+
+    let ready = rx
+        .recv_timeout(std::time::Duration::from_secs(10))
+        .unwrap_or(false);
+    assert!(ready, "Server did not start within 10 seconds");
+}
+
+/// Poll until the server exits or the timeout elapses.
+fn wait_for_server_exit(guard: &mut ServerGuard, timeout: std::time::Duration) -> bool {
+    let deadline = std::time::Instant::now() + timeout;
+    loop {
+        if guard
+            .0
+            .try_wait()
+            .expect("failed to poll server process")
+            .is_some()
+        {
+            return true;
+        }
+        if std::time::Instant::now() >= deadline {
+            return false;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
 }
 
 #[test]
@@ -1940,4 +1982,61 @@ fn e2e_struct_in_result_roundtrip() {
     let source = read_fixture("struct_in_result_roundtrip.mpl");
     let output = compile_and_run(&source);
     assert_eq!(output, "141\n-1\n60\n");
+}
+
+// ── M032/S01: retained-limit runtime proofs ────────────────────────────
+
+/// Confirms the bare-function control path used by `mesher/ingestion/routes.mpl`
+/// still serves live HTTP requests correctly.
+#[test]
+fn e2e_m032_route_bare_handler_control() {
+    let mut guard = compile_and_start_server(include_str!(
+        "../../../.tmp/m032-s01/route_bare_server/main.mpl"
+    ));
+    wait_for_server_ready(&mut guard);
+
+    let response = send_request(
+        18124,
+        "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+    );
+    assert!(
+        response.contains("HTTP/1.1 200 OK"),
+        "Expected bare-function control to return HTTP 200, got: {}",
+        response
+    );
+    let body = response.split("\r\n\r\n").nth(1).unwrap_or("");
+    assert_eq!(
+        body.trim(),
+        "bare_ok",
+        "Expected bare-function control body 'bare_ok', got: {:?}",
+        body
+    );
+}
+
+/// Confirms closure-based HTTP routes still fail only at live request time.
+#[test]
+fn e2e_m032_route_closure_runtime_failure() {
+    let mut guard = compile_and_start_server(include_str!(
+        "../../../.tmp/m032-s01/route_closure_server/main.mpl"
+    ));
+    wait_for_server_ready(&mut guard);
+
+    let response = send_request(
+        18123,
+        "GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+    );
+    let crashed = wait_for_server_exit(&mut guard, std::time::Duration::from_secs(2));
+    let returned_200 = response.contains("HTTP/1.1 200 OK");
+
+    assert!(
+        !returned_200,
+        "Expected closure route to fail with empty reply, non-200, or crash; got: {}",
+        response
+    );
+    assert!(
+        response.is_empty() || crashed || !response.contains("closure_ok"),
+        "Closure route unexpectedly returned its success body without an HTTP failure signal; response={:?}, crashed={}",
+        response,
+        crashed
+    );
 }
