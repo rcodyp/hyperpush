@@ -6415,3 +6415,113 @@ end
     let output = compile_and_run(source);
     assert_eq!(output, "size: medium\n");
 }
+
+// ── Multiline function call type resolution ─────────────────────────────
+
+/// Multiline function call with Int return — args on separate lines should
+/// resolve to the correct return type, not `()`.
+#[test]
+fn e2e_multiline_call_int_return() {
+    let source = r#"
+fn add(a :: Int, b :: Int) -> Int do
+  a + b
+end
+
+fn main() do
+  let result = add(
+    1,
+    2
+  )
+  println("${result}")
+end
+"#;
+    let output = compile_and_run(source);
+    assert_eq!(output, "3\n");
+}
+
+/// Multiline function call with String return — verifies no misaligned pointer
+/// crash when the return type spans multiple lines.
+#[test]
+fn e2e_multiline_call_string_return() {
+    let source = r#"
+fn greet(greeting :: String, name :: String) -> String do
+  greeting <> " " <> name
+end
+
+fn main() do
+  let msg = greet(
+    "hello",
+    "world"
+  )
+  println(msg)
+end
+"#;
+    let output = compile_and_run(source);
+    assert_eq!(output, "hello world\n");
+}
+
+/// Multiline function call with 3+ args on separate lines.
+#[test]
+fn e2e_multiline_call_three_args() {
+    let source = r#"
+fn sum3(a :: Int, b :: Int, c :: Int) -> Int do
+  a + b + c
+end
+
+fn main() do
+  let result = sum3(
+    10,
+    20,
+    30
+  )
+  println("${result}")
+end
+"#;
+    let output = compile_and_run(source);
+    assert_eq!(output, "60\n");
+}
+
+/// Mixed single-line and multiline calls in the same function — both must
+/// produce correct results.
+#[test]
+fn e2e_multiline_call_mixed_single_and_multi() {
+    let source = r#"
+fn add(a :: Int, b :: Int) -> Int do
+  a + b
+end
+
+fn main() do
+  let x = add(1, 2)
+  let y = add(
+    10,
+    20
+  )
+  println("${x}")
+  println("${y}")
+end
+"#;
+    let output = compile_and_run(source);
+    assert_eq!(output, "3\n30\n");
+}
+
+/// Multiline call used in a let binding — the bound variable must have
+/// the correct type for subsequent use.
+#[test]
+fn e2e_multiline_call_let_binding() {
+    let source = r#"
+fn multiply(a :: Int, b :: Int) -> Int do
+  a * b
+end
+
+fn main() do
+  let product = multiply(
+    6,
+    7
+  )
+  let doubled = product * 2
+  println("${doubled}")
+end
+"#;
+    let output = compile_and_run(source);
+    assert_eq!(output, "84\n");
+}

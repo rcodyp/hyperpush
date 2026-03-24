@@ -51,7 +51,7 @@ cargo run -p meshc -- build mesher
   - Verify: `cargo test -p meshc --test e2e` passes; new `else_if` tests pass; no crashes or wrong values
   - Done when: `else if` chains return the correct branch value for all three tested types
 
-- [ ] **T03: Fix multiline function call type resolution** `est:1h`
+- [x] **T03: Fix multiline function call type resolution** `est:1h`
   - Why: R017 — function calls with args on separate lines resolve to `()` instead of the correct return type. The parser produces a correct CST, but the typechecker or codegen loses the type when the call spans multiple lines.
   - Files: `compiler/mesh-typeck/src/infer.rs`, `compiler/meshc/tests/e2e.rs`
   - Do: Diagnose the exact failure point by adding a test that compiles a multiline call and checking where the type is lost (compare `TextRange` storage vs lookup). Fix the root cause — likely in `infer_call` or the `types.insert` path. Add e2e tests for multiline user-defined function calls with Int and String return types, 2+ args on separate lines, and mixed single/multiline calls.
@@ -64,6 +64,7 @@ cargo run -p meshc -- build mesher
 - **Parse-time:** Trailing-closure disambiguation failures surface as "expected expression" at the `do` token position — the parser tried to continue past the call site.
 - **Test surface:** `cargo test -p meshc --test e2e else_if` isolates the `else if` chain correctness gate. `cargo test -p meshc --test e2e trailing_closure` isolates trailing-closure disambiguation. Both can be run independently for targeted diagnosis.
 - **Failure-path verification:** The String-return `else_if` test exercises the crash path that previously caused misaligned pointer dereferences — it serves as a sentinel for type-map regression.
+- **Multiline call surface:** `cargo test -p meshc --test e2e multiline_call` isolates multiline function call correctness. The String-return test (`e2e_multiline_call_string_return`) is the most sensitive sentinel — it would crash on misaligned pointer dereference if `Literal::token()` returned a trivia token instead of the meaningful literal.
 
 ## Files Likely Touched
 

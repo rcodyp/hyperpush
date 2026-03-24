@@ -147,11 +147,14 @@ ast_node!(Literal, LITERAL);
 
 impl Literal {
     /// The literal token (INT_LITERAL, FLOAT_LITERAL, TRUE_KW, FALSE_KW, NIL_KW).
+    /// Skips trivia tokens (whitespace, newlines, comments) that may precede the
+    /// meaningful token inside the node — this matters for multiline arg lists
+    /// where the parser attaches a leading NEWLINE as trivia of the literal.
     pub fn token(&self) -> Option<SyntaxToken> {
         self.syntax
             .children_with_tokens()
             .filter_map(|it| it.into_token())
-            .next()
+            .find(|t| !t.kind().is_trivia())
     }
 }
 
