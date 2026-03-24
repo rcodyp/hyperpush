@@ -51,3 +51,10 @@ Clean up the last stale `from_json` rationale in `mesher/storage/queries.mpl` an
 ## Expected Output
 
 - `mesher/storage/queries.mpl` — truthful `extract_event_fields(...)` boundary comment aligned with the remaining Mesher keep-sites.
+
+## Observability Impact
+
+- `Storage.Queries.extract_event_fields(...)` must keep the named `Err("extract_event_fields: no result")` failure surface unchanged; the closeout grep against that string remains the fastest diagnostic proof that this cleanup did not hide or rename the query-layer failure.
+- `Services.EventProcessor.ProcessEvent(...)` must keep forwarding `extract_event_fields(...)` errors unchanged so `mesher/ingestion/routes.mpl` still turns them into `bad_request_response(reason)` without adding a second JSON parsing path.
+- Future agents should inspect the boundary story in three places: `mesher/ingestion/routes.mpl` for pre-service payload-size checks only, `mesher/storage/queries.mpl` for SQL-side extraction/fingerprint rationale, and `mesher/storage/writer.mpl` for the matching insert-side JSONB boundary note.
+- Redaction rule: comments and diagnostics in this slice stay structural only. Do not add raw event JSON, API keys, or payload contents to comments, errors, or verification output.

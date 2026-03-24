@@ -35,7 +35,7 @@
   - Do: Rewrite the top-of-file, `route_event(...)`, and service-call comments so they describe the real current flow; remove the unused `compute_fingerprint` import if it stays unused; keep `process_extracted_fields(...)`, the SQL-backed extraction path, and the service API shape unchanged.
   - Verify: `bash -lc '! rg -n "cross-module from_json limitation|from_json limitation per decision \\[88-02\\]|Validation is done by the caller|caller is responsible for JSON parsing and field validation" mesher/services/event_processor.mpl && ! rg -n "^from Ingestion\\.Fingerprint import compute_fingerprint$" mesher/services/event_processor.mpl'`
   - Done when: `event_processor.mpl` only makes truthful claims about the live ingestion path, no dead fingerprint import remains, and no behavioral rewrite was introduced.
-- [ ] **T02: Retire stale extract_event_fields folklore and close the Mesher proof gate** `est:45m`
+- [x] **T02: Retire stale extract_event_fields folklore and close the Mesher proof gate** `est:45m`
   - Why: `mesher/storage/queries.mpl` still blames a solved module-boundary limitation even though the real keep-surface is the PostgreSQL JSONB / ORM boundary; this is also the slice that must prove S02’s repaired path stays clean in the real Mesher tree.
   - Files: `mesher/storage/queries.mpl`, `mesher/storage/writer.mpl`, `mesher/types/event.mpl`, `mesher/types/issue.mpl`, `compiler/meshc/tests/e2e.rs`, `scripts/verify-m032-s01.sh`
   - Do: Rewrite the `extract_event_fields(...)` banner around the real SQL/JSONB rationale without turning it into a Mesh-side parsing redesign; keep `storage/writer` as a read-only guard file; use the existing compiler proof plus Mesher fmt/build and grep checks as the slice closeout gate.
