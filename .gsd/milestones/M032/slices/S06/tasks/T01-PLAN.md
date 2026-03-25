@@ -51,3 +51,11 @@ Replace the doctor-generated `S01-UAT.md` placeholder with a real artifact-drive
 ## Expected Output
 
 - `.gsd/milestones/M032/slices/S01/S01-UAT.md` — real artifact-driven UAT aligned to current S01 proof surfaces and handoff truth.
+
+## Observability Impact
+
+- This task changes the acceptance artifact, not compiler or Mesher runtime code, so the durable inspection surface is the rewritten `S01-UAT.md` plus the existing replay bundle it names.
+- Future agents should inspect `.tmp/m032-s01/verify/` first when the smoke test or named proofs drift; the UAT must make that debug path explicit instead of forcing rediscovery.
+- Failure visibility depends on preserving the zero-test guard around `cargo test -q -p meshc --test e2e m032_ -- --nocapture` and `cargo test -q -p meshc --test e2e_stdlib m032_ -- --nocapture`; a green exit with `running 0 tests` is not a pass.
+- Route-closure status remains runtime-only truth, so the UAT must keep the live-request warning explicit and treat compile-only success as insufficient evidence.
+- Redaction constraint: keep diagnostics limited to repo-local logs and paths; do not record or restate secret-bearing environment output.

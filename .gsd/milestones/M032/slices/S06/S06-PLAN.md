@@ -20,9 +20,17 @@
 - `bash -lc 'set -euo pipefail; log=$(mktemp); cargo test -q -p meshc --test e2e_stdlib m032_ -- --nocapture 2>&1 | tee "$log"; rg -q "running [1-9][0-9]* tests" "$log"'`
 - `bash scripts/verify-m032-s01.sh`
 
+## Observability / Diagnostics
+
+- Primary replay surface: `bash scripts/verify-m032-s01.sh`; success ends with `verify-m032-s01: ok`, and failures dump named logs under `.tmp/m032-s01/verify/`.
+- Filtered Cargo commands are only trustworthy when both the exit code is zero and the output says `running [1-9][0-9]* tests`; `running 0 tests` is an explicit failure signal for this slice.
+- Artifact truthfulness stays anchored to named grep hits in `S01-UAT.md` and `S01-SUMMARY.md`, especially `xmod_identity`, route closures, and `Timer.send_after`.
+- First debug path is `.tmp/m032-s01/verify/`; only if those logs are clean should the executor suspect wording drift in the rewritten UAT.
+- Redaction constraint: keep diagnostics limited to repo-local logs and command output; do not add or capture secret-bearing environment dumps.
+
 ## Tasks
 
-- [ ] **T01: Replace the S01 placeholder with a current proof-driven UAT** `est:45m`
+- [x] **T01: Replace the S01 placeholder with a current proof-driven UAT** `est:45m`
   - Why: S06 exists because the accepted S01 proof bundle is real but the required UAT artifact is still a doctor stub, leaving the slice without the acceptance file that closes R035 truthfulness cleanly.
   - Files: `.gsd/milestones/M032/slices/S01/S01-UAT.md`, `.gsd/milestones/M032/slices/S01/S01-SUMMARY.md`, `.gsd/milestones/M032/slices/S06/S06-RESEARCH.md`, `.gsd/milestones/M032/slices/S05/S05-UAT.md`, `scripts/verify-m032-s01.sh`, `compiler/meshc/tests/e2e.rs`, `compiler/meshc/tests/e2e_stdlib.rs`
   - Do: Rewrite `S01-UAT.md` into a real artifact-driven UAT that uses the current proof bundle, starts with `bash scripts/verify-m032-s01.sh`, preserves S01’s truthful stale-vs-real landmarks from `S01-SUMMARY.md`, keeps the route-closure live-request warning explicit, treats `xmod_identity` as a named handoff/current-proof family rather than an expected pre-S02 failure, and points debuggers to `.tmp/m032-s01/verify/` instead of inventing new evidence surfaces.
