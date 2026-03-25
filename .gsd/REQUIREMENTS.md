@@ -34,8 +34,8 @@ This file is the explicit capability and coverage contract for the project.
 - Source: execution
 - Primary owning slice: M033/S02
 - Supporting slices: M033/S03, M033/S04
-- Validation: mapped
-- Notes: PG-specific query and migration pressure is handled explicitly through JSONB, search, crypto, and partition/schema helper slices grounded in mesher.
+- Validation: Advanced by M033/S02 via `cargo test -p meshc --test e2e_m033_s02 -- --nocapture`, `cargo run -q -p meshc -- fmt --check mesher`, `cargo run -q -p meshc -- build mesher`, and `bash scripts/verify-m033-s02.sh`; final validation still depends on the S04 partition/schema-extra proof.
+- Notes: Advanced by M033/S02: Mesh now exposes explicit PG helper usage on the real Mesher path for pgcrypto auth, JSONB insert/filter/breakdown/defaulting, full-text search ranking/query binding, and alert-rule JSONB helpers, all proven by `cargo test -p meshc --test e2e_m033_s02 -- --nocapture` plus `bash scripts/verify-m033-s02.sh`. Full validation still depends on S04's partition/schema helper proof.
 
 ### R038 — After M033, `mesher/` should use stronger Mesh ORM and migration surfaces for the cases they honestly cover, while retaining only a short justified keep-list of raw SQL and DDL escape hatches.
 - Class: quality-attribute
@@ -67,8 +67,8 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M033/S01 (provisional)
 - Supporting slices: M033/S02 (provisional)
-- Validation: mapped
-- Notes: SQLite extras are deferred implementation work, but the extension points should be designed now.
+- Validation: Design seam advanced in M033/S01 by the neutral Expr/Query/Repo proofs and the explicit keep-list enforced by `bash scripts/verify-m033-s01.sh`; full validation still depends on later vendor-extra slices.
+- Notes: Advanced by M033/S01: the neutral expression core stayed free of PG-only helpers, while the remaining PostgreSQL JSONB/crypto keep-sites remained explicit instead of leaking into the baseline API. SQLite-specific extras can still be added later as vendor-specific surfaces rather than backing out a PG-only abstraction.
 
 ## Validated
 
@@ -499,10 +499,10 @@ This file is the explicit capability and coverage contract for the project.
 | R034 | anti-feature | out-of-scope | none | none | n/a |
 | R035 | quality-attribute | validated | M032/S01 | M032/S03, M032/S04, M032/S05, M032/S06 | Validated by the named `e2e_m032_*` proofs, `bash scripts/verify-m032-s01.sh`, Mesher fmt/build, the negative grep over stale disproven limitation phrases, the positive grep over the retained keep-sites in `mesher/ingestion/routes.mpl`, `mesher/services/stream_manager.mpl`, `mesher/services/writer.mpl`, `mesher/ingestion/pipeline.mpl`, `mesher/services/event_processor.mpl`, `mesher/ingestion/fingerprint.mpl`, `mesher/services/retention.mpl`, `mesher/api/team.mpl`, `mesher/storage/queries.mpl`, `mesher/storage/writer.mpl`, `mesher/migrations/20260216120000_create_initial_schema.mpl`, `mesher/types/event.mpl`, and `mesher/types/issue.mpl`, plus the backfilled `.gsd/milestones/M032/slices/S01/S01-UAT.md` acceptance artifact that now replays the current proof bundle instead of a placeholder. |
 | R036 | core-capability | active | M033/S01 | M033/S02, M033/S04 | Evidence advanced in M033/S01 by `cargo test -p meshc --test e2e_m033_s01 expr_ -- --nocapture`, `cargo test -p meshc --test e2e_m033_s01 mesher_mutations -- --nocapture`, `cargo test -p meshc --test e2e_m033_s01 mesher_issue_upsert -- --nocapture`, and `bash scripts/verify-m033-s01.sh`. |
-| R037 | integration | active | M033/S02 | M033/S03, M033/S04 | mapped |
+| R037 | integration | active | M033/S02 | M033/S03, M033/S04 | Advanced by M033/S02 via `cargo test -p meshc --test e2e_m033_s02 -- --nocapture`, `cargo run -q -p meshc -- fmt --check mesher`, `cargo run -q -p meshc -- build mesher`, and `bash scripts/verify-m033-s02.sh`; final validation still depends on the S04 partition/schema-extra proof. |
 | R038 | quality-attribute | active | M033/S03 (provisional) | M033/S04, M033/S05 (provisional) | mapped |
 | R039 | launchability | active | M033/S04 (provisional) | M033/S02 (provisional) | mapped |
-| R040 | constraint | active | M033/S01 (provisional) | M033/S02 (provisional) | mapped |
+| R040 | constraint | active | M033/S01 (provisional) | M033/S02 (provisional) | Design seam advanced in M033/S01 by the neutral Expr/Query/Repo proofs and the explicit keep-list enforced by `bash scripts/verify-m033-s01.sh`; full validation still depends on later vendor-extra slices. |
 | R041 | integration | deferred | none | none | unmapped |
 | R043 | anti-feature | out-of-scope | none | none | n/a |
 | R044 | constraint | out-of-scope | none | none | n/a |

@@ -485,6 +485,9 @@ end
 # until S03 can collapse it without pretending the expression surface is portable.
 
 pub fn extract_event_fields(pool :: PoolHandle, event_json :: String) -> Map < String, String > ! String do
+  # Honest raw S03 keep-site: this query still depends on CASE + WITH ORDINALITY +
+  # jsonb_array_elements/string_agg scalar-subquery behavior for the fingerprint
+  # fallback chain, so S02 keeps it raw until S03 can collapse it honestly.
   let sql = "SELECT CASE WHEN length(COALESCE(j->>'fingerprint', '')) > 0 THEN j->>'fingerprint' WHEN j->'stacktrace' IS NOT NULL AND jsonb_typeof(j->'stacktrace') = 'array' AND jsonb_array_length(j->'stacktrace') > 0 THEN (SELECT string_agg((frame->>'filename') || '|' || (frame->>'function_name'), ';' ORDER BY ordinality) FROM jsonb_array_elements(j->'stacktrace') WITH ORDINALITY AS t(frame, ordinality)) || ':' || lower(COALESCE(replace(j->>'message', '0x', ''), '')) WHEN j->'exception' IS NOT NULL AND j->'exception'->>'type_name' IS NOT NULL THEN (j->'exception'->>'type_name') || ':' || lower(COALESCE(replace(j->'exception'->>'value', '0x', ''), '')) ELSE 'msg:' || lower(COALESCE(replace(j->>'message', '0x', ''), '')) END AS fingerprint, COALESCE(NULLIF(j->>'message', ''), 'Untitled') AS title, COALESCE(j->>'level', 'error') AS level FROM (SELECT $1::jsonb AS j) AS sub"
   let rows = Repo.query_raw(pool, sql, [event_json]) ?
   if List.length(rows) > 0 do
@@ -838,7 +841,7 @@ rule_name :: String) -> String ! String do
   let row = Repo.insert_expr(pool,
   Alert.__table__(),
   %{"rule_id" => Pg.uuid(Expr.value(rule_id)), "project_id" => Pg.uuid(Expr.value(project_id)), "status" => Expr.value("active"), "message" => Expr.value(message), "condition_snapshot" => Expr.fn_call("jsonb_build_object",
-  [Expr.value("condition_type"), Expr.value(condition_type), Expr.value("rule_name"), Expr.value(rule_name)])}) ?
+  [Pg.text(Expr.value("condition_type")), Pg.text(Expr.value(condition_type)), Pg.text(Expr.value("rule_name")), Pg.text(Expr.value(rule_name))])}) ?
   let q = Query.from(AlertRule.__table__())
     |> Query.where_expr(Expr.eq(Expr.column("id"), Pg.uuid(Expr.value(rule_id))))
   Repo.update_where_expr(pool,

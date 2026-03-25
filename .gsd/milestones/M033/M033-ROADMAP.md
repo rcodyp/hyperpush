@@ -15,7 +15,7 @@
 - [x] **S01: Neutral expression core on real write paths** `risk:high` `depends:[]`
   > After this: After this: live Postgres-backed Mesher write paths for issue upserts, alert state transitions, settings updates, and `NULL`/`now()`-driven mutations run through structured Mesh expressions instead of recurring raw SQL.
 
-- [ ] **S02: Explicit PG extras for JSONB, search, and crypto** `risk:high` `depends:[S01]`
+- [x] **S02: Explicit PG extras for JSONB, search, and crypto** `risk:high` `depends:[S01]`
   > After this: After this: Mesher event ingest, JSONB extraction, full-text search, and pgcrypto-backed auth flows work through explicit PostgreSQL helpers on the real runtime path.
 
 - [ ] **S03: Hard read-side coverage and honest raw-tail collapse** `risk:medium` `depends:[S01,S02]`

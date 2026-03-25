@@ -27,11 +27,12 @@ Recent milestone state:
 - M032/S06 backfilled the missing S01 acceptance artifact, reran the live S01 proof bundle with non-zero test-count guards, and closed the last milestone evidence gap so M032 now seals cleanly
 - M032 is now fully closed through `.gsd/milestones/M032/M032-SUMMARY.md`, which records the compiler repair, the Mesher dogfood cleanup, and the three-bucket handoff into M033 (supported-now proof, still-real Mesh keep-sites, and real data-layer follow-on work)
 - M033/S01 is now complete: Mesh ships the neutral expression builder and expression-aware Query/Repo select/update/upsert surface, Mesher’s S01-owned write paths run on that core, the live ingest/rate-limit/writer blockers are retired, and `bash scripts/verify-m033-s01.sh` closes green against the Postgres-backed acceptance suite
+- M033/S02 is now complete: Mesh ships explicit PG helper usage on the live Mesher auth/search/JSONB/alert paths, the S02 proof bundle (`compiler/meshc/tests/e2e_m033_s02.rs`) passes against live Postgres, and `bash scripts/verify-m033-s02.sh` now enforces the owned keep-list plus the named S03 `extract_event_fields` raw boundary.
 
 The next planned work is M033:
-1. S02 should replace the remaining explicit PostgreSQL raw keep-sites (`create_alert_rule`, `fire_alert`, `insert_event`, and related JSONB/search/crypto families) with honest PG helper surfaces built on the new expression core.
-2. S03 should reuse the proven serializer/runtime contract to retire the harder read-side raw-query families without pretending every remaining query belongs in a universal neutral AST.
-3. S04 should cover the retained migration/DDL gap anchored by the `PARTITION BY` note while keeping SQLite-specific extras as a later vendor-specific seam instead of backing out a PG-only abstraction.
+1. S03 should reuse the proven serializer/runtime contract plus the new explicit PG helper boundary to retire the harder read-side raw-query families without pretending every remaining query belongs in a universal neutral AST.
+2. S04 should cover the retained partition/schema helper gap anchored by the `PARTITION BY` note while keeping SQLite-specific extras as a later vendor-specific seam instead of backing out a PG-only abstraction.
+3. S05 should document the neutral-vs-PG boundary and replay the assembled Mesher data-layer acceptance suite end to end once S03/S04 land.
 
 ## Architecture / Key Patterns
 

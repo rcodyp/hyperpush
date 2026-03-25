@@ -408,6 +408,7 @@ fn e2e_m033_s02_pgcrypto_auth_helpers() {
 
         let template = r#"
 from Storage.Queries import create_user, authenticate_user
+from Types.User import User
 
 fn main() do
   let pool_result = Pool.open("postgres://mesh:mesh@127.0.0.1:5432/mesher", 1, 1, 5000)
@@ -567,12 +568,18 @@ fn main() do
           println("search_count=#{List.length(rows)}")
           let first = List.get(rows, 0)
           let second = List.get(rows, 1)
-          println("first_message=#{Map.get(first, \"message\")}")
-          println("first_issue_id=#{Map.get(first, \"issue_id\")}")
-          println("first_rank=#{Map.get(first, \"rank\")}")
-          println("second_message=#{Map.get(second, \"message\")}")
-          println("second_issue_id=#{Map.get(second, \"issue_id\")}")
-          println("second_rank=#{Map.get(second, \"rank\")}")
+          let first_message = Map.get(first, "message")
+          let first_issue_id = Map.get(first, "issue_id")
+          let first_rank = Map.get(first, "rank")
+          let second_message = Map.get(second, "message")
+          let second_issue_id = Map.get(second, "issue_id")
+          let second_rank = Map.get(second, "rank")
+          println("first_message=#{first_message}")
+          println("first_issue_id=#{first_issue_id}")
+          println("first_rank=#{first_rank}")
+          println("second_message=#{second_message}")
+          println("second_issue_id=#{second_issue_id}")
+          println("second_rank=#{second_rank}")
         end
       end
     end
@@ -704,8 +711,12 @@ fn main() do
           println("breakdown_count=#{List.length(rows)}")
           let first = List.get(rows, 0)
           let second = List.get(rows, 1)
-          println("breakdown_first=#{Map.get(first, \"tag_value\")}|#{Map.get(first, \"count\")}")
-          println("breakdown_second=#{Map.get(second, \"tag_value\")}|#{Map.get(second, \"count\")}")
+          let first_tag_value = Map.get(first, "tag_value")
+          let first_count = Map.get(first, "count")
+          let second_tag_value = Map.get(second, "tag_value")
+          let second_count = Map.get(second, "count")
+          println("breakdown_first=#{first_tag_value}|#{first_count}")
+          println("breakdown_second=#{second_tag_value}|#{second_count}")
         end
       end
     end
