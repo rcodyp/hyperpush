@@ -41,8 +41,8 @@ This milestone is complete only when all are true:
 
 ## Requirement Coverage
 
-- Covers: R011, R013, R035
-- Partially covers: R010
+- Covers: R010, R011, R013, R035
+- Partially covers: none
 - Leaves for later: R036, R037, R038, R039, R040, R041
 - Orphan risks: none
 
@@ -60,7 +60,7 @@ This milestone is complete only when all are true:
 - [x] **S04: Module-boundary JSON and workaround convergence** `risk:medium` `depends:[S01,S02]`
   > After this: a validated module-boundary workaround family is simplified in mesher to the repaired or already-supported Mesh path without product drift.
 
-- [ ] **S05: Integrated mesher proof and retained-limit ledger** `risk:low` `depends:[S02,S03,S04]`
+- [x] **S05: Integrated mesher proof and retained-limit ledger** `risk:low` `depends:[S02,S03,S04]`
   > After this: mesher build/format proof passes on the cleaned codebase and the remaining limitation comments form a short verified keep-list that hands cleanly into M033.
 
 ## Boundary Map

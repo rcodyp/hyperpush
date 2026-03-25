@@ -1,0 +1,1 @@
+{"ts":"2026-03-25T00:05:35.102Z","flowId":"fc58e387-f1f6-4358-a86e-bae0566c7d46","seq":4,"eventType":"unit-end","data":{"unitType":"execute-task","unitId":"M032/S05/T02","status":"completed","artifactVerified":true},"causedBy":{"flowId":"fc58e387-f1f6-4358-a86e-bae0566c7d46","seq":3}}

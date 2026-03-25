@@ -23,10 +23,11 @@ Recent milestone state:
 - M032/S02 retired the unconstrained inferred-export blocker by threading concrete call-site signatures into MIR lowering, replaying `xmod_identity` as a success path, and dogfooding the repaired export via `mesher/storage/writer.mpl`
 - M032/S03 retired the stale request/handler/control-flow folklore in the audited `mesher/` modules by dogfooding direct `Request.query(...)`, inline service-call `case`, and inline cast-handler `if/else`, while preserving the real route-closure, nested-`&&`, and timer keep-sites
 - M032/S04 retired the stale module-boundary `from_json` folklore in Mesher's event ingestion/storage comments, kept the real PostgreSQL JSONB/ORM keep-sites explicit, and revalidated the supported cross-module `from_json` path plus Mesher fmt/build on the cleaned codebase
+- M032/S05 replayed the full Mesher proof matrix, closed the supported-now versus retained-limit ledger, and left a short file-backed keep-list for the remaining Mesh and data-layer pressure sites
 
-The next planned work is the remaining M032 closeout:
-1. run the integrated mesher proof and publish the retained-limit ledger in S05
-2. then move into M033 to strengthen the ORM and migration/DDL surfaces, with a neutral core and explicit database-specific extras where honest
+The next planned work is M033:
+1. shape the neutral ORM/migration core plus explicit PG extras around the recurring `mesher/storage/queries.mpl` and `mesher/storage/writer.mpl` ORM boundary families
+2. cover the retained migration/DDL gap anchored by the `PARTITION BY` note while keeping a clean path for SQLite-specific extras later
 
 ## Architecture / Key Patterns
 
@@ -46,5 +47,5 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M029: Mesher & Reference-Backend Dogfood Completion — fix formatter corruption and complete the dogfood cleanup wave
 - [ ] M030: Tooling & Package Trust — make package, dependency, and daily-driver tooling flow credible for backend work
 - [x] M031: Language DX Audit & Rough Edge Fixes — retire real dogfood rough edges through compiler and parser fixes
-- [ ] M032: Mesher Limitation Truth & Mesh Dogfood Retirement — audit workaround folklore, fix real blockers in Mesh, and dogfood those repairs back into `mesher/`
+- [x] M032: Mesher Limitation Truth & Mesh Dogfood Retirement — audit workaround folklore, fix real blockers in Mesh, and dogfood those repairs back into `mesher/`
 - [ ] M033: ORM Expressiveness & Schema Extras — strengthen the neutral data layer, add PG-first extras now, and leave a clean path for SQLite extras later

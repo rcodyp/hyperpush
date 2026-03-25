@@ -15,39 +15,6 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: mapped
 - Notes: This sits after the backend trust baseline but is already part of the capability contract.
 
-### R010 — The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is "better than Elixir."
-- Class: differentiator
-- Status: active
-- Description: The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is "better than Elixir."
-- Why it matters: The comparison target is clear, but the comparison needs grounded evidence rather than rhetoric.
-- Source: user
-- Primary owning slice: M032/S05
-- Supporting slices: M028/S04, M028/S06, M033/S05 (provisional)
-- Validation: mapped
-- Notes: M032 and M033 sharpen this by replacing folklore and improving the data layer through real dogfood pressure.
-
-### R011 — New language/runtime work after M028 should come from real backend friction discovered while using Mesh for actual backend code.
-- Class: differentiator
-- Status: active
-- Description: New language/runtime work after M028 should come from real backend friction discovered while using Mesh for actual backend code.
-- Why it matters: This keeps the project from chasing clever language features that do not improve the target use case.
-- Source: user
-- Primary owning slice: M032/S01
-- Supporting slices: M032/S02, M032/S03, M033/S02 (provisional)
-- Validation: mapped
-- Notes: The M032 wave now advances this through the S02 inferred-export repair and the S03 direct request/handler/control-flow dogfood cleanup in mesher.
-
-### R035 — Comments in `mesher/` that claim a Mesh limitation or workaround must reflect current verified reality, not stale folklore.
-- Class: quality-attribute
-- Status: active
-- Description: Comments in `mesher/` that claim a Mesh limitation or workaround must reflect current verified reality, not stale folklore.
-- Why it matters: Stale limitation comments make Mesh look weaker than it is and hide the real regression surface.
-- Source: execution
-- Primary owning slice: M032/S01
-- Supporting slices: M032/S03, M032/S04, M032/S05
-- Validation: mapped
-- Notes: S01 classified the stale-vs-real workaround families, S03 retired the audited request/handler/control-flow folklore in mesher, S04 retired the stale module-boundary from_json folklore in mesher's event ingestion/storage comments while preserving the real JSONB/ORM keep-sites, and S05 still owns the final retained-limit ledger plus integrated closeout proof.
-
 ### R036 — The ORM and migration surfaces should keep a neutral baseline API while allowing explicit PG or SQLite extras when the underlying capability is not honestly portable.
 - Class: core-capability
 - Status: active
@@ -193,6 +160,28 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: The reference backend remains the narrow proof target; `mesher/` is the broader pressure test.
 
+### R010 — The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is "better than Elixir."
+- Class: differentiator
+- Status: validated
+- Description: The project can point to specific ways Mesh is easier to deploy, measurably fast, and nicer for backend development rather than vaguely claiming it is "better than Elixir."
+- Why it matters: The comparison target is clear, but the comparison needs grounded evidence rather than rhetoric.
+- Source: user
+- Primary owning slice: M032/S05
+- Supporting slices: M028/S04, M028/S06
+- Validation: Validated by the M028 native deploy proof plus the M032 closeout bundle: `bash scripts/verify-m032-s01.sh`, `cargo test -q -p meshc --test e2e m032_inferred -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_nested_wrapper_list_from_json -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_inline_writer_cast_body -- --nocapture`, `cargo test -q -p meshc --test e2e_stdlib e2e_m032_route_closure_runtime_failure -- --nocapture`, `cargo run -q -p meshc -- fmt --check mesher`, and `cargo run -q -p meshc -- build mesher`, with the retained-limit ledger tying supported Mesher dogfood wins to honest remaining boundaries.
+- Notes: M028 established the easier-deploy anchor through the boring native deployment proof; M032 closes the backend-development differentiator claim with current Mesher dogfood evidence instead of vague comparison language. M033 can deepen the data layer, but it no longer blocks this requirement.
+
+### R011 — New language/runtime work after M028 should come from real backend friction discovered while using Mesh for actual backend code.
+- Class: differentiator
+- Status: validated
+- Description: New language/runtime work after M028 should come from real backend friction discovered while using Mesh for actual backend code.
+- Why it matters: This keeps the project from chasing clever language features that do not improve the target use case.
+- Source: user
+- Primary owning slice: M032/S01
+- Supporting slices: M032/S02, M032/S03, M032/S04, M032/S05
+- Validation: Validated by the M032 slice chain plus the final S05 replay: `bash scripts/verify-m032-s01.sh`, `cargo test -q -p meshc --test e2e m032_inferred -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_nested_wrapper_list_from_json -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_inline_writer_cast_body -- --nocapture`, `cargo test -q -p meshc --test e2e_stdlib e2e_m032_route_closure_runtime_failure -- --nocapture`, `cargo run -q -p meshc -- fmt --check mesher`, `cargo run -q -p meshc -- build mesher`, and the retained keep-site sweep over the real Mesher files.
+- Notes: Validated by the full M032 dogfood wave: the language/runtime/tooling work came directly from Mesher pressure sites (inferred exports, request/handler cleanup, module-boundary JSON truth, and the final retained-limit ledger) instead of speculative language design.
+
 ### R013 — A blocking Mesh language/runtime/tooling limitation is not worked around indefinitely; it is fixed in Mesh and then used in mesher.
 - Class: constraint
 - Status: validated
@@ -200,9 +189,9 @@ This file is the explicit capability and coverage contract for the project.
 - Why it matters: `mesher/` is a dogfooding vehicle as well as an application.
 - Source: user
 - Primary owning slice: M032/S02
-- Supporting slices: M032/S03, M032/S04
-- Validation: Validated by `cargo test -p meshc --test e2e m032_inferred -- --nocapture`, `cargo test -p meshc --test e2e m032_inferred_cross_module_identity -- --nocapture`, `cargo test -p meshc --test e2e e2e_cross_module_polymorphic -- --nocapture`, `cargo test -p meshc --test e2e e2e_cross_module_service -- --nocapture`, `bash scripts/verify-m032-s01.sh`, `cargo run -q -p meshc -- fmt --check mesher`, and `cargo run -q -p meshc -- build mesher` after moving `flush_batch` into `mesher/storage/writer.mpl` and importing it from `mesher/services/writer.mpl`.
-- Notes: M032/S02 fixed the unconstrained inferred-export lowering bug in Mesh, replayed the old `xmod_identity` repro as a success path, and dogfooded the repaired module-boundary export from mesher instead of keeping the helper local to the service.
+- Supporting slices: M032/S03, M032/S04, M032/S05
+- Validation: Validated by `cargo test -q -p meshc --test e2e m032_inferred -- --nocapture`, the `xmod_identity` cross-module repro inside that test, `bash scripts/verify-m032-s01.sh`, `cargo run -q -p meshc -- fmt --check mesher`, and `cargo run -q -p meshc -- build mesher` after moving `flush_batch` into `mesher/storage/writer.mpl` and importing it from `mesher/services/writer.mpl`.
+- Notes: M032/S02 fixed the unconstrained inferred-export lowering bug in Mesh, replayed the old `xmod_identity` repro as a success path, dogfooded the repaired module-boundary export from mesher, and S05 closed the milestone with the integrated replay plus retained-limit ledger so the fix stays visible as current proof.
 
 ### R015 — `else if` chains produce the correct branch value instead of returning garbage or crashing on certain types.
 - Class: core-capability
@@ -313,6 +302,17 @@ This file is the explicit capability and coverage contract for the project.
 - Supporting slices: none
 - Validation: validated
 - Notes: Proven by repaired source plus `fmt --check reference-backend` and dot-path grep gates.
+
+### R035 — Comments in `mesher/` that claim a Mesh limitation or workaround must reflect current verified reality, not stale folklore.
+- Class: quality-attribute
+- Status: validated
+- Description: Comments in `mesher/` that claim a Mesh limitation or workaround must reflect current verified reality, not stale folklore.
+- Why it matters: Stale limitation comments make Mesh look weaker than it is and hide the real regression surface.
+- Source: execution
+- Primary owning slice: M032/S01
+- Supporting slices: M032/S03, M032/S04, M032/S05
+- Validation: Validated by the named `e2e_m032_*` proofs, `bash scripts/verify-m032-s01.sh`, Mesher fmt/build, the negative grep over stale disproven limitation phrases, and the positive grep over the retained keep-sites in `mesher/ingestion/routes.mpl`, `mesher/services/stream_manager.mpl`, `mesher/services/writer.mpl`, `mesher/ingestion/pipeline.mpl`, `mesher/services/event_processor.mpl`, `mesher/ingestion/fingerprint.mpl`, `mesher/services/retention.mpl`, `mesher/api/team.mpl`, `mesher/storage/queries.mpl`, `mesher/storage/writer.mpl`, `mesher/migrations/20260216120000_create_initial_schema.mpl`, `mesher/types/event.mpl`, and `mesher/types/issue.mpl`.
+- Notes: S01 classified the stale-vs-real workaround families, S03 and S04 retired the disproven request/handler/control-flow and module-boundary JSON folklore, and S05 closed the requirement with a short retained-limit ledger plus integrated proof replay.
 
 ## Deferred
 
@@ -474,10 +474,10 @@ This file is the explicit capability and coverage contract for the project.
 | R007 | launchability | active | M030/S01 (provisional) | M030/S02 (provisional) | mapped |
 | R008 | launchability | validated | M028/S06 | M028/S01, M028/S03, M028/S04, M028/S05, M028/S07, M028/S08 | validated |
 | R009 | differentiator | validated | M028/S06 | M028/S01, M028/S02, M028/S05, M028/S07 | validated |
-| R010 | differentiator | active | M032/S05 | M028/S04, M028/S06, M033/S05 (provisional) | mapped |
-| R011 | differentiator | active | M032/S01 | M032/S02, M032/S03, M033/S02 (provisional) | mapped |
+| R010 | differentiator | validated | M032/S05 | M028/S04, M028/S06 | Validated by the M028 native deploy proof plus the M032 closeout bundle: `bash scripts/verify-m032-s01.sh`, `cargo test -q -p meshc --test e2e m032_inferred -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_nested_wrapper_list_from_json -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_inline_writer_cast_body -- --nocapture`, `cargo test -q -p meshc --test e2e_stdlib e2e_m032_route_closure_runtime_failure -- --nocapture`, `cargo run -q -p meshc -- fmt --check mesher`, and `cargo run -q -p meshc -- build mesher`, with the retained-limit ledger tying supported Mesher dogfood wins to honest remaining boundaries. |
+| R011 | differentiator | validated | M032/S01 | M032/S02, M032/S03, M032/S04, M032/S05 | Validated by the M032 slice chain plus the final S05 replay: `bash scripts/verify-m032-s01.sh`, `cargo test -q -p meshc --test e2e m032_inferred -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_nested_wrapper_list_from_json -- --nocapture`, `cargo test -q -p meshc --test e2e e2e_m032_supported_inline_writer_cast_body -- --nocapture`, `cargo test -q -p meshc --test e2e_stdlib e2e_m032_route_closure_runtime_failure -- --nocapture`, `cargo run -q -p meshc -- fmt --check mesher`, `cargo run -q -p meshc -- build mesher`, and the retained keep-site sweep over the real Mesher files. |
 | R012 | core-capability | deferred | none | none | unmapped |
-| R013 | constraint | validated | M032/S02 | M032/S03, M032/S04 | Validated by `cargo test -p meshc --test e2e m032_inferred -- --nocapture`, `cargo test -p meshc --test e2e m032_inferred_cross_module_identity -- --nocapture`, `cargo test -p meshc --test e2e e2e_cross_module_polymorphic -- --nocapture`, `cargo test -p meshc --test e2e e2e_cross_module_service -- --nocapture`, `bash scripts/verify-m032-s01.sh`, `cargo run -q -p meshc -- fmt --check mesher`, and `cargo run -q -p meshc -- build mesher` after moving `flush_batch` into `mesher/storage/writer.mpl` and importing it from `mesher/services/writer.mpl`. |
+| R013 | constraint | validated | M032/S02 | M032/S03, M032/S04, M032/S05 | Validated by `cargo test -q -p meshc --test e2e m032_inferred -- --nocapture`, the `xmod_identity` cross-module repro inside that test, `bash scripts/verify-m032-s01.sh`, `cargo run -q -p meshc -- fmt --check mesher`, and `cargo run -q -p meshc -- build mesher` after moving `flush_batch` into `mesher/storage/writer.mpl` and importing it from `mesher/services/writer.mpl`. |
 | R014 | constraint | deferred | none | none | unmapped |
 | R015 | core-capability | validated | M031/S01 | none | validated |
 | R016 | core-capability | validated | M031/S01 | none | validated |
@@ -497,7 +497,7 @@ This file is the explicit capability and coverage contract for the project.
 | R032 | constraint | out-of-scope | none | none | n/a |
 | R033 | constraint | out-of-scope | none | none | n/a |
 | R034 | anti-feature | out-of-scope | none | none | n/a |
-| R035 | quality-attribute | active | M032/S01 | M032/S03, M032/S04, M032/S05 | mapped |
+| R035 | quality-attribute | validated | M032/S01 | M032/S03, M032/S04, M032/S05 | Validated by the named `e2e_m032_*` proofs, `bash scripts/verify-m032-s01.sh`, Mesher fmt/build, the negative grep over stale disproven limitation phrases, and the positive grep over the retained keep-sites in `mesher/ingestion/routes.mpl`, `mesher/services/stream_manager.mpl`, `mesher/services/writer.mpl`, `mesher/ingestion/pipeline.mpl`, `mesher/services/event_processor.mpl`, `mesher/ingestion/fingerprint.mpl`, `mesher/services/retention.mpl`, `mesher/api/team.mpl`, `mesher/storage/queries.mpl`, `mesher/storage/writer.mpl`, `mesher/migrations/20260216120000_create_initial_schema.mpl`, `mesher/types/event.mpl`, and `mesher/types/issue.mpl`. |
 | R036 | core-capability | active | M033/S01 (provisional) | M033/S02, M033/S04 (provisional) | mapped |
 | R037 | integration | active | M033/S02 (provisional) | M033/S03, M033/S04 (provisional) | mapped |
 | R038 | quality-attribute | active | M033/S03 (provisional) | M033/S04, M033/S05 (provisional) | mapped |
@@ -509,7 +509,7 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 9
-- Mapped to slices: 9
-- Validated: 19 (R001, R002, R003, R004, R005, R006, R008, R009, R013, R015, R016, R017, R018, R019, R023, R024, R025, R026, R027)
+- Active requirements: 6
+- Mapped to slices: 6
+- Validated: 22 (R001, R002, R003, R004, R005, R006, R008, R009, R010, R011, R013, R015, R016, R017, R018, R019, R023, R024, R025, R026, R027, R035)
 - Unmapped active requirements: 0
