@@ -75,7 +75,8 @@ fn find_project_dir_for_target(target: &Path) -> Option<PathBuf> {
 }
 
 fn resolve_project_dir(target: Option<&Path>) -> Result<PathBuf, String> {
-    let cwd = std::env::current_dir().map_err(|e| format!("Failed to read current directory: {}", e))?;
+    let cwd =
+        std::env::current_dir().map_err(|e| format!("Failed to read current directory: {}", e))?;
 
     match target {
         Some(target) => {
@@ -123,7 +124,11 @@ fn resolve_test_files(target: Option<&Path>) -> Result<Vec<PathBuf>, String> {
 /// - `target`: optional project root, directory, or specific `*.test.mpl` file.
 /// - `quiet`: compact output (dots instead of per-file names).
 /// - `coverage`: currently unsupported and returns an explicit error.
-pub fn run_tests(target: Option<&Path>, quiet: bool, coverage: bool) -> Result<TestSummary, String> {
+pub fn run_tests(
+    target: Option<&Path>,
+    quiet: bool,
+    coverage: bool,
+) -> Result<TestSummary, String> {
     if coverage {
         return Err(
             "coverage reporting is not implemented for `meshc test`; run the command without --coverage"

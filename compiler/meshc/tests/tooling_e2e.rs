@@ -214,8 +214,16 @@ fn test_test_runs_tests_directory_target() {
     let tests_dir = project.join("tests");
 
     std::fs::create_dir_all(&tests_dir).unwrap();
-    std::fs::write(project.join("main.mpl"), "fn main() do\n  println(\"app\")\nend\n").unwrap();
-    std::fs::write(project.join("math.mpl"), "pub fn answer() -> Int do\n  42\nend\n").unwrap();
+    std::fs::write(
+        project.join("main.mpl"),
+        "fn main() do\n  println(\"app\")\nend\n",
+    )
+    .unwrap();
+    std::fs::write(
+        project.join("math.mpl"),
+        "pub fn answer() -> Int do\n  42\nend\n",
+    )
+    .unwrap();
     std::fs::write(
         tests_dir.join("math.test.mpl"),
         "from Math import answer\n\ntest(\"directory target runs project tests\") do\n  assert(answer() == 42)\nend\n",

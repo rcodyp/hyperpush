@@ -2169,14 +2169,22 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
         expr_mod.insert(
             "case".to_string(),
             Scheme::mono(Ty::fun(
-                vec![Ty::list(ptr_t.clone()), Ty::list(ptr_t.clone()), ptr_t.clone()],
+                vec![
+                    Ty::list(ptr_t.clone()),
+                    Ty::list(ptr_t.clone()),
+                    ptr_t.clone(),
+                ],
                 ptr_t.clone(),
             )),
         );
         expr_mod.insert(
             "case_when".to_string(),
             Scheme::mono(Ty::fun(
-                vec![Ty::list(ptr_t.clone()), Ty::list(ptr_t.clone()), ptr_t.clone()],
+                vec![
+                    Ty::list(ptr_t.clone()),
+                    Ty::list(ptr_t.clone()),
+                    ptr_t.clone(),
+                ],
                 ptr_t.clone(),
             )),
         );
@@ -2190,6 +2198,10 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
         );
         expr_mod.insert(
             "alias".to_string(),
+            Scheme::mono(Ty::fun(vec![ptr_t.clone(), Ty::string()], ptr_t.clone())),
+        );
+        expr_mod.insert(
+            "label".to_string(),
             Scheme::mono(Ty::fun(vec![ptr_t.clone(), Ty::string()], ptr_t.clone())),
         );
         modules.insert("Expr".to_string(), expr_mod);
@@ -2272,6 +2284,14 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
             "select".to_string(),
             Scheme::mono(Ty::fun(
                 vec![ptr_t.clone(), Ty::list(Ty::string())],
+                ptr_t.clone(),
+            )),
+        );
+        // Query.select_exprs(Ptr, List<Ptr>) -> Ptr  (structured SELECT expressions)
+        query_mod.insert(
+            "select_exprs".to_string(),
+            Scheme::mono(Ty::fun(
+                vec![ptr_t.clone(), Ty::list(ptr_t.clone())],
                 ptr_t.clone(),
             )),
         );

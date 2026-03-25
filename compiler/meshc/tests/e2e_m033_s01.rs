@@ -161,7 +161,11 @@ fn spawn_mesher(config: MesherConfig) -> SpawnedMesher {
     }
 }
 
-fn collect_stopped_mesher(mut child: Child, stdout_path: PathBuf, stderr_path: PathBuf) -> StoppedMesher {
+fn collect_stopped_mesher(
+    mut child: Child,
+    stdout_path: PathBuf,
+    stderr_path: PathBuf,
+) -> StoppedMesher {
     child.wait().expect("failed to collect mesher exit status");
 
     let stdout = fs::read_to_string(&stdout_path)
@@ -211,7 +215,8 @@ fn send_http_request(
     let mut stream = TcpStream::connect(("127.0.0.1", config.http_port))?;
     stream.set_read_timeout(Some(Duration::from_secs(10)))?;
 
-    let mut request = format!("{method} {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n");
+    let mut request =
+        format!("{method} {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n");
     for (name, value) in headers {
         request.push_str(name);
         request.push_str(": ");
@@ -342,14 +347,25 @@ fn execute_database_sql(database_url: &str, sql: &str, params: &[&str]) -> i64 {
 
 fn cleanup_stale_mesher_postgres_containers() {
     let output = Command::new("docker")
-        .args(["ps", "-aq", "--filter", &format!("name={POSTGRES_CONTAINER_PREFIX}")])
+        .args([
+            "ps",
+            "-aq",
+            "--filter",
+            &format!("name={POSTGRES_CONTAINER_PREFIX}"),
+        ])
         .output()
         .expect("failed to list stale docker containers");
     if !output.status.success() {
-        panic!("failed to list stale docker containers:\n{}", command_output_text(&output));
+        panic!(
+            "failed to list stale docker containers:\n{}",
+            command_output_text(&output)
+        );
     }
     let stdout = String::from_utf8_lossy(&output.stdout);
-    let ids: Vec<&str> = stdout.lines().filter(|line| !line.trim().is_empty()).collect();
+    let ids: Vec<&str> = stdout
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .collect();
     if ids.is_empty() {
         return;
     }
@@ -408,7 +424,10 @@ fn start_postgres_container(label: &str) -> PostgresContainer {
         .output()
         .expect("failed to start temporary postgres container");
     if !output.status.success() {
-        panic!("failed to start temporary postgres container:\n{}", command_output_text(&output));
+        panic!(
+            "failed to start temporary postgres container:\n{}",
+            command_output_text(&output)
+        );
     }
 
     let container = PostgresContainer { name };
@@ -433,6 +452,18 @@ fn build_mesher() -> Output {
         .expect("failed to invoke meshc build mesher")
 }
 
+fn ensure_mesh_rt_staticlib() {
+    static BUILD_ONCE: OnceLock<()> = OnceLock::new();
+    BUILD_ONCE.get_or_init(|| {
+        let output = Command::new("cargo")
+            .current_dir(repo_root())
+            .args(["build", "-p", "mesh-rt"])
+            .output()
+            .expect("failed to invoke cargo build -p mesh-rt");
+        assert_command_success(&output, "cargo build -p mesh-rt");
+    });
+}
+
 fn assert_command_success(output: &Output, description: &str) {
     assert!(
         output.status.success(),
@@ -442,6 +473,8 @@ fn assert_command_success(output: &Output, description: &str) {
 }
 
 fn compile_and_run_mesh(source: &str) -> String {
+    ensure_mesh_rt_staticlib();
+
     let temp_dir = tempfile::tempdir().expect("failed to create temp dir");
     let project_dir = temp_dir.path().join("project");
     fs::create_dir_all(&project_dir).expect("failed to create project dir");
@@ -480,7 +513,9 @@ fn compile_and_run_mesh(source: &str) -> String {
 }
 
 fn with_mesher_postgres<T>(label: &str, f: impl FnOnce() -> T) -> T {
-    let _guard = test_lock().lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _guard = test_lock()
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let _container = start_postgres_container(label);
     f()
 }
@@ -492,9 +527,15 @@ fn assert_mesher_logs(logs: &StoppedMesher, config: &MesherConfig) {
         logs.combined
     );
     assert!(
-        logs.combined.contains(&format!("HTTP server listening on 0.0.0.0:{}", config.http_port))
-            || logs.combined.contains(&format!("HTTP server listening on 127.0.0.1:{}", config.http_port))
-            || logs.combined.contains(&format!("Listening on {}", config.http_port)),
+        logs.combined.contains(&format!(
+            "HTTP server listening on 0.0.0.0:{}",
+            config.http_port
+        )) || logs.combined.contains(&format!(
+            "HTTP server listening on 127.0.0.1:{}",
+            config.http_port
+        )) || logs
+            .combined
+            .contains(&format!("Listening on {}", config.http_port)),
         "mesher logs never showed the HTTP listener on :{}:\n{}",
         config.http_port,
         logs.combined
@@ -502,15 +543,84 @@ fn assert_mesher_logs(logs: &StoppedMesher, config: &MesherConfig) {
 }
 
 #[test]
+fn e2e_m033_expr_select_executes() {
+    with_mesher_postgres("expr-select", || {
+        execute_database_sql(
+            MESHER_DATABASE_URL,
+            "DROP TABLE IF EXISTS m033_expr_selects",
+            &[],
+        );
+        execute_database_sql(
+            MESHER_DATABASE_URL,
+            "CREATE TABLE m033_expr_selects (id TEXT PRIMARY KEY, nickname TEXT, amount INTEGER NOT NULL, status TEXT NOT NULL)",
+            &[],
+        );
+        execute_database_sql(
+            MESHER_DATABASE_URL,
+            "INSERT INTO m033_expr_selects (id, nickname, amount, status) VALUES ($1, NULL, $2::int, $3)",
+            &["row-1", "5", "resolved"],
+        );
+
+        let source = r#"
+fn main() do
+  let pool_result = Pool.open("postgres://mesh:mesh@127.0.0.1:5432/mesher", 1, 1, 5000)
+  case pool_result do
+    Err( e) -> println("pool_err:#{e}")
+    Ok( pool) -> do
+      let q = Query.from("m033_expr_selects")
+        |> Query.select_exprs([
+          Expr.label(Expr.coalesce([Expr.column("nickname"), Expr.value("fallback")]), "nick"),
+          Expr.label(Expr.add(Expr.column("amount"), Expr.value("2")), "next_amount"),
+          Expr.label(
+            Expr.case_when(
+              [Expr.eq(Expr.column("status"), Expr.value("resolved"))],
+              [Expr.value("closed")],
+              Expr.column("status")
+            ),
+            "display_status"
+          )
+        ])
+        |> Query.where(:id, "row-1")
+      let result = Repo.all(pool, q)
+      case result do
+        Err( e) -> println("select_err:#{e}")
+        Ok( rows) -> do
+          let row = List.get(rows, 0)
+          println("nick=#{Map.get(row, "nick")}")
+          println("next_amount=#{Map.get(row, "next_amount")}")
+          println("display_status=#{Map.get(row, "display_status")}")
+        end
+      end
+    end
+  end
+end
+"#;
+        let output = compile_and_run_mesh(source);
+        assert_eq!(
+            output, "nick=fallback\nnext_amount=7\ndisplay_status=closed\n",
+            "select_exprs must preserve SELECT placeholder order before WHERE params"
+        );
+    });
+}
+
+#[test]
 fn e2e_m033_expr_repo_executes() {
     with_mesher_postgres("expr", || {
-        execute_database_sql(MESHER_DATABASE_URL, "DROP TABLE IF EXISTS m033_expr_updates", &[]);
+        execute_database_sql(
+            MESHER_DATABASE_URL,
+            "DROP TABLE IF EXISTS m033_expr_updates",
+            &[],
+        );
         execute_database_sql(
             MESHER_DATABASE_URL,
             "CREATE TABLE m033_expr_updates (id TEXT PRIMARY KEY, amount INTEGER NOT NULL, status TEXT NOT NULL, touched_at TIMESTAMPTZ NOT NULL DEFAULT now())",
             &[],
         );
-        execute_database_sql(MESHER_DATABASE_URL, "DROP TABLE IF EXISTS m033_expr_upserts", &[]);
+        execute_database_sql(
+            MESHER_DATABASE_URL,
+            "DROP TABLE IF EXISTS m033_expr_upserts",
+            &[],
+        );
         execute_database_sql(
             MESHER_DATABASE_URL,
             "CREATE TABLE m033_expr_upserts (slug TEXT PRIMARY KEY, amount INTEGER NOT NULL, status TEXT NOT NULL, touched_at TIMESTAMPTZ NOT NULL DEFAULT now())",
@@ -574,7 +684,10 @@ end
             &["row-1"],
         );
         assert_eq!(updated_row.get("amount").map(String::as_str), Some("3"));
-        assert_eq!(updated_row.get("status").map(String::as_str), Some("unresolved"));
+        assert_eq!(
+            updated_row.get("status").map(String::as_str),
+            Some("unresolved")
+        );
         assert!(
             updated_row
                 .get("touched_at")
@@ -644,7 +757,10 @@ end
             &["alpha"],
         );
         assert_eq!(upsert_row.get("amount").map(String::as_str), Some("2"));
-        assert_eq!(upsert_row.get("status").map(String::as_str), Some("unresolved"));
+        assert_eq!(
+            upsert_row.get("status").map(String::as_str),
+            Some("unresolved")
+        );
         assert!(
             upsert_row
                 .get("touched_at")
@@ -706,7 +822,10 @@ fn main() do
 end
 "#;
         let output = compile_and_run_mesh(source);
-        assert_eq!(output, "insert_or_update_expr: no conflict targets provided\n");
+        assert_eq!(
+            output,
+            "insert_or_update_expr: no conflict targets provided\n"
+        );
     });
 }
 
@@ -773,7 +892,10 @@ fn e2e_m033_mesher_mutations() {
                 "SELECT COALESCE(assigned_to::text, '') AS assigned_to FROM issues WHERE id = $1::uuid",
                 &[&issue_id],
             );
-            assert_eq!(assigned_row.get("assigned_to").map(String::as_str), Some(user_id.as_str()));
+            assert_eq!(
+                assigned_row.get("assigned_to").map(String::as_str),
+                Some(user_id.as_str())
+            );
 
             let unassign_response = post_json(
                 &config,
@@ -788,7 +910,10 @@ fn e2e_m033_mesher_mutations() {
                 "SELECT COALESCE(assigned_to::text, '') AS assigned_to FROM issues WHERE id = $1::uuid",
                 &[&issue_id],
             );
-            assert_eq!(unassigned_row.get("assigned_to").map(String::as_str), Some(""));
+            assert_eq!(
+                unassigned_row.get("assigned_to").map(String::as_str),
+                Some("")
+            );
 
             let api_key_row = query_single_row(
                 MESHER_DATABASE_URL,
@@ -845,7 +970,10 @@ fn e2e_m033_mesher_mutations() {
                 "SELECT status, COALESCE(acknowledged_at::text, '') AS acknowledged_at, COALESCE(resolved_at::text, '') AS resolved_at FROM alerts WHERE id = $1::uuid",
                 &[&alert_id],
             );
-            assert_eq!(acknowledged_row.get("status").map(String::as_str), Some("acknowledged"));
+            assert_eq!(
+                acknowledged_row.get("status").map(String::as_str),
+                Some("acknowledged")
+            );
             assert!(
                 acknowledged_row
                     .get("acknowledged_at")
@@ -854,7 +982,10 @@ fn e2e_m033_mesher_mutations() {
                 "acknowledged_at was not set: {:?}",
                 acknowledged_row
             );
-            assert_eq!(acknowledged_row.get("resolved_at").map(String::as_str), Some(""));
+            assert_eq!(
+                acknowledged_row.get("resolved_at").map(String::as_str),
+                Some("")
+            );
 
             let resolve_response = post_json(
                 &config,
@@ -869,7 +1000,10 @@ fn e2e_m033_mesher_mutations() {
                 "SELECT status, COALESCE(acknowledged_at::text, '') AS acknowledged_at, COALESCE(resolved_at::text, '') AS resolved_at FROM alerts WHERE id = $1::uuid",
                 &[&alert_id],
             );
-            assert_eq!(resolved_row.get("status").map(String::as_str), Some("resolved"));
+            assert_eq!(
+                resolved_row.get("status").map(String::as_str),
+                Some("resolved")
+            );
             assert!(
                 resolved_row
                     .get("acknowledged_at")
@@ -901,7 +1035,9 @@ fn e2e_m033_mesher_mutations() {
                 &[&project_id],
             );
             assert_eq!(
-                project_after_retention.get("retention_days").map(String::as_str),
+                project_after_retention
+                    .get("retention_days")
+                    .map(String::as_str),
                 Some("30")
             );
             let sample_rate_before = project_after_retention
@@ -924,7 +1060,9 @@ fn e2e_m033_mesher_mutations() {
                 &[&project_id],
             );
             assert_eq!(
-                project_after_sample_rate.get("retention_days").map(String::as_str),
+                project_after_sample_rate
+                    .get("retention_days")
+                    .map(String::as_str),
                 Some("30")
             );
             let sample_rate_after = project_after_sample_rate
@@ -979,8 +1117,14 @@ fn e2e_m033_mesher_issue_upsert() {
                 &["M033 repeated issue"],
             );
             let issue_id = row_one.get("id").cloned().expect("issue id missing");
-            let last_seen_one = row_one.get("last_seen").cloned().expect("last_seen missing");
-            assert_eq!(row_one.get("status").map(String::as_str), Some("unresolved"));
+            let last_seen_one = row_one
+                .get("last_seen")
+                .cloned()
+                .expect("last_seen missing");
+            assert_eq!(
+                row_one.get("status").map(String::as_str),
+                Some("unresolved")
+            );
             assert_eq!(row_one.get("event_count").map(String::as_str), Some("1"));
 
             std::thread::sleep(Duration::from_secs(1));
@@ -999,11 +1143,23 @@ fn e2e_m033_mesher_issue_upsert() {
                 "SELECT id::text AS id, status, event_count::text AS event_count, last_seen::text AS last_seen FROM issues WHERE id = $1::uuid",
                 &[&issue_id],
             );
-            let last_seen_two = row_two.get("last_seen").cloned().expect("last_seen missing");
-            assert_eq!(row_two.get("id").map(String::as_str), Some(issue_id.as_str()));
-            assert_eq!(row_two.get("status").map(String::as_str), Some("unresolved"));
+            let last_seen_two = row_two
+                .get("last_seen")
+                .cloned()
+                .expect("last_seen missing");
+            assert_eq!(
+                row_two.get("id").map(String::as_str),
+                Some(issue_id.as_str())
+            );
+            assert_eq!(
+                row_two.get("status").map(String::as_str),
+                Some("unresolved")
+            );
             assert_eq!(row_two.get("event_count").map(String::as_str), Some("2"));
-            assert_ne!(last_seen_two, last_seen_one, "last_seen must advance on repeated ingest");
+            assert_ne!(
+                last_seen_two, last_seen_one,
+                "last_seen must advance on repeated ingest"
+            );
 
             let resolve_response = post_json(
                 &config,
@@ -1018,7 +1174,10 @@ fn e2e_m033_mesher_issue_upsert() {
                 "SELECT status FROM issues WHERE id = $1::uuid",
                 &[&issue_id],
             );
-            assert_eq!(resolved_row.get("status").map(String::as_str), Some("resolved"));
+            assert_eq!(
+                resolved_row.get("status").map(String::as_str),
+                Some("resolved")
+            );
 
             std::thread::sleep(Duration::from_secs(1));
 
@@ -1036,11 +1195,23 @@ fn e2e_m033_mesher_issue_upsert() {
                 "SELECT id::text AS id, status, event_count::text AS event_count, last_seen::text AS last_seen FROM issues WHERE id = $1::uuid",
                 &[&issue_id],
             );
-            let last_seen_three = row_three.get("last_seen").cloned().expect("last_seen missing");
-            assert_eq!(row_three.get("id").map(String::as_str), Some(issue_id.as_str()));
-            assert_eq!(row_three.get("status").map(String::as_str), Some("unresolved"));
+            let last_seen_three = row_three
+                .get("last_seen")
+                .cloned()
+                .expect("last_seen missing");
+            assert_eq!(
+                row_three.get("id").map(String::as_str),
+                Some(issue_id.as_str())
+            );
+            assert_eq!(
+                row_three.get("status").map(String::as_str),
+                Some("unresolved")
+            );
             assert_eq!(row_three.get("event_count").map(String::as_str), Some("3"));
-            assert_ne!(last_seen_three, last_seen_two, "last_seen must advance after resolve regression");
+            assert_ne!(
+                last_seen_three, last_seen_two,
+                "last_seen must advance after resolve regression"
+            );
 
             let event_count_row = query_single_row(
                 MESHER_DATABASE_URL,

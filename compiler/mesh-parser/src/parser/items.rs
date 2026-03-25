@@ -213,8 +213,7 @@ pub(crate) fn parse_from_import_decl(p: &mut Parser) {
             p.close(name, SyntaxKind::NAME);
 
             while p.eat(SyntaxKind::COMMA) {
-                if p.at(SyntaxKind::NEWLINE) || p.at(SyntaxKind::EOF) || p.at(SyntaxKind::R_PAREN)
-                {
+                if p.at(SyntaxKind::NEWLINE) || p.at(SyntaxKind::EOF) || p.at(SyntaxKind::R_PAREN) {
                     break;
                 }
                 let name = p.open();

@@ -773,7 +773,12 @@ impl<'a> Lowerer<'a> {
         }
     }
 
-    fn lowered_fn_symbol_name(&self, original_name: &str, base_name: &str, range: TextRange) -> String {
+    fn lowered_fn_symbol_name(
+        &self,
+        original_name: &str,
+        base_name: &str,
+        range: TextRange,
+    ) -> String {
         match self.specialization_ty_for_range(original_name, range) {
             Some(fun_ty)
                 if self
@@ -2373,6 +2378,11 @@ impl<'a> Lowerer<'a> {
             "mesh_query_select".to_string(),
             MirType::FnPtr(vec![MirType::Ptr, MirType::Ptr], Box::new(MirType::Ptr)),
         );
+        // mesh_query_select_exprs(q: ptr, exprs: ptr) -> ptr
+        self.known_functions.insert(
+            "mesh_query_select_exprs".to_string(),
+            MirType::FnPtr(vec![MirType::Ptr, MirType::Ptr], Box::new(MirType::Ptr)),
+        );
         // mesh_query_order_by(q: ptr, field: ptr, direction: ptr) -> ptr
         self.known_functions.insert(
             "mesh_query_order_by".to_string(),
@@ -3103,7 +3113,8 @@ impl<'a> Lowerer<'a> {
                     let is_closure = matches!(param_ty, Ty::Fun(..));
                     let mut mir_ty = resolve_type(param_ty, self.registry, is_closure);
                     if mir_ty == MirType::Unit && matches!(param_ty, Ty::Var(_)) {
-                        if let Some(recovered) = self.resolve_param_from_usage(original_name, param_idx)
+                        if let Some(recovered) =
+                            self.resolve_param_from_usage(original_name, param_idx)
                         {
                             mir_ty = recovered;
                         }
@@ -9074,7 +9085,11 @@ impl<'a> Lowerer<'a> {
                         let field = fa.field().map(|t| t.text().to_string()).unwrap_or_default();
                         if func_names.contains(&field) {
                             let ty = self.resolve_range(fa.syntax().text_range());
-                            let lowered_name = self.lowered_fn_symbol_name(&field, &field, fa.syntax().text_range());
+                            let lowered_name = self.lowered_fn_symbol_name(
+                                &field,
+                                &field,
+                                fa.syntax().text_range(),
+                            );
                             return MirExpr::Var(lowered_name, ty);
                         }
                     }
@@ -13419,6 +13434,7 @@ fn map_builtin_name(name: &str) -> String {
         "expr_coalesce" => "mesh_expr_coalesce".to_string(),
         "expr_excluded" => "mesh_expr_excluded".to_string(),
         "expr_alias" => "mesh_expr_alias".to_string(),
+        "expr_label" => "mesh_expr_alias".to_string(),
         // ── Phase 98: Query Builder ─────────────────────────────────────
         "query_from" => "mesh_query_from".to_string(),
         "query_where" => "mesh_query_where".to_string(),
@@ -13430,6 +13446,7 @@ fn map_builtin_name(name: &str) -> String {
         "query_where_between" => "mesh_query_where_between".to_string(),
         "query_where_or" => "mesh_query_where_or".to_string(),
         "query_select" => "mesh_query_select".to_string(),
+        "query_select_exprs" => "mesh_query_select_exprs".to_string(),
         "query_order_by" => "mesh_query_order_by".to_string(),
         "query_limit" => "mesh_query_limit".to_string(),
         "query_offset" => "mesh_query_offset".to_string(),
@@ -14390,7 +14407,8 @@ mod tests {
         let typeck = mesh_typeck::check(&parse);
         let empty_pub_fns = HashSet::new();
         // Ignore type errors for MIR lowering tests -- we test lowering, not typeck.
-        lower_to_mir(&parse, &typeck, "", &empty_pub_fns, &HashMap::new()).expect("MIR lowering failed")
+        lower_to_mir(&parse, &typeck, "", &empty_pub_fns, &HashMap::new())
+            .expect("MIR lowering failed")
     }
 
     #[test]
@@ -15007,7 +15025,8 @@ fn main() do bar(42) end
         // that lowering a deeply nested call chain doesn't crash -- the depth
         // counter prevents stack overflow.
         let empty_pub_fns = HashSet::new();
-        let _mir = lower_to_mir(&parse, &typeck, "", &empty_pub_fns, &HashMap::new()).expect("MIR lowering failed");
+        let _mir = lower_to_mir(&parse, &typeck, "", &empty_pub_fns, &HashMap::new())
+            .expect("MIR lowering failed");
     }
 
     // ── End-to-end trait codegen integration tests (19-04) ────────────
@@ -16415,7 +16434,8 @@ end
         );
         // Should also lower to MIR without failure.
         let empty_pub_fns = HashSet::new();
-        let mir = lower_to_mir(&parse, &typeck, "", &empty_pub_fns, &HashMap::new()).expect("MIR lowering failed");
+        let mir = lower_to_mir(&parse, &typeck, "", &empty_pub_fns, &HashMap::new())
+            .expect("MIR lowering failed");
         assert!(
             mir.functions
                 .iter()

@@ -202,8 +202,7 @@ fn walk_source_file(node: &SyntaxNode) -> FormatIR {
         for (kind, item) in items {
             if let Some(prev) = prev_kind {
                 parts.push(ir::hardline());
-                if !(prev == SourceFileItemKind::Import && kind == SourceFileItemKind::Import)
-                {
+                if !(prev == SourceFileItemKind::Import && kind == SourceFileItemKind::Import) {
                     parts.push(ir::hardline());
                 }
             }
@@ -1059,10 +1058,7 @@ fn walk_child_spec_def(node: &SyntaxNode) -> FormatIR {
     }
 
     let header = ir::text(&lines[0]);
-    let end_line = lines
-        .last()
-        .cloned()
-        .unwrap_or_else(|| "end".to_string());
+    let end_line = lines.last().cloned().unwrap_or_else(|| "end".to_string());
     let body_lines = if lines.len() > 2 {
         lines[1..lines.len() - 1].to_vec()
     } else {
@@ -1467,9 +1463,9 @@ fn walk_path(node: &SyntaxNode) -> FormatIR {
 
 fn walk_import_list(node: &SyntaxNode) -> FormatIR {
     // Check whether this import list is wrapped in parens.
-    let has_parens = node.children_with_tokens().any(|child| {
-        matches!(child, NodeOrToken::Token(ref tok) if tok.kind() == SyntaxKind::L_PAREN)
-    });
+    let has_parens = node.children_with_tokens().any(
+        |child| matches!(child, NodeOrToken::Token(ref tok) if tok.kind() == SyntaxKind::L_PAREN),
+    );
 
     if !has_parens {
         // Non-parenthesized: inline formatting (e.g. "sqrt, pow")
@@ -2436,7 +2432,10 @@ mod tests {
     #[test]
     fn top_level_comment_block_stays_compact_before_imports() {
         let result = fmt("# one\n# two\nfrom Foo import bar\nfrom Baz import qux");
-        assert_eq!(result, "# one\n# two\n\nfrom Foo import bar\nfrom Baz import qux\n");
+        assert_eq!(
+            result,
+            "# one\n# two\n\nfrom Foo import bar\nfrom Baz import qux\n"
+        );
     }
 
     #[test]
@@ -2488,9 +2487,7 @@ mod tests {
             "from Api.Router import (\n  build_router,\n  health_router\n)\n"
         );
 
-        let qualified_impl = fmt(
-            "impl Foo.Bar for Baz.Qux do\nfn run(self) do\nself\nend\nend",
-        );
+        let qualified_impl = fmt("impl Foo.Bar for Baz.Qux do\nfn run(self) do\nself\nend\nend");
         assert_eq!(
             qualified_impl,
             "impl Foo.Bar for Baz.Qux do\n  fn run(self) do\n    self\n  end\nend\n"
@@ -2518,7 +2515,10 @@ mod tests {
     #[test]
     fn schema_option_table_keeps_space_before_string_literal() {
         let result = fmt("pub struct Person do\ntable \"people\"\nend deriving(Schema)");
-        assert_eq!(result, "pub struct Person do\n  table \"people\"\nend deriving(Schema)\n");
+        assert_eq!(
+            result,
+            "pub struct Person do\n  table \"people\"\nend deriving(Schema)\n"
+        );
     }
 
     #[test]
@@ -2772,8 +2772,7 @@ mod tests {
     fn from_import_paren_single_line() {
         let result = fmt("from Math import (sqrt, pow)");
         assert_eq!(
-            result,
-            "from Math import (\n  sqrt,\n  pow\n)\n",
+            result, "from Math import (\n  sqrt,\n  pow\n)\n",
             "Parenthesized imports should format with one name per indented line"
         );
     }
@@ -2782,8 +2781,7 @@ mod tests {
     fn from_import_paren_multiline() {
         let result = fmt("from Math import (\n  sqrt,\n  pow\n)");
         assert_eq!(
-            result,
-            "from Math import (\n  sqrt,\n  pow\n)\n",
+            result, "from Math import (\n  sqrt,\n  pow\n)\n",
             "Multiline parenthesized imports should preserve structure"
         );
     }
@@ -2792,8 +2790,7 @@ mod tests {
     fn from_import_paren_trailing_comma() {
         let result = fmt("from Math import (\n  sqrt,\n  pow,\n)");
         assert_eq!(
-            result,
-            "from Math import (\n  sqrt,\n  pow\n)\n",
+            result, "from Math import (\n  sqrt,\n  pow\n)\n",
             "Trailing comma in parenthesized imports should be cleaned up"
         );
     }

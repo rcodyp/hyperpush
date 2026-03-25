@@ -2,76 +2,70 @@
 id: T01
 parent: S01
 milestone: M033
-provides:
-  - Partial neutral SQL expression runtime scaffolding; compiler/runtime integration and e2e coverage are still unfinished
 key_files:
-  - compiler/mesh-rt/src/db/expr.rs
   - compiler/mesh-rt/src/db/query.rs
-  - compiler/mesh-rt/src/db/mod.rs
+  - compiler/mesh-rt/src/db/repo.rs
   - compiler/mesh-rt/src/lib.rs
-  - .gsd/milestones/M033/slices/S01/S01-PLAN.md
+  - compiler/mesh-typeck/src/infer.rs
+  - compiler/mesh-codegen/src/mir/lower.rs
+  - compiler/mesh-codegen/src/codegen/intrinsics.rs
+  - compiler/meshc/tests/e2e_m033_s01.rs
+  - .gsd/KNOWLEDGE.md
 key_decisions:
-  - Use a dedicated Box-backed SqlExpr tree with local placeholder numbering so outer Query/Repo serializers can renumber fragments safely later
-patterns_established:
-  - Expression fragments should serialize with per-fragment $1..$N numbering; the surrounding SQL builder is responsible for final placeholder renumbering
-observability_surfaces:
-  - none yet; the planned e2e surface in compiler/meshc/tests/e2e_m033_s01.rs was not created before the context wrap-up
-duration: 1h
-verification_result: failed
-completed_at: 2026-03-24 14:39 EDT
+  - Represent structured SELECT items as internal `EXPR:` query slots plus ordered `select_params` so placeholder numbering stays stable without exposing `RAW:` to Mesh code.
+  - Expose `Expr.label(...)` as the Mesh-callable aliasing surface for now, while still lowering to `mesh_expr_alias`, because `Expr.alias(...)` currently collides with keyword parsing after module qualification.
+  - Make the M033/S01 compiler e2e helper rebuild `mesh-rt` once before temp-project compilation so new runtime ABI symbols are present in `target/debug/libmesh_rt.a` during Mesh binary linking.
+duration: ""
+verification_result: mixed
+completed_at: 2026-03-25T06:30:01.051Z
 blocker_discovered: false
 ---
 
-# T01: Ship the neutral expression contract through compiler and runtime
+# T01: Added Query.select_exprs with compiler/runtime wiring and expr select e2e coverage
 
-**Started the neutral SQL expression runtime skeleton and added the slice’s explicit failure-path verification command, but T01 is still incomplete.**
+**Added Query.select_exprs with compiler/runtime wiring and expr select e2e coverage**
 
 ## What Happened
 
-I completed the pre-flight artifact fix in `.gsd/milestones/M033/slices/S01/S01-PLAN.md` by adding an explicit `expr_error_` verification command so the slice has a named diagnostic/failure-path gate.
+I verified the existing M033/S01 runtime/compiler work first and found that the neutral expression builder plus expression-aware write paths were already present, but the portable SELECT side of the contract was still missing from the Query surface. I added a new `Query.select_exprs` runtime entrypoint in `compiler/mesh-rt/src/db/query.rs`, encoded structured SELECT items as internal `EXPR:` slots plus ordered `select_params`, and threaded those parameters through `compiler/mesh-rt/src/db/repo.rs` so SELECT placeholders are renumbered before WHERE placeholders without exposing `RAW:` to Mesh code. I kept the old pure SQL-builder helper shape for the existing repo tests and added a new select-placeholder-order unit proof.
 
-On the implementation side, I added `compiler/mesh-rt/src/db/expr.rs` with a dedicated `SqlExpr` tree plus portable serializer support for column refs, parameter values, `NULL`, function calls, arithmetic/comparison, `CASE`, `COALESCE`, `EXCLUDED.<field>`, and aliases. I also registered the new runtime module in `compiler/mesh-rt/src/db/mod.rs` and exported the expression builders from `compiler/mesh-rt/src/lib.rs`.
+I wired the new surface through the compiler by extending `compiler/mesh-typeck/src/infer.rs`, `compiler/mesh-codegen/src/mir/lower.rs`, `compiler/mesh-codegen/src/codegen/intrinsics.rs`, and the runtime exports in `compiler/mesh-rt/src/lib.rs`. While exercising the new API from Mesh source, I hit a real parser-facing issue: `Expr.alias(...)` is not callable after `Expr.` because `alias` is tokenized as a keyword in this path. Rather than widen scope into parser surgery, I exposed `Expr.label(...)` as a callable synonym that lowers to the same `mesh_expr_alias` runtime intrinsic and used that in the new e2e proof.
 
-I started the Query-side plumbing in `compiler/mesh-rt/src/db/query.rs` by extending the internal query layout with a `select_params` slot so expression-valued `SELECT` clauses can eventually carry their own parameters without colliding with WHERE/HAVING placeholders.
+I then extended `compiler/meshc/tests/e2e_m033_s01.rs` with a dedicated `e2e_m033_expr_select_executes` proof covering expression-valued SELECT, aliasing, coalesce/case serialization, and SELECT-vs-WHERE placeholder ordering. While getting that proof green, the temp-project linker exposed another harness-level issue: newly added runtime ABI symbols can link against a stale `target/debug/libmesh_rt.a`. I fixed that by having the file-local `compile_and_run_mesh(...)` helper rebuild `mesh-rt` once before invoking `meshc`, which keeps the compiler e2e contract truthful when S01 adds new runtime exports.
 
-I stopped there because the context-budget warning hit mid-task. The unfinished parts are still the main body of T01: Query/Repo expression entrypoints, type inference wiring, MIR/intrinsic wiring, and `compiler/meshc/tests/e2e_m033_s01.rs`.
+The focused T01 contract is now implemented and green: Mesh code can build neutral expression trees for SELECT, SET, and ON CONFLICT update work without `RAW:` or `Repo.query_raw`, and the expr-specific e2e coverage now proves all three families. The later slice-wide Mesher acceptance checks still surfaced HTTP 429 rate-limiter behavior on `/api/v1/events`, which is outside T01’s focused expression-core work and is recorded below as a known issue rather than as a plan-invalidating blocker.
 
 ## Verification
 
-I did not run the task or slice verification commands before wrap-up. The repo was left in a coherent partial state by reverting the incomplete `mesh_query_select_expr` / `mesh_query_where_expr` / `mesh_repo_*_expr` export additions from `compiler/mesh-rt/src/lib.rs` after the context warning arrived.
+Task-level verification passed with the new focused proofs: `cargo test -p meshc --test e2e_m033_s01 expr_ -- --nocapture` passed with `e2e_m033_expr_select_executes`, `e2e_m033_expr_repo_executes`, and both `expr_error_*` checks green; `cargo test -p mesh-rt db::repo::tests::test_select_expr_sql_renumbers_select_params_before_where_params -- --nocapture` passed to prove SQL placeholder stability in the runtime builder; and `cargo run -q -p meshc -- build mesher` passed after the compiler/runtime wiring changes.
+
+I also ran the broader slice acceptance target `cargo test -p meshc --test e2e_m033_s01 -- --nocapture` to assess slice status under recovery. That broader suite failed only in the later Mesher mutation/upsert acceptance tests because `/api/v1/events` returned HTTP 429 rate-limit responses; the expr-focused proofs and both `expr_error_*` checks inside the same run passed.
 
 ## Verification Evidence
 
-No verification commands were run before the context wrap-up.
+| # | Command | Exit Code | Verdict | Duration |
+|---|---------|-----------|---------|----------|
+| 1 | `cargo test -p meshc --test e2e_m033_s01 expr_ -- --nocapture` | 0 | ✅ pass | 128510ms |
+| 2 | `cargo test -p mesh-rt db::repo::tests::test_select_expr_sql_renumbers_select_params_before_where_params -- --nocapture` | 0 | ✅ pass | 1370ms |
+| 3 | `cargo run -q -p meshc -- build mesher` | 0 | ✅ pass | 3000ms |
+| 4 | `cargo test -p meshc --test e2e_m033_s01 -- --nocapture` | 101 | ❌ fail | 178030ms |
 
-## Diagnostics
-
-Resume from these files first:
-
-1. `compiler/mesh-rt/src/db/expr.rs` — expression tree/serializer already exists and is the intended core
-2. `compiler/mesh-rt/src/db/query.rs` — `select_params` slot is already added; next work should add `mesh_query_select_expr` and `mesh_query_where_expr`
-3. `compiler/mesh-rt/src/db/repo.rs` — add `update_where_expr` / `insert_or_update_expr` and any supporting SQL builders
-4. `compiler/mesh-typeck/src/infer.rs`, `compiler/mesh-codegen/src/mir/lower.rs`, `compiler/mesh-codegen/src/codegen/intrinsics.rs` — add the `Expr` module surface plus the new Query/Repo entrypoints
-5. `compiler/meshc/tests/e2e_m033_s01.rs` — create the named `e2e_m033_expr_*` and `expr_error_*` proofs that the slice plan now expects
-
-The safest next move is to finish the runtime/compiler wiring before touching Mesher code. Do not assume `expr.rs` is wired through yet; it is only the runtime-side core.
 
 ## Deviations
 
-I wrapped the unit early because of the explicit context-budget warning. That left T01 incomplete instead of forcing through unverified compiler/runtime changes.
+Added a Mesh-callable `Expr.label(...)` synonym that maps to the same runtime alias intrinsic because `Expr.alias(...)` currently collides with keyword parsing in Mesh source. Also updated the `e2e_m033_s01` temp-project compile helper to rebuild `mesh-rt` once before invoking `meshc`, because new runtime ABI symbols can otherwise link against a stale `libmesh_rt.a` during compiler e2e runs.
 
 ## Known Issues
 
-- `compiler/mesh-rt/src/db/query.rs` contains the new `select_params` slot, but the expression-aware Query functions were not implemented yet.
-- `compiler/mesh-rt/src/db/repo.rs` still has only the legacy Map<String,String>-based write surface.
-- `compiler/mesh-typeck/src/infer.rs`, `compiler/mesh-codegen/src/mir/lower.rs`, and `compiler/mesh-codegen/src/codegen/intrinsics.rs` were not updated.
-- `compiler/meshc/tests/e2e_m033_s01.rs` does not exist yet.
-- T01 verification was not run.
+The broader slice acceptance target `cargo test -p meshc --test e2e_m033_s01 -- --nocapture` is still red in `e2e_m033_mesher_mutations` and `e2e_m033_mesher_issue_upsert`: both fail because `/api/v1/events` returns HTTP 429 from Mesher’s rate limiter. That drift is outside the focused T01 expression-core contract, but it means the full slice gate and `scripts/verify-m033-s01.sh` were not green at task close.
 
 ## Files Created/Modified
 
-- `compiler/mesh-rt/src/db/expr.rs` — added the new neutral expression tree plus serializer unit tests
-- `compiler/mesh-rt/src/db/query.rs` — added a `select_params` query slot in preparation for expression-valued SELECT support
-- `compiler/mesh-rt/src/db/mod.rs` — registered the new `expr` runtime module
-- `compiler/mesh-rt/src/lib.rs` — exported the new expression builder runtime functions and reverted incomplete Query/Repo expression exports
-- `.gsd/milestones/M033/slices/S01/S01-PLAN.md` — added an explicit `expr_error_` verification command for the slice failure-path gate
+- `compiler/mesh-rt/src/db/query.rs`
+- `compiler/mesh-rt/src/db/repo.rs`
+- `compiler/mesh-rt/src/lib.rs`
+- `compiler/mesh-typeck/src/infer.rs`
+- `compiler/mesh-codegen/src/mir/lower.rs`
+- `compiler/mesh-codegen/src/codegen/intrinsics.rs`
+- `compiler/meshc/tests/e2e_m033_s01.rs`
+- `.gsd/KNOWLEDGE.md`

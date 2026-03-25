@@ -13,7 +13,10 @@ pub enum SqlExpr {
     Column(String),
     Value(String),
     Null,
-    Call { name: String, args: Vec<SqlExpr> },
+    Call {
+        name: String,
+        args: Vec<SqlExpr>,
+    },
     Binary {
         op: &'static str,
         lhs: Box<SqlExpr>,

@@ -86,9 +86,9 @@ pub use db::changeset::{
 };
 pub use db::expr::{
     mesh_expr_add, mesh_expr_alias, mesh_expr_call, mesh_expr_case, mesh_expr_coalesce,
-    mesh_expr_column, mesh_expr_div, mesh_expr_eq, mesh_expr_excluded, mesh_expr_gt,
-    mesh_expr_gte, mesh_expr_lt, mesh_expr_lte, mesh_expr_mul, mesh_expr_neq, mesh_expr_null,
-    mesh_expr_sub, mesh_expr_value,
+    mesh_expr_column, mesh_expr_div, mesh_expr_eq, mesh_expr_excluded, mesh_expr_gt, mesh_expr_gte,
+    mesh_expr_lt, mesh_expr_lte, mesh_expr_mul, mesh_expr_neq, mesh_expr_null, mesh_expr_sub,
+    mesh_expr_value,
 };
 pub use db::json::{mesh_json_get, mesh_json_get_nested};
 pub use db::migration::{
@@ -108,9 +108,9 @@ pub use db::query::{
     mesh_query_fragment, mesh_query_from, mesh_query_group_by, mesh_query_group_by_raw,
     mesh_query_having, mesh_query_join, mesh_query_join_as, mesh_query_limit, mesh_query_offset,
     mesh_query_order_by, mesh_query_order_by_raw, mesh_query_select, mesh_query_select_avg,
-    mesh_query_select_count, mesh_query_select_count_field, mesh_query_select_max,
-    mesh_query_select_min, mesh_query_select_raw, mesh_query_select_sum, mesh_query_where,
-    mesh_query_where_between, mesh_query_where_in, mesh_query_where_not_in,
+    mesh_query_select_count, mesh_query_select_count_field, mesh_query_select_exprs,
+    mesh_query_select_max, mesh_query_select_min, mesh_query_select_raw, mesh_query_select_sum,
+    mesh_query_where, mesh_query_where_between, mesh_query_where_in, mesh_query_where_not_in,
     mesh_query_where_not_null, mesh_query_where_null, mesh_query_where_op, mesh_query_where_or,
     mesh_query_where_raw, mesh_query_where_sub,
 };

@@ -147,10 +147,9 @@ impl LspSession {
     }
 
     fn recv_response(&mut self, id: u64, method: &str) -> Value {
-        let response = self.recv_matching(
-            &format!("response for {}", method),
-            |message| message.get("id").and_then(Value::as_u64) == Some(id),
-        );
+        let response = self.recv_matching(&format!("response for {}", method), |message| {
+            message.get("id").and_then(Value::as_u64) == Some(id)
+        });
 
         if let Some(error) = response.get("error") {
             panic!(
@@ -189,7 +188,10 @@ impl LspSession {
         F: FnMut(&Value) -> bool,
     {
         if let Some(index) = self.pending.iter().position(|message| predicate(message)) {
-            return self.pending.remove(index).expect("pending index should exist");
+            return self
+                .pending
+                .remove(index)
+                .expect("pending index should exist");
         }
 
         let deadline = Instant::now() + MESSAGE_TIMEOUT;
@@ -236,7 +238,8 @@ impl LspSession {
         let message = self.recv_matching(
             &format!("publishDiagnostics for {} during {}", uri, phase),
             |value| {
-                value.get("method").and_then(Value::as_str) == Some("textDocument/publishDiagnostics")
+                value.get("method").and_then(Value::as_str)
+                    == Some("textDocument/publishDiagnostics")
                     && value
                         .get("params")
                         .and_then(|params| params.get("uri"))
@@ -348,7 +351,9 @@ fn lsp_json_rpc_reference_backend_flow() {
         .as_str()
         .unwrap_or_default();
     assert!(
-        hover_contents.contains("create_job_response") || hover_contents.contains("Job") || hover_contents.contains("String"),
+        hover_contents.contains("create_job_response")
+            || hover_contents.contains("Job")
+            || hover_contents.contains("String"),
         "hover should return function type information for backend code, got: {hover:?}"
     );
 
@@ -407,7 +412,8 @@ fn lsp_json_rpc_reference_backend_flow() {
             "contentChanges": [{ "text": unformatted_health }],
         }),
     );
-    let health_change_diagnostics = session.wait_for_diagnostics(&health_uri, "health unformatted didChange");
+    let health_change_diagnostics =
+        session.wait_for_diagnostics(&health_uri, "health unformatted didChange");
     assert!(
         health_change_diagnostics.is_empty(),
         "unformatted backend text should still type-check cleanly before formatting, got diagnostics: {:?}",

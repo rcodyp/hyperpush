@@ -25,6 +25,7 @@
 //! | 13   | 104    | select_params   | *mut u8 (List<String>) |
 
 use crate::collections::list::{mesh_list_append, mesh_list_get, mesh_list_length, mesh_list_new};
+use crate::db::expr::{clone_expr, serialize_expr};
 use crate::gc::mesh_gc_alloc_actor;
 use crate::string::{mesh_string_new, MeshString};
 
@@ -386,6 +387,36 @@ pub extern "C" fn mesh_query_select(q: *mut u8, fields: *mut u8) -> *mut u8 {
         let new_q = clone_query(q);
         query_set(new_q, SLOT_SELECT, fields);
         query_set(new_q, SLOT_SELECT_PARAMS, mesh_list_new());
+        new_q
+    }
+}
+
+/// Append structured expression-valued SELECT items.
+///
+/// `Query.select_exprs(q, [Expr.alias(Expr.coalesce([...]), "label")])`
+///   -> new Query with portable expression SELECT items and ordered params.
+#[no_mangle]
+pub extern "C" fn mesh_query_select_exprs(q: *mut u8, exprs: *mut u8) -> *mut u8 {
+    unsafe {
+        let new_q = clone_query(q);
+        let mut select_fields = query_get(new_q, SLOT_SELECT);
+        let mut select_params = query_get(new_q, SLOT_SELECT_PARAMS);
+        let expr_count = mesh_list_length(exprs);
+
+        for idx in 0..expr_count {
+            let expr_ptr = mesh_list_get(exprs, idx) as *mut u8;
+            let expr = clone_expr(expr_ptr);
+            let (expr_sql, expr_param_values) = serialize_expr(&expr);
+            let encoded_expr = rust_str_to_mesh(&format!("EXPR:{expr_sql}"));
+            select_fields = mesh_list_append(select_fields, encoded_expr as u64);
+            for value in expr_param_values {
+                let param_ptr = rust_str_to_mesh(&value);
+                select_params = mesh_list_append(select_params, param_ptr as u64);
+            }
+        }
+
+        query_set(new_q, SLOT_SELECT, select_fields);
+        query_set(new_q, SLOT_SELECT_PARAMS, select_params);
         new_q
     }
 }

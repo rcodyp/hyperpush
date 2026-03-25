@@ -24,10 +24,10 @@
 
 use crate::collections::list::{mesh_list_append, mesh_list_get, mesh_list_length, mesh_list_new};
 use crate::collections::map::{mesh_map_get, mesh_map_put};
-use crate::db::expr::{clone_expr, serialize_expr, SqlExpr};
 use crate::db::changeset::{
     add_constraint_error_to_changeset, map_constraint_error, SLOT_CHANGES, SLOT_VALID,
 };
+use crate::db::expr::{clone_expr, serialize_expr, SqlExpr};
 use crate::db::pg::{mesh_pg_begin, mesh_pg_commit, mesh_pg_rollback};
 use crate::db::pool::{mesh_pool_checkin, mesh_pool_checkout, mesh_pool_execute, mesh_pool_query};
 use crate::io::{alloc_result, MeshResult};
@@ -103,6 +103,7 @@ const SLOT_HAVING_CLAUSES: usize = 9;
 const SLOT_HAVING_PARAMS: usize = 10;
 const SLOT_FRAGMENT_PARTS: usize = 11;
 const SLOT_FRAGMENT_PARAMS: usize = 12;
+const SLOT_SELECT_PARAMS: usize = 13;
 
 unsafe fn query_get(q: *mut u8, slot: usize) -> *mut u8 {
     *(q.add(slot * 8) as *mut *mut u8)
@@ -172,6 +173,7 @@ unsafe fn query_to_select_sql(query: *mut u8) -> (String, Vec<String>) {
     let source_ptr = query_get(query, SLOT_SOURCE);
     let source = mesh_str_ref(source_ptr);
     let select_fields = list_to_strings(query_get(query, SLOT_SELECT));
+    let select_params = list_to_strings(query_get(query, SLOT_SELECT_PARAMS));
     let where_clauses = list_to_strings(query_get(query, SLOT_WHERE_CLAUSES));
     let where_params = list_to_strings(query_get(query, SLOT_WHERE_PARAMS));
     let order_fields = list_to_strings(query_get(query, SLOT_ORDER));
@@ -184,9 +186,10 @@ unsafe fn query_to_select_sql(query: *mut u8) -> (String, Vec<String>) {
     let fragment_parts = list_to_strings(query_get(query, SLOT_FRAGMENT_PARTS));
     let fragment_params = list_to_strings(query_get(query, SLOT_FRAGMENT_PARAMS));
 
-    build_select_sql_from_parts(
+    build_select_sql_from_parts_with_select_params(
         source,
         &select_fields,
+        &select_params,
         &where_clauses,
         &where_params,
         &order_fields,
@@ -203,9 +206,44 @@ unsafe fn query_to_select_sql(query: *mut u8) -> (String, Vec<String>) {
 
 /// Pure Rust SQL builder from decomposed Query parts.
 /// Separated for testability without GC.
+#[allow(dead_code)]
 fn build_select_sql_from_parts(
     source: &str,
     select_fields: &[String],
+    where_clauses: &[String],
+    where_params: &[String],
+    order_fields: &[String],
+    limit_val: i64,
+    offset_val: i64,
+    join_clauses: &[String],
+    group_fields: &[String],
+    having_clauses: &[String],
+    having_params: &[String],
+    fragment_parts: &[String],
+    fragment_params: &[String],
+) -> (String, Vec<String>) {
+    build_select_sql_from_parts_with_select_params(
+        source,
+        select_fields,
+        &[],
+        where_clauses,
+        where_params,
+        order_fields,
+        limit_val,
+        offset_val,
+        join_clauses,
+        group_fields,
+        having_clauses,
+        having_params,
+        fragment_parts,
+        fragment_params,
+    )
+}
+
+fn build_select_sql_from_parts_with_select_params(
+    source: &str,
+    select_fields: &[String],
+    select_params: &[String],
     where_clauses: &[String],
     where_params: &[String],
     order_fields: &[String],
@@ -227,16 +265,27 @@ fn build_select_sql_from_parts(
     if select_fields.is_empty() {
         sql.push('*');
     } else {
-        let cols: Vec<String> = select_fields
-            .iter()
-            .map(|f| {
-                if let Some(raw) = f.strip_prefix("RAW:") {
-                    raw.to_string() // emit verbatim, no quoting
-                } else {
-                    quote_ident(f)
+        let mut cols = Vec::with_capacity(select_fields.len());
+        let mut select_param_idx = 0usize;
+        for field in select_fields {
+            if let Some(raw) = field.strip_prefix("RAW:") {
+                cols.push(raw.to_string());
+                continue;
+            }
+            if let Some(expr_sql) = field.strip_prefix("EXPR:") {
+                let (renumbered, consumed) = renumber_placeholders(expr_sql, param_idx);
+                cols.push(renumbered);
+                for _ in 0..consumed {
+                    if select_param_idx < select_params.len() {
+                        params.push(select_params[select_param_idx].clone());
+                        select_param_idx += 1;
+                    }
+                    param_idx += 1;
                 }
-            })
-            .collect();
+                continue;
+            }
+            cols.push(quote_ident(field));
+        }
         sql.push_str(&cols.join(", "));
     }
 
@@ -875,6 +924,7 @@ pub extern "C" fn mesh_repo_one(pool: u64, query: *mut u8) -> *mut u8 {
         let source_ptr = query_get(query, SLOT_SOURCE);
         let source = mesh_str_ref(source_ptr);
         let select_fields = list_to_strings(query_get(query, SLOT_SELECT));
+        let select_params = list_to_strings(query_get(query, SLOT_SELECT_PARAMS));
         let where_clauses = list_to_strings(query_get(query, SLOT_WHERE_CLAUSES));
         let where_params = list_to_strings(query_get(query, SLOT_WHERE_PARAMS));
         let order_fields = list_to_strings(query_get(query, SLOT_ORDER));
@@ -886,9 +936,10 @@ pub extern "C" fn mesh_repo_one(pool: u64, query: *mut u8) -> *mut u8 {
         let fragment_parts = list_to_strings(query_get(query, SLOT_FRAGMENT_PARTS));
         let fragment_params = list_to_strings(query_get(query, SLOT_FRAGMENT_PARAMS));
 
-        let (sql, params) = build_select_sql_from_parts(
+        let (sql, params) = build_select_sql_from_parts_with_select_params(
             source,
             &select_fields,
+            &select_params,
             &where_clauses,
             &where_params,
             &order_fields,
@@ -1130,7 +1181,11 @@ unsafe fn map_to_columns_and_exprs(map: *mut u8) -> (Vec<String>, Vec<SqlExpr>) 
     (columns, exprs)
 }
 
-fn build_set_expr_parts(columns: &[String], exprs: &[SqlExpr], start_idx: usize) -> (Vec<String>, Vec<String>, usize) {
+fn build_set_expr_parts(
+    columns: &[String],
+    exprs: &[SqlExpr],
+    start_idx: usize,
+) -> (Vec<String>, Vec<String>, usize) {
     let mut set_parts = Vec::with_capacity(columns.len());
     let mut params = Vec::new();
     let mut next_idx = start_idx;
@@ -3632,6 +3687,35 @@ mod tests {
             "SELECT * FROM \"issues\" WHERE \"status\" = $1 AND \"project_id\" IN (SELECT \"id\" FROM \"projects\" WHERE \"org_id\" = $2)"
         );
         assert_eq!(params, vec!["open", "org-123"]);
+    }
+
+    #[test]
+    fn test_select_expr_sql_renumbers_select_params_before_where_params() {
+        let (sql, params) = build_select_sql_from_parts_with_select_params(
+            "issues",
+            &[
+                "EXPR:COALESCE(\"nickname\", $1) AS \"nick\"".into(),
+                "EXPR:(\"event_count\" + $1) AS \"next_count\"".into(),
+            ],
+            &["fallback".into(), "2".into()],
+            &["id =".into()],
+            &["issue-123".into()],
+            &[],
+            -1,
+            -1,
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+            &[],
+        );
+
+        assert_eq!(
+            sql,
+            "SELECT COALESCE(\"nickname\", $1) AS \"nick\", (\"event_count\" + $2) AS \"next_count\" FROM \"issues\" WHERE \"id\" = $3"
+        );
+        assert_eq!(params, vec!["fallback", "2", "issue-123"]);
     }
 
     #[test]

@@ -34,7 +34,11 @@ pub struct AnalysisResult {
 /// analysis uses project-aware import resolution with open-document overlays so
 /// backend-shaped files behave like the real compiler path instead of isolated
 /// single-file snippets.
-pub fn analyze_document(uri: &str, source: &str, open_documents: &[(String, String)]) -> AnalysisResult {
+pub fn analyze_document(
+    uri: &str,
+    source: &str,
+    open_documents: &[(String, String)],
+) -> AnalysisResult {
     analyze_project_document(uri, source, open_documents)
         .unwrap_or_else(|| analyze_single_document(source))
 }
@@ -227,8 +231,8 @@ fn type_error_to_diagnostic(
     let range = type_error_span(error)?;
     let start_tree: usize = range.start().into();
     let end_tree: usize = range.end().into();
-    let start_offset = crate::definition::tree_to_source_offset(source, start_tree)
-        .unwrap_or(start_tree);
+    let start_offset =
+        crate::definition::tree_to_source_offset(source, start_tree).unwrap_or(start_tree);
     let end_offset = crate::definition::tree_to_source_offset(source, end_tree).unwrap_or(end_tree);
 
     let start = offset_to_position(source, start_offset);
@@ -322,7 +326,8 @@ fn analyze_project_document(
     let current_source = project.module_sources.get(current_idx)?.clone();
     let current_typeck = all_typeck.into_iter().nth(current_idx).flatten()?;
     let current_parse = mesh_parser::parse(&current_source);
-    let diagnostics = diagnostics_from_parse_and_typeck(&current_source, &current_parse, &current_typeck);
+    let diagnostics =
+        diagnostics_from_parse_and_typeck(&current_source, &current_parse, &current_typeck);
 
     Some(AnalysisResult {
         diagnostics,
@@ -504,8 +509,13 @@ fn to_pascal_case(segment: &str) -> String {
 
 fn discover_mesh_files(project_root: &Path) -> Result<Vec<PathBuf>, String> {
     let mut files = Vec::new();
-    discover_recursive(project_root, project_root, &mut files)
-        .map_err(|e| format!("Failed to walk directory '{}': {}", project_root.display(), e))?;
+    discover_recursive(project_root, project_root, &mut files).map_err(|e| {
+        format!(
+            "Failed to walk directory '{}': {}",
+            project_root.display(),
+            e
+        )
+    })?;
     files.sort();
     Ok(files)
 }
@@ -583,7 +593,9 @@ fn build_import_context(
     for item in tree.items() {
         let segments = match &item {
             Item::ImportDecl(import_decl) => import_decl.module_path().map(|path| path.segments()),
-            Item::FromImportDecl(from_import) => from_import.module_path().map(|path| path.segments()),
+            Item::FromImportDecl(from_import) => {
+                from_import.module_path().map(|path| path.segments())
+            }
             _ => None,
         };
 

@@ -430,8 +430,11 @@ pub(crate) fn build(
             })
         })
         .collect();
-    let inferred_fn_usage_types =
-        collect_inferred_fn_usage_types(&project.module_parses, &all_typeck, &inferred_export_names);
+    let inferred_fn_usage_types = collect_inferred_fn_usage_types(
+        &project.module_parses,
+        &all_typeck,
+        &inferred_export_names,
+    );
 
     // Lower ALL modules to MIR and merge into a single module for codegen
     let mut mir_modules = Vec::new();
@@ -531,7 +534,8 @@ fn collect_inferred_fn_usage_types(
                     if let Some(name_ref) = NameRef::cast(node.clone()) {
                         if let Some(name) = name_ref.text() {
                             if candidate_names.contains(&name) {
-                                if let Some(ty) = typeck.types.get(&name_ref.syntax().text_range()) {
+                                if let Some(ty) = typeck.types.get(&name_ref.syntax().text_range())
+                                {
                                     push_usage_type(&mut usage, &name, ty);
                                 }
                             }
@@ -552,7 +556,8 @@ fn collect_inferred_fn_usage_types(
                         if !typeck.qualified_modules.contains_key(&base_name) {
                             continue;
                         }
-                        let Some(field_name) = field_access.field().map(|t| t.text().to_string()) else {
+                        let Some(field_name) = field_access.field().map(|t| t.text().to_string())
+                        else {
                             continue;
                         };
                         if !candidate_names.contains(&field_name) {
