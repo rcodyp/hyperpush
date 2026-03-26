@@ -1,5 +1,5 @@
-use sqlx::PgPool;
 use chrono::{DateTime, Utc};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Debug, sqlx::FromRow)]
@@ -32,9 +32,13 @@ pub struct SearchResult {
 }
 
 /// Check whether a specific name+version already exists (for 409 duplicate detection).
-pub async fn version_exists(pool: &PgPool, package_name: &str, version: &str) -> Result<bool, sqlx::Error> {
+pub async fn version_exists(
+    pool: &PgPool,
+    package_name: &str,
+    version: &str,
+) -> Result<bool, sqlx::Error> {
     let row = sqlx::query_scalar::<_, i32>(
-        "SELECT 1 FROM versions WHERE package_name = $1 AND version = $2"
+        "SELECT 1 FROM versions WHERE package_name = $1 AND version = $2",
     )
     .bind(package_name)
     .bind(version)
@@ -107,7 +111,11 @@ pub async fn get_package(pool: &PgPool, name: &str) -> Result<Option<PackageRow>
 }
 
 /// Get version metadata (sha256, size, etc.).
-pub async fn get_version(pool: &PgPool, package_name: &str, version: &str) -> Result<Option<VersionRow>, sqlx::Error> {
+pub async fn get_version(
+    pool: &PgPool,
+    package_name: &str,
+    version: &str,
+) -> Result<Option<VersionRow>, sqlx::Error> {
     sqlx::query_as::<_, VersionRow>(
         "SELECT id, package_name, version, sha256, size_bytes, readme, published_at, download_count FROM versions WHERE package_name = $1 AND version = $2"
     )
@@ -118,7 +126,10 @@ pub async fn get_version(pool: &PgPool, package_name: &str, version: &str) -> Re
 }
 
 /// Get all versions for a package, ordered newest first.
-pub async fn list_versions(pool: &PgPool, package_name: &str) -> Result<Vec<VersionRow>, sqlx::Error> {
+pub async fn list_versions(
+    pool: &PgPool,
+    package_name: &str,
+) -> Result<Vec<VersionRow>, sqlx::Error> {
     sqlx::query_as::<_, VersionRow>(
         "SELECT id, package_name, version, sha256, size_bytes, readme, published_at, download_count FROM versions WHERE package_name = $1 ORDER BY published_at DESC"
     )
@@ -128,7 +139,11 @@ pub async fn list_versions(pool: &PgPool, package_name: &str) -> Result<Vec<Vers
 }
 
 /// List all packages, ordered by download_count DESC then updated_at DESC.
-pub async fn list_packages(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<PackageRow>, sqlx::Error> {
+pub async fn list_packages(
+    pool: &PgPool,
+    limit: i64,
+    offset: i64,
+) -> Result<Vec<PackageRow>, sqlx::Error> {
     sqlx::query_as::<_, PackageRow>(
         "SELECT name, owner_login, description, latest_version, download_count, updated_at FROM packages ORDER BY download_count DESC, updated_at DESC LIMIT $1 OFFSET $2"
     )
@@ -155,19 +170,25 @@ pub async fn search_packages(pool: &PgPool, query: &str) -> Result<Vec<SearchRes
 }
 
 /// Atomically increment download counter for both version and package.
-pub async fn increment_download(pool: &PgPool, package_name: &str, version: &str) -> Result<(), sqlx::Error> {
+pub async fn increment_download(
+    pool: &PgPool,
+    package_name: &str,
+    version: &str,
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
     sqlx::query(
         "UPDATE versions SET download_count = download_count + 1 WHERE package_name = $1 AND version = $2"
     )
     .bind(package_name)
     .bind(version)
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
-    sqlx::query(
-        "UPDATE packages SET download_count = download_count + 1 WHERE name = $1"
-    )
-    .bind(package_name)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE packages SET download_count = download_count + 1 WHERE name = $1")
+        .bind(package_name)
+        .execute(&mut *tx)
+        .await?;
+
+    tx.commit().await?;
     Ok(())
 }

@@ -8,6 +8,30 @@ use tar::Archive;
 
 use mesh_pkg::{LockedPackage, Lockfile, Manifest};
 
+const LOCKFILE_NAME: &str = "mesh.lock";
+
+fn dependency_declaration_snippet(name: &str, version: &str) -> String {
+    format!("\"{}\" = \"{}\"", name, version)
+}
+
+fn named_install_follow_up(name: &str, version: &str) -> String {
+    format!(
+        "Named install does not edit mesh.toml; add {} if you want to declare this dependency.",
+        dependency_declaration_snippet(name, version)
+    )
+}
+
+fn named_install_result_json(name: &str, version: &str) -> String {
+    serde_json::json!({
+        "status": "ok",
+        "name": name,
+        "version": version,
+        "lockfile": LOCKFILE_NAME,
+        "manifest_changed": false,
+    })
+    .to_string()
+}
+
 pub fn run(
     project_dir: &Path,
     package_name: Option<&str>,
@@ -26,7 +50,7 @@ fn install_all(project_dir: &Path, registry: &str, json_mode: bool) -> Result<()
     let manifest_path = project_dir.join("mesh.toml");
     let manifest = Manifest::from_file(&manifest_path)?;
 
-    let lock_path = project_dir.join("mesh.lock");
+    let lock_path = project_dir.join(LOCKFILE_NAME);
     let existing_lock = if lock_path.exists() {
         Some(Lockfile::read(&lock_path)?)
     } else {
@@ -119,16 +143,20 @@ fn install_all(project_dir: &Path, registry: &str, json_mode: bool) -> Result<()
         lockfile.write(&lock_path)?;
 
         if json_mode {
-            println!("{{\"status\": \"ok\", \"lockfile\": \"mesh.lock\"}}");
+            println!(
+                "{}",
+                serde_json::json!({"status": "ok", "lockfile": LOCKFILE_NAME})
+            );
         } else {
-            println!("{} Updated mesh.lock", "✓".green().bold());
+            println!("{} Updated {}", "✓".green().bold(), LOCKFILE_NAME);
         }
     }
 
     Ok(())
 }
 
-/// Install a single named package and add it to mesh.toml.
+/// Fetch and lock the latest release of a single named package.
+/// Named install does not edit mesh.toml; it only downloads the package and updates mesh.lock.
 fn install_named(
     project_dir: &Path,
     name: &str,
@@ -161,7 +189,7 @@ fn install_named(
     extract_tarball(&tarball_bytes, &install_dir)?;
 
     // Update mesh.lock
-    let lock_path = project_dir.join("mesh.lock");
+    let lock_path = project_dir.join(LOCKFILE_NAME);
     let mut packages = if lock_path.exists() {
         Lockfile::read(&lock_path)?.packages
     } else {
@@ -180,13 +208,11 @@ fn install_named(
     Lockfile::new(packages).write(&lock_path)?;
 
     if json_mode {
-        println!(
-            "{{\"status\": \"ok\", \"name\": \"{}\", \"version\": \"{}\"}}",
-            name, version
-        );
+        println!("{}", named_install_result_json(name, &version));
     } else {
         println!("{} Installed {}@{}", "✓".green().bold(), name, version);
-        println!("  Add to mesh.toml: {} = \"{}\"", name, version);
+        println!("  Updated {}", LOCKFILE_NAME);
+        println!("  {}", named_install_follow_up(name, &version));
     }
 
     Ok(())
@@ -286,4 +312,34 @@ fn extract_tarball(bytes: &[u8], dest: &Path) -> Result<(), String> {
     archive
         .unpack(dest)
         .map_err(|e| format!("Failed to extract package to {}: {}", dest.display(), e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{
+        dependency_declaration_snippet, named_install_follow_up, named_install_result_json,
+    };
+
+    #[test]
+    fn named_install_json_reports_lockfile_and_manifest_stability() {
+        let json: serde_json::Value =
+            serde_json::from_str(&named_install_result_json("acme/widget", "1.2.3"))
+                .expect("named install JSON should parse");
+
+        assert_eq!(json["status"], "ok");
+        assert_eq!(json["name"], "acme/widget");
+        assert_eq!(json["version"], "1.2.3");
+        assert_eq!(json["lockfile"], "mesh.lock");
+        assert_eq!(json["manifest_changed"], false);
+    }
+
+    #[test]
+    fn named_install_follow_up_quotes_scoped_dependency_keys() {
+        let declaration = dependency_declaration_snippet("acme/widget", "1.2.3");
+        let follow_up = named_install_follow_up("acme/widget", "1.2.3");
+
+        assert_eq!(declaration, "\"acme/widget\" = \"1.2.3\"");
+        assert!(follow_up.contains("does not edit mesh.toml"));
+        assert!(follow_up.contains(&declaration));
+    }
 }

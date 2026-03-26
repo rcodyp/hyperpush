@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use crate::{db, error::AppError, state::AppState};
 use axum::{
     body::to_bytes,
     extract::{Request, State},
     http::{HeaderMap, StatusCode},
 };
 use sha2::{Digest, Sha256};
-use crate::{db, error::AppError, state::AppState};
+use std::sync::Arc;
 
 pub async fn handler(
     State(state): State<Arc<AppState>>,
@@ -30,7 +30,8 @@ pub async fn handler(
     // 4. Namespace check: name must start with "{owner}/"
     if !name.starts_with(&format!("{}/", owner)) {
         return Err(AppError::Forbidden(format!(
-            "Package name must be scoped to your GitHub login: {}/...", owner
+            "Package name must be scoped to your GitHub login: {}/...",
+            owner
         )));
     }
 
@@ -68,16 +69,29 @@ pub async fn handler(
 
     // 9. Look up user UUID for published_by
     #[derive(sqlx::FromRow)]
-    struct UserIdRow { id: uuid::Uuid }
-    let user_row = sqlx::query_as::<_, UserIdRow>(
-        "SELECT id FROM users WHERE github_login = $1"
-    )
-    .bind(&owner)
-    .fetch_one(&state.pool)
-    .await
-    .map_err(|_| AppError::Internal("User not found in DB".to_string()))?;
+    struct UserIdRow {
+        id: uuid::Uuid,
+    }
+    let user_row = sqlx::query_as::<_, UserIdRow>("SELECT id FROM users WHERE github_login = $1")
+        .bind(&owner)
+        .fetch_one(&state.pool)
+        .await
+        .map_err(|_| AppError::Internal("User not found in DB".to_string()))?;
 
-    // 10. Insert into DB (UNIQUE constraint serializes concurrent duplicates)
+    // 10. Establish blob truth in R2 before metadata becomes public truth.
+    let blob_exists =
+        state.s3.object_exists(&actual_sha256).await.map_err(|e| {
+            AppError::Internal(format!("Failed to check package blob state: {}", e))
+        })?;
+    if !blob_exists {
+        state
+            .s3
+            .put_object(&actual_sha256, &body_bytes)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to store package blob: {}", e)))?;
+    }
+
+    // 11. Insert into DB once blob storage is confirmed (UNIQUE serializes concurrent duplicates).
     db::packages::insert_version(
         &state.pool,
         &name,
@@ -95,19 +109,12 @@ pub async fn handler(
         if e.to_string().contains("unique") || e.to_string().contains("duplicate") {
             AppError::Conflict(format!("{}@{} already published.", name, version))
         } else {
-            AppError::Internal(e.to_string())
+            AppError::Internal(format!(
+                "Failed to persist package metadata for {}@{}: {}",
+                name, version, e
+            ))
         }
     })?;
-
-    // 11. Upload to R2 (idempotent — skip if blob already exists by SHA-256)
-    if !state.s3.object_exists(&actual_sha256)
-        .await
-        .map_err(|e| AppError::Internal(e))?
-    {
-        state.s3.put_object(&actual_sha256, &body_bytes)
-            .await
-            .map_err(|e| AppError::Internal(e))?;
-    }
 
     Ok(StatusCode::CREATED)
 }
@@ -116,8 +123,8 @@ pub async fn handler(
 /// Returns None if not found or if decompression fails.
 fn extract_readme_from_tarball(gz_bytes: &[u8]) -> Option<String> {
     use flate2::read::GzDecoder;
-    use tar::Archive;
     use std::io::Read;
+    use tar::Archive;
 
     let decoder = GzDecoder::new(gz_bytes);
     let mut archive = Archive::new(decoder);
@@ -126,10 +133,7 @@ fn extract_readme_from_tarball(gz_bytes: &[u8]) -> Option<String> {
     for entry in entries {
         let mut entry = entry.ok()?;
         let path = entry.path().ok()?;
-        let file_name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
         // Case-insensitive match for README.md
         if file_name.to_lowercase() == "readme.md" {

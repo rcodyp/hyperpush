@@ -73,7 +73,7 @@
   - Files: scripts/verify-m034-s01.sh, scripts/fixtures/m034-s01-proof-package/mesh.toml.template, scripts/fixtures/m034-s01-proof-package/registry_proof.mpl, scripts/fixtures/m034-s01-consumer/mesh.toml.template, scripts/fixtures/m034-s01-consumer/main.mpl, compiler/meshpkg/src/install.rs
   - Verify: `bash -n scripts/verify-m034-s01.sh`
 `bash scripts/verify-m034-s01.sh`
-- [ ] **T03: Harden registry truth edges and align the named-install/scoped-key contract** — The live verifier should not be able to report green while registry state is half-committed or the public docs lie about dependency declaration. Tighten publish/download ordering so blob truth exists before metadata/counters advance, correct `meshpkg install <name>` messaging to match its real fetch+lockfile behavior, and update the public tooling docs so scoped dependency examples use quoted TOML keys and the operator contract matches what the CLI actually does.
+- [x] **T03: Hardened registry truth ordering and the named-install/docs contract, but the live verifier still stops at duplicate-publish because the verifier’s Python urllib POST helper cannot validate the registry certificate on this host.** — The live verifier should not be able to report green while registry state is half-committed or the public docs lie about dependency declaration. Tighten publish/download ordering so blob truth exists before metadata/counters advance, correct `meshpkg install <name>` messaging to match its real fetch+lockfile behavior, and update the public tooling docs so scoped dependency examples use quoted TOML keys and the operator contract matches what the CLI actually does.
 
 ## Failure Modes
 

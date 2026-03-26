@@ -15,8 +15,10 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenvy::dotenv().ok();
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| "mesh_registry=debug,tower_http=debug".into()))
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "mesh_registry=debug,tower_http=debug".into()),
+        )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
@@ -30,7 +32,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Set up session store using the same PostgreSQL pool
     let session_store = PostgresStore::new(pool.clone());
-    session_store.migrate().await
+    session_store
+        .migrate()
+        .await
         .expect("Failed to create sessions table");
 
     let session_layer = SessionManagerLayer::new(session_store)
@@ -39,7 +43,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let s3 = storage::r2::build_r2_client(&config);
     let oauth_client = Arc::new(build_oauth_client(&config));
-    let state = Arc::new(state::AppState { pool, s3, config: Arc::new(config.clone()), oauth_client });
+    let state = Arc::new(state::AppState {
+        pool,
+        s3,
+        config: Arc::new(config.clone()),
+        oauth_client,
+    });
 
     let app = routes::router(state).layer(session_layer);
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.port)).await?;

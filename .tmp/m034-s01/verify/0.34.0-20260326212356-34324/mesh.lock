@@ -1,0 +1,8 @@
+version = 1
+
+[[packages]]
+name = "snowdamiz/mesh-registry-proof"
+version = "0.34.0-20260326212356-34324"
+source = "https://api.packages.meshlang.dev/api/v1/packages/snowdamiz/mesh-registry-proof/0.34.0-20260326212356-34324/download"
+revision = "0.34.0-20260326212356-34324"
+sha256 = "fd6a2ee92983cf38f50fe0253c30b7ae788135d4132a3ef641f7c9b59581f39f"

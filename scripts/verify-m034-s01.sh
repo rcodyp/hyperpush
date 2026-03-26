@@ -14,6 +14,7 @@ HOME_DIR="$TMP_ROOT/home"
 WORK_ROOT="$TMP_ROOT/work"
 PROOF_WORK_DIR="$WORK_ROOT/proof-package"
 CONSUMER_WORK_DIR="$WORK_ROOT/consumer"
+NAMED_INSTALL_WORK_DIR="$WORK_ROOT/named-install"
 FIXTURE_ROOT="$ROOT_DIR/scripts/fixtures"
 PROOF_FIXTURE_DIR="$FIXTURE_ROOT/m034-s01-proof-package"
 CONSUMER_FIXTURE_DIR="$FIXTURE_ROOT/m034-s01-consumer"
@@ -391,7 +392,7 @@ SEARCH_PAGE_URL="$PACKAGES_SITE_URL/search?q=$SEARCH_QUERY"
 export PACKAGE_NAME PROOF_VERSION PACKAGE_DESCRIPTION DOWNLOAD_URL
 
 rm -rf "$HOME_DIR" "$WORK_ROOT" "$RUN_DIR"
-mkdir -p "$HOME_DIR" "$PROOF_WORK_DIR" "$CONSUMER_WORK_DIR" "$RUN_DIR"
+mkdir -p "$HOME_DIR" "$PROOF_WORK_DIR" "$CONSUMER_WORK_DIR" "$NAMED_INSTALL_WORK_DIR" "$RUN_DIR"
 
 cat >"$RUN_DIR/00-context.log" <<EOF
 package=${PACKAGE_NAME}
@@ -400,6 +401,7 @@ registry_url=${REGISTRY_URL}
 packages_site_url=${PACKAGES_SITE_URL}
 proof_workspace=${PROOF_WORK_DIR#$ROOT_DIR/}
 consumer_workspace=${CONSUMER_WORK_DIR#$ROOT_DIR/}
+named_install_workspace=${NAMED_INSTALL_WORK_DIR#$ROOT_DIR/}
 EOF
 
 python3 - "$PROOF_FIXTURE_DIR/mesh.toml.template" "$PROOF_WORK_DIR/mesh.toml" <<'PY'
@@ -431,12 +433,21 @@ if "__PACKAGE_NAME__" in text or "__VERSION__" in text:
 Path(dst).write_text(text)
 PY
 cp "$CONSUMER_FIXTURE_DIR/main.mpl" "$CONSUMER_WORK_DIR/main.mpl"
+cp "$CONSUMER_WORK_DIR/mesh.toml" "$NAMED_INSTALL_WORK_DIR/mesh.toml"
+cp "$CONSUMER_WORK_DIR/main.mpl" "$NAMED_INSTALL_WORK_DIR/main.mpl"
 cp "$PROOF_WORK_DIR/mesh.toml" "$RUN_DIR/proof-package.mesh.toml"
 cp "$CONSUMER_WORK_DIR/mesh.toml" "$RUN_DIR/consumer.mesh.toml"
+cp "$NAMED_INSTALL_WORK_DIR/mesh.toml" "$RUN_DIR/named-install.mesh.toml.before"
 
 if ! grep -Fq "\"$PACKAGE_NAME\" = \"$PROOF_VERSION\"" "$CONSUMER_WORK_DIR/mesh.toml"; then
   fail_phase "render" "consumer manifest did not render a quoted scoped dependency key" "$RUN_DIR/00-context.log"
 fi
+if ! grep -Fq "\"$PACKAGE_NAME\" = \"$PROOF_VERSION\"" "$NAMED_INSTALL_WORK_DIR/mesh.toml"; then
+  fail_phase "render" "named-install manifest did not preserve the quoted scoped dependency key" "$RUN_DIR/00-context.log"
+fi
+
+run_command contract 00a-docs-scoped-key "rg -n '\"your-login/your-package\" = \"1.0.0\"' website/docs/docs/tooling/index.md" rg -n '"your-login/your-package" = "1.0.0"' website/docs/docs/tooling/index.md
+run_command contract 00b-named-install-contract "rg -n 'does not edit mesh.toml|updates mesh.lock' website/docs/docs/tooling/index.md compiler/meshpkg/src/install.rs" rg -n 'does not edit mesh.toml|updates mesh.lock' website/docs/docs/tooling/index.md compiler/meshpkg/src/install.rs
 
 run_command tooling 01-build-tooling "cargo build -q -p meshpkg -p meshc" cargo build -q -p meshpkg -p meshc
 [[ -x "$MESHPKG_BIN" ]] || fail_phase "tooling" "meshpkg binary was not built" "$LAST_LOG_PATH"
@@ -501,7 +512,7 @@ from pathlib import Path
 import json
 import os
 import sys
-import toml
+import tomllib
 
 publish_path, package_path, version_path, versions_path, search_path, install_path, lock_path, download_sha = sys.argv[1:9]
 package_name = os.environ["PACKAGE_NAME"]
@@ -542,7 +553,7 @@ if install.get("lockfile") != "mesh.lock":
     raise SystemExit("install JSON did not report mesh.lock")
 if download_sha != publish_sha:
     raise SystemExit("downloaded tarball sha256 did not match publish metadata")
-lock = toml.loads(Path(lock_path).read_text())
+lock = tomllib.loads(Path(lock_path).read_text())
 if lock.get("version") != 1:
     raise SystemExit("mesh.lock format version drifted")
 packages = lock.get("packages")
@@ -566,9 +577,62 @@ INSTALLED_PACKAGE_DIR="$CONSUMER_WORK_DIR/.mesh/packages/$MESH_PUBLISH_OWNER/$PA
 [[ -f "$INSTALLED_PACKAGE_DIR/registry_proof.mpl" ]] || fail_phase "install" "installed package module was not extracted" "$RUN_DIR/09-install.log"
 [[ -f "$INSTALLED_PACKAGE_DIR/mesh.toml" ]] || fail_phase "install" "installed package manifest was not extracted" "$RUN_DIR/09-install.log"
 
+run_command_in_dir install 09b-named-install "meshpkg --json install $PACKAGE_NAME" "$NAMED_INSTALL_WORK_DIR" env HOME="$HOME_DIR" "$MESHPKG_BIN" --json install "$PACKAGE_NAME" --registry "$REGISTRY_URL"
+cp "$LAST_STDOUT_PATH" "$RUN_DIR/named-install.json"
+cp "$NAMED_INSTALL_WORK_DIR/mesh.lock" "$RUN_DIR/named-install.mesh.lock"
+cp "$NAMED_INSTALL_WORK_DIR/mesh.toml" "$RUN_DIR/named-install.mesh.toml.after"
+if ! cmp -s "$RUN_DIR/named-install.mesh.toml.before" "$RUN_DIR/named-install.mesh.toml.after"; then
+  diff -u "$RUN_DIR/named-install.mesh.toml.before" "$RUN_DIR/named-install.mesh.toml.after" >"$RUN_DIR/09b-named-install-manifest.log" || true
+  fail_phase "install" "named install edited mesh.toml" "$RUN_DIR/09b-named-install-manifest.log"
+fi
+
+python3 - "$RUN_DIR/named-install.json" "$RUN_DIR/named-install.mesh.lock" <<'PY'
+from pathlib import Path
+import json
+import os
+import sys
+import tomllib
+
+install_path, lock_path = sys.argv[1:3]
+package_name = os.environ["PACKAGE_NAME"]
+proof_version = os.environ["PROOF_VERSION"]
+expected_download_url = os.environ["DOWNLOAD_URL"]
+install = json.loads(Path(install_path).read_text())
+if install.get("status") != "ok":
+    raise SystemExit("named install JSON missing ok status")
+if install.get("name") != package_name:
+    raise SystemExit("named install JSON reported the wrong package name")
+if install.get("version") != proof_version:
+    raise SystemExit("named install JSON reported the wrong version")
+if install.get("lockfile") != "mesh.lock":
+    raise SystemExit("named install JSON did not report mesh.lock")
+if install.get("manifest_changed") is not False:
+    raise SystemExit("named install JSON did not report manifest stability")
+lock = tomllib.loads(Path(lock_path).read_text())
+if lock.get("version") != 1:
+    raise SystemExit("named install mesh.lock format version drifted")
+packages = lock.get("packages")
+if not isinstance(packages, list):
+    raise SystemExit("named install mesh.lock packages was not a list")
+entry = next((pkg for pkg in packages if pkg.get("name") == package_name), None)
+if entry is None:
+    raise SystemExit("named install mesh.lock did not record the published package")
+if entry.get("version") != proof_version:
+    raise SystemExit("named install mesh.lock version drifted")
+if entry.get("revision") != proof_version:
+    raise SystemExit("named install mesh.lock revision drifted")
+if entry.get("source") != expected_download_url:
+    raise SystemExit("named install mesh.lock source drifted")
+PY
+
+NAMED_INSTALL_PACKAGE_DIR="$NAMED_INSTALL_WORK_DIR/.mesh/packages/$MESH_PUBLISH_OWNER/$PACKAGE_SLUG@$PROOF_VERSION"
+[[ -d "$NAMED_INSTALL_PACKAGE_DIR" ]] || fail_phase "install" "named install package directory was not created" "$RUN_DIR/09b-named-install.log"
+[[ -f "$NAMED_INSTALL_PACKAGE_DIR/registry_proof.mpl" ]] || fail_phase "install" "named install package module was not extracted" "$RUN_DIR/09b-named-install.log"
+[[ -f "$NAMED_INSTALL_PACKAGE_DIR/mesh.toml" ]] || fail_phase "install" "named install package manifest was not extracted" "$RUN_DIR/09b-named-install.log"
+
 run_command build 10-consumer-build "meshc build consumer" "$MESHC_BIN" build "$CONSUMER_WORK_DIR" --output "$RUN_DIR/m034-s01-consumer.bin" --no-color
 run_command runtime 11-consumer-run "run built consumer" "$RUN_DIR/m034-s01-consumer.bin"
-if [[ "$(tr -d '\r' <"$LAST_STDOUT_PATH")" != $'registry proof ok\n' ]]; then
+if [[ "$(tr -d '\r\n' <"$LAST_STDOUT_PATH")" != "registry proof ok" ]]; then
   fail_phase "runtime" "consumer binary printed unexpected output" "$LAST_LOG_PATH"
 fi
 
@@ -584,7 +648,4 @@ fetch_visibility_page visibility 13-detail-page "$DETAIL_PAGE_URL" "$PACKAGE_NAM
 fetch_visibility_page visibility 14-search-page "$SEARCH_PAGE_URL" "$PACKAGE_NAME" "v$PROOF_VERSION"
 
 printf '%s\n' "$PACKAGE_NAME@$PROOF_VERSION" >"$RUN_DIR/package-version.txt"
-echo "verify-m034-s01: ok"
--s01: ok"
-n.txt"
 echo "verify-m034-s01: ok"

@@ -222,13 +222,13 @@ This reads `mesh.toml`, creates a `.tar.gz` tarball, computes the SHA-256 checks
 
 ### Installing a Package
 
-Install a package from the registry into the current project:
+Install the latest release of a package from the registry into the current project:
 
 ```bash
-meshpkg install some_pkg
+meshpkg install your-login/your-package
 ```
 
-This downloads the latest version, verifies its SHA-256 checksum, and extracts it into the project's dependency directory. A `mesh.lock` lockfile is updated to pin the exact version.
+This fetches the latest published release, verifies its SHA-256 checksum, extracts it into the project's dependency directory, and updates mesh.lock to pin the exact version. Named install does not edit mesh.toml; add the dependency yourself when you want it declared in the manifest.
 
 ### Searching
 
@@ -252,10 +252,12 @@ description = "A Mesh application"
 license = "MIT"
 
 [dependencies]
-some_pkg = "1.0.0"                                           # registry: exact version
+"your-login/your-package" = "1.0.0"                         # registry: exact version (quoted because scoped names contain '/')
 my_lib = { path = "../my_lib" }                              # local path
 utils = { git = "https://github.com/user/utils", tag = "v1.0.0" }  # git
 ```
+
+Scoped registry package names include `/`, so TOML keys must be quoted in `mesh.toml`.
 
 Browse and search available packages at [packages.meshlang.dev](https://packages.meshlang.dev).
 

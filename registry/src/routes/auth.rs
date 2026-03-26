@@ -1,17 +1,14 @@
-use std::sync::Arc;
+use crate::{db, error::AppError, state::AppState};
 use axum::{
     extract::{Query, State},
     response::{Html, IntoResponse, Redirect},
     Json as AxumJson,
 };
-use oauth2::{
-    AuthorizationCode, CsrfToken, Scope, TokenResponse,
-    reqwest::async_http_client,
-};
+use oauth2::{reqwest::async_http_client, AuthorizationCode, CsrfToken, Scope, TokenResponse};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use tower_sessions::Session;
 use uuid::Uuid;
-use crate::{db, error::AppError, state::AppState};
 
 const SESSION_USER_ID: &str = "user_id";
 const SESSION_GITHUB_LOGIN: &str = "github_login";
@@ -23,13 +20,17 @@ pub async fn github_login(
     State(state): State<Arc<AppState>>,
     session: Session,
 ) -> impl IntoResponse {
-    let (auth_url, csrf_token) = state.oauth_client
+    let (auth_url, csrf_token) = state
+        .oauth_client
         .authorize_url(CsrfToken::new_random)
         .add_scope(Scope::new("read:user".to_string()))
         .add_scope(Scope::new("user:email".to_string()))
         .url();
 
-    session.insert(SESSION_CSRF, csrf_token.secret().clone()).await.ok();
+    session
+        .insert(SESSION_CSRF, csrf_token.secret().clone())
+        .await
+        .ok();
 
     Redirect::to(auth_url.as_str())
 }
@@ -48,7 +49,9 @@ pub async fn github_callback(
     Query(params): Query<CallbackParams>,
 ) -> Result<Redirect, AppError> {
     // Verify CSRF state
-    let stored_state: Option<String> = session.get(SESSION_CSRF).await
+    let stored_state: Option<String> = session
+        .get(SESSION_CSRF)
+        .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
     session.remove::<String>(SESSION_CSRF).await.ok();
 
@@ -59,7 +62,8 @@ pub async fn github_callback(
     }
 
     // Exchange authorization code for access token
-    let token_result = state.oauth_client
+    let token_result = state
+        .oauth_client
         .exchange_code(AuthorizationCode::new(params.code))
         .request_async(async_http_client)
         .await
@@ -71,19 +75,18 @@ pub async fn github_callback(
     let (github_id, github_login, email) = fetch_github_user(&access_token).await?;
 
     // Upsert user in DB
-    let user_id = db::tokens::upsert_user(
-        &state.pool,
-        github_id,
-        &github_login,
-        email.as_deref(),
-    )
-    .await
-    .map_err(|e| AppError::Internal(e.to_string()))?;
+    let user_id = db::tokens::upsert_user(&state.pool, github_id, &github_login, email.as_deref())
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?;
 
     // Store user info in session
-    session.insert(SESSION_USER_ID, user_id.to_string()).await
+    session
+        .insert(SESSION_USER_ID, user_id.to_string())
+        .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
-    session.insert(SESSION_GITHUB_LOGIN, github_login.clone()).await
+    session
+        .insert(SESSION_GITHUB_LOGIN, github_login.clone())
+        .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
 
     // Auto-create a publish token and hand it off to the frontend
@@ -112,9 +115,11 @@ async fn fetch_github_user(access_token: &str) -> Result<(i64, String, Option<St
         .await
         .map_err(|e| AppError::Internal(format!("GitHub API JSON parse error: {}", e)))?;
 
-    let github_id = user["id"].as_i64()
+    let github_id = user["id"]
+        .as_i64()
         .ok_or_else(|| AppError::Internal("GitHub user missing id".to_string()))?;
-    let github_login = user["login"].as_str()
+    let github_login = user["login"]
+        .as_str()
         .ok_or_else(|| AppError::Internal("GitHub user missing login".to_string()))?
         .to_string();
     let email = user["email"].as_str().map(|s| s.to_string());
@@ -125,9 +130,13 @@ async fn fetch_github_user(access_token: &str) -> Result<(i64, String, Option<St
 // ===== Session helper =====
 
 async fn require_session(session: &Session) -> Result<(Uuid, String), AppError> {
-    let user_id_str: Option<String> = session.get(SESSION_USER_ID).await
+    let user_id_str: Option<String> = session
+        .get(SESSION_USER_ID)
+        .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
-    let github_login: Option<String> = session.get(SESSION_GITHUB_LOGIN).await
+    let github_login: Option<String> = session
+        .get(SESSION_GITHUB_LOGIN)
+        .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
 
     match (user_id_str, github_login) {
@@ -173,7 +182,7 @@ pub struct CreateTokenRequest {
 pub struct CreateTokenResponse {
     pub id: String,
     pub name: String,
-    pub token: String,  // Raw token — shown ONCE, not stored
+    pub token: String, // Raw token — shown ONCE, not stored
 }
 
 #[derive(Serialize)]
@@ -196,7 +205,7 @@ pub async fn create_token_handler(
     Ok(AxumJson(CreateTokenResponse {
         id: token_id.to_string(),
         name: body.name,
-        token: raw_token,  // Raw token shown once here; only argon2 hash stored in DB
+        token: raw_token, // Raw token shown once here; only argon2 hash stored in DB
     }))
 }
 
@@ -210,8 +219,13 @@ pub async fn list_tokens_handler(
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
 
-    Ok(AxumJson(tokens.into_iter().map(|(id, name)| TokenListItem {
-        id: id.to_string(),
-        name,
-    }).collect()))
+    Ok(AxumJson(
+        tokens
+            .into_iter()
+            .map(|(id, name)| TokenListItem {
+                id: id.to_string(),
+                name,
+            })
+            .collect(),
+    ))
 }

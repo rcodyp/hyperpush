@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use crate::{db, error::AppError, state::AppState};
 use axum::{
     extract::{Path, State},
     Json,
 };
 use serde::Serialize;
-use crate::{db, error::AppError, state::AppState};
+use std::sync::Arc;
 
 #[derive(Serialize)]
 pub struct VersionListItem {
@@ -29,12 +29,17 @@ pub async fn versions_handler(
     let versions = db::packages::list_versions(&state.pool, &name)
         .await
         .map_err(|e| AppError::Internal(e.to_string()))?;
-    Ok(Json(versions.into_iter().map(|v| VersionListItem {
-        version: v.version,
-        published_at: v.published_at,
-        download_count: v.download_count,
-        size_bytes: v.size_bytes,
-    }).collect()))
+    Ok(Json(
+        versions
+            .into_iter()
+            .map(|v| VersionListItem {
+                version: v.version,
+                published_at: v.published_at,
+                download_count: v.download_count,
+                size_bytes: v.size_bytes,
+            })
+            .collect(),
+    ))
 }
 
 #[derive(Serialize)]

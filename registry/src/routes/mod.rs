@@ -1,11 +1,11 @@
-use std::sync::Arc;
+use crate::state::AppState;
 use axum::{
-    Router,
     extract::DefaultBodyLimit,
     routing::{get, post},
+    Router,
 };
+use std::sync::Arc;
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
-use crate::state::AppState;
 
 pub mod auth;
 pub mod download;
@@ -23,9 +23,18 @@ pub fn router(state: Arc<AppState>) -> Router {
                 .layer(DefaultBodyLimit::max(50 * 1024 * 1024)),
         )
         // Metadata routes — {owner}/{package} captures scoped names like "snowdamiz/mesh-slug"
-        .route("/api/v1/packages/{owner}/{package}", get(metadata::package_handler))
-        .route("/api/v1/packages/{owner}/{package}/versions", get(metadata::versions_handler))
-        .route("/api/v1/packages/{owner}/{package}/{version}", get(metadata::version_handler))
+        .route(
+            "/api/v1/packages/{owner}/{package}",
+            get(metadata::package_handler),
+        )
+        .route(
+            "/api/v1/packages/{owner}/{package}/versions",
+            get(metadata::versions_handler),
+        )
+        .route(
+            "/api/v1/packages/{owner}/{package}/{version}",
+            get(metadata::version_handler),
+        )
         // Download — streaming
         .route(
             "/api/v1/packages/{owner}/{package}/{version}/download",
@@ -35,8 +44,11 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/auth/github", get(auth::github_login))
         .route("/auth/callback", get(auth::github_callback))
         .route("/dashboard", get(auth::dashboard))
-        .route("/dashboard/tokens", post(auth::create_token_handler).get(auth::list_tokens_handler))
+        .route(
+            "/dashboard/tokens",
+            post(auth::create_token_handler).get(auth::list_tokens_handler),
+        )
         .with_state(state)
-        .layer(CorsLayer::permissive())  // Restrict to meshlang.dev in production config
+        .layer(CorsLayer::permissive()) // Restrict to meshlang.dev in production config
         .layer(TraceLayer::new_for_http())
 }
