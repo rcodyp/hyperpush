@@ -1737,10 +1737,7 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
     // Pg.gen_salt(String, Int) -> Ptr
     pg_mod.insert(
         "gen_salt".to_string(),
-        Scheme::mono(Ty::fun(
-            vec![Ty::string(), Ty::int()],
-            ptr_t.clone(),
-        )),
+        Scheme::mono(Ty::fun(vec![Ty::string(), Ty::int()], ptr_t.clone())),
     );
     // Pg.crypt(Ptr, Ptr) -> Ptr
     pg_mod.insert(
@@ -1751,10 +1748,7 @@ fn stdlib_modules() -> HashMap<String, HashMap<String, Scheme>> {
     for helper in ["to_tsvector", "plainto_tsquery"] {
         pg_mod.insert(
             helper.to_string(),
-            Scheme::mono(Ty::fun(
-                vec![Ty::string(), ptr_t.clone()],
-                ptr_t.clone(),
-            )),
+            Scheme::mono(Ty::fun(vec![Ty::string(), ptr_t.clone()], ptr_t.clone())),
         );
     }
     // Pg.ts_rank(Ptr, Ptr) -> Ptr

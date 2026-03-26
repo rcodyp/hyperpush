@@ -128,6 +128,56 @@ fn discover_recursive(root: &Path, dir: &Path, files: &mut Vec<PathBuf>) -> std:
     Ok(())
 }
 
+fn discover_installed_package_roots(packages_dir: &Path) -> Result<Vec<PathBuf>, String> {
+    let mut package_roots = Vec::new();
+    discover_installed_package_roots_recursive(packages_dir, &mut package_roots).map_err(|e| {
+        format!(
+            "Failed to walk installed packages under '{}': {}",
+            packages_dir.display(),
+            e
+        )
+    })?;
+    package_roots.sort();
+    Ok(package_roots)
+}
+
+fn discover_installed_package_roots_recursive(
+    dir: &Path,
+    package_roots: &mut Vec<PathBuf>,
+) -> std::io::Result<()> {
+    let mut child_dirs = Vec::new();
+    let mut has_manifest = false;
+
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+
+        if name.starts_with('.') {
+            continue;
+        }
+
+        if path.is_dir() {
+            child_dirs.push(path);
+        } else if name == "mesh.toml" {
+            has_manifest = true;
+        }
+    }
+
+    if has_manifest {
+        package_roots.push(dir.to_path_buf());
+        return Ok(());
+    }
+
+    child_dirs.sort();
+    for child_dir in child_dirs {
+        discover_installed_package_roots_recursive(&child_dir, package_roots)?;
+    }
+
+    Ok(())
+}
+
 /// Extract import module paths from a parsed source file.
 ///
 /// Walks the top-level items and collects module paths from both
@@ -220,25 +270,18 @@ pub fn build_project(project_root: &Path) -> Result<ProjectData, String> {
         module_parses.push(parse);
     }
 
-    // Phase 1b: Discover installed package modules from .mesh/packages/*/.
+    // Phase 1b: Discover installed package modules from leaf package roots under
+    // .mesh/packages, including scoped layouts like <owner>/<package>@<version>.
     let packages_dir = project_root.join(".mesh").join("packages");
     if packages_dir.exists() {
-        for entry in std::fs::read_dir(&packages_dir)
-            .map_err(|e| format!("Failed to read .mesh/packages: {}", e))?
-        {
-            let entry = entry.map_err(|e| format!("Failed to read packages entry: {}", e))?;
-            let pkg_dir = entry.path();
-            if !pkg_dir.is_dir() {
-                continue;
-            }
-
-            let pkg_files = discover_mesh_files(&pkg_dir)?;
+        for package_root in discover_installed_package_roots(&packages_dir)? {
+            let pkg_files = discover_mesh_files(&package_root)?;
             for relative_path in &pkg_files {
                 let name = match path_to_module_name(relative_path) {
                     Some(n) => n,
-                    None => continue, // skip main.mpl
+                    None => continue, // skip package-root main.mpl
                 };
-                let full_path = pkg_dir.join(relative_path);
+                let full_path = package_root.join(relative_path);
                 let source = std::fs::read_to_string(&full_path)
                     .map_err(|e| format!("Failed to read '{}': {}", full_path.display(), e))?;
                 let parse = mesh_parser::parse(&source);
@@ -357,6 +400,83 @@ mod tests {
         let file_strs: Vec<&str> = files.iter().map(|p| p.to_str().unwrap()).collect();
 
         assert_eq!(file_strs, vec!["main.mpl", "math/vector.mpl", "utils.mpl"]);
+    }
+
+    #[test]
+    fn test_discover_installed_package_roots_scoped_and_flat() {
+        let tmp = tempfile::tempdir().unwrap();
+        let packages_dir = tmp.path().join(".mesh/packages");
+
+        fs::create_dir_all(packages_dir.join("acme/greeter@1.0.0")).unwrap();
+        fs::write(
+            packages_dir.join("acme/greeter@1.0.0/mesh.toml"),
+            "[package]\nname = \"acme/greeter\"\nversion = \"1.0.0\"\n\n[dependencies]\n",
+        )
+        .unwrap();
+        fs::write(packages_dir.join("acme/greeter@1.0.0/main.mpl"), "").unwrap();
+
+        fs::create_dir_all(packages_dir.join("flat@1.0.0")).unwrap();
+        fs::write(
+            packages_dir.join("flat@1.0.0/mesh.toml"),
+            "[package]\nname = \"flat\"\nversion = \"1.0.0\"\n\n[dependencies]\n",
+        )
+        .unwrap();
+
+        fs::create_dir_all(packages_dir.join("owner-only")).unwrap();
+        fs::write(packages_dir.join("owner-only/main.mpl"), "").unwrap();
+
+        fs::create_dir_all(packages_dir.join(".hidden/ignored@1.0.0")).unwrap();
+        fs::write(
+            packages_dir.join(".hidden/ignored@1.0.0/mesh.toml"),
+            "[package]\nname = \"ignored\"\nversion = \"1.0.0\"\n\n[dependencies]\n",
+        )
+        .unwrap();
+
+        let roots = discover_installed_package_roots(&packages_dir).unwrap();
+        let relative_roots: Vec<String> = roots
+            .iter()
+            .map(|path| {
+                path.strip_prefix(&packages_dir)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/")
+            })
+            .collect();
+
+        assert_eq!(relative_roots, vec!["acme/greeter@1.0.0", "flat@1.0.0"]);
+    }
+
+    #[test]
+    fn test_build_project_discovers_scoped_installed_package_modules() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        let package_root = root.join(".mesh/packages/acme/greeter@1.0.0");
+
+        fs::write(
+            root.join("main.mpl"),
+            "from Support.Message import message\n\nfn main() do\n  println(message())\nend\n",
+        )
+        .unwrap();
+        fs::create_dir_all(package_root.join("support")).unwrap();
+        fs::write(
+            package_root.join("mesh.toml"),
+            "[package]\nname = \"acme/greeter\"\nversion = \"1.0.0\"\n\n[dependencies]\n",
+        )
+        .unwrap();
+        fs::write(package_root.join("main.mpl"), "fn main() do\n  0\nend\n").unwrap();
+        fs::write(
+            package_root.join("support/message.mpl"),
+            "fn message() -> String do\n  \"hello from package\"\nend\n",
+        )
+        .unwrap();
+
+        let project = build_project(root).unwrap();
+
+        assert!(project.graph.resolve("Support.Message").is_some());
+        assert!(project
+            .graph
+            .resolve("Greeter@1.0.0.Support.Message")
+            .is_none());
     }
 
     // ── Import extraction tests ─────────────────────────────────────────

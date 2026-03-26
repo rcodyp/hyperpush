@@ -1071,6 +1071,7 @@ dependencies = [
  "mesh-typeck",
  "rowan",
  "serde_json",
+ "tempfile",
  "tokio",
  "tower-lsp",
 ]

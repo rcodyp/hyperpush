@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-03-26T16:33:29.845Z",
+  "exported_at": "2026-03-26T19:54:27.183Z",
   "milestones": [
     {
       "id": "M001",
@@ -631,6 +631,138 @@
       ],
       "requirement_coverage": "Covers R036, R037, R038, R039, and R040. Leaves R041 for later. No orphan risks are expected if PG-only behavior stays explicit and the remaining raw keep-list is named honestly.",
       "boundary_map_markdown": "### S01 → S02\nProduces:\n- a neutral expression contract in `Query`/`Repo` for column refs, parameters, literals, `NULL`, function calls, `CASE`, `COALESCE`, and expression-valued `SELECT`/`SET`/`ON CONFLICT` work\n- stable SQL serialization and placeholder-handling rules that later PG extras can compose with instead of bypassing\n- rewritten Mesher mutation paths (`upsert_issue`, alert acknowledge/resolve, settings updates, unassign/null cases) proving the neutral write surface on real storage code\n\nConsumes:\n- nothing (first slice)\n\n### S02 → S03\nProduces:\n- explicit PostgreSQL helper surfaces for JSONB read/write expressions, full-text search/ranking/query construction, and pgcrypto-backed auth operations\n- rewritten Mesher event ingest/search/auth/alert-rule storage paths using those PG helpers with unchanged record shapes\n- a concrete boundary rule for what stays neutral versus what must stay PG-namespaced\n\nConsumes from S01:\n- the neutral expression builder and serializer contract\n- the proven write/update/upsert expression surface\n\n### S02 → S04\nProduces:\n- PG-specific migration/schema seam for extension/index/partition-related helpers rather than scattered raw DDL strings\n- naming and rendering conventions shared between migration-time helpers and runtime partition-management helpers\n- proof that PG-only schema behavior stays explicit and does not leak back into the neutral DSL\n\nConsumes from S01:\n- expression/rendering contract used by helper serialization where relevant\n\n### S03 → S05\nProduces:\n- rewritten Mesher read-side query modules for the recurring hard families (`list_issues_filtered`, `project_health_summary`, `get_event_neighbors`, `evaluate_threshold_rule`, `check_volume_spikes`, and similar recurring shapes where honest coverage exists)\n- reconciled justified raw-query keep-list containing only dishonest leftovers\n- regression surface proving rewritten queries preserve expected result shapes and behavior\n\nConsumes from S01:\n- neutral expression/query-building contract\n\nConsumes from S02:\n- PG JSONB/search helper surfaces and boundary rules\n\n### S04 → S05\nProduces:\n- migration-time and runtime partition create/list/drop helpers proven against live catalogs\n- rewritten Mesher schema and retention paths using first-class partition helpers where honest\n- operational acceptance commands for migration apply, partition lifecycle, and retention cleanup replay\n\nConsumes from S01:\n- neutral rendering/building rules where shared\n\nConsumes from S02:\n- explicit PG schema/helper namespacing and related extension/index surfaces"
+    },
+    {
+      "id": "M034",
+      "title": "",
+      "status": "queued",
+      "depends_on": [],
+      "created_at": "2026-03-26T18:20:58.749Z",
+      "completed_at": null,
+      "vision": "Harden CI/CD and ensure everything important is included in it, test the package manager end to end, and turn Mesh’s public release path into something that is proven rather than assumed.",
+      "success_criteria": [
+        "PR and release automation rerun the named Mesh proof surfaces and fail on real regressions instead of only compiling and uploading artifacts.",
+        "A real registry-scoped package can be published, resolved, downloaded, installed, and pinned through `meshpkg` with checksum and lockfile truth rechecked.",
+        "Released `meshc` and `meshpkg` artifacts are proven installable and runnable through the documented installer path.",
+        "The VS Code extension release lane validates packaged-artifact and publish prerequisites instead of relying on blind packaging success.",
+        "One release candidate can be checked across GitHub release assets, docs deployment, Fly registry/packages-site health, and extension release checks as a single public-ready flow."
+      ],
+      "key_risks": [
+        {
+          "risk": "The public release path crosses GitHub releases, Fly deploys, the registry, the packages website, install scripts, and the extension publish lane, so subsystem-green can still hide assembled-path failure.",
+          "whyItMatters": "M034 is only honest if the assembled path is proven, not just the parts."
+        },
+        {
+          "risk": "The package-manager path may work in pieces but still fail on the real publish→metadata/download→install→lockfile loop.",
+          "whyItMatters": "The user explicitly wants the package manager tested end to end, and that path is a major trust surface."
+        },
+        {
+          "risk": "Current workflows are build-heavy and may produce artifacts without rerunning the proof surfaces that matter most.",
+          "whyItMatters": "That creates false-green releases and undermines any production-ready claim."
+        },
+        {
+          "risk": "The extension release lane can publish a packageable extension while syntax/tooling truth is still drifting.",
+          "whyItMatters": "M034 needs an honest release-path contract without pretending M036’s full syntax/editor parity work is already done."
+        }
+      ],
+      "proof_strategy": [
+        {
+          "riskOrUnknown": "Real package-manager end-to-end viability on the live registry contract",
+          "retireIn": "S01",
+          "whatWillBeProven": "A release-scoped package can be published, discovered, downloaded, installed, and pinned by `meshpkg` with checksum and lockfile truth rechecked."
+        },
+        {
+          "riskOrUnknown": "Artifact-only CI allowing false-green releases",
+          "retireIn": "S02",
+          "whatWillBeProven": "Named PR/release verification jobs rerun the real proof surfaces and fail on covered regressions before packaging or publication."
+        },
+        {
+          "riskOrUnknown": "Released binaries existing but not being truly installable or runnable via the documented install path",
+          "retireIn": "S03",
+          "whatWillBeProven": "Tagged `meshc` and `meshpkg` assets pass installer smoke and become runnable through the documented install flow."
+        },
+        {
+          "riskOrUnknown": "Extension release workflow publishing without enough validation",
+          "retireIn": "S04",
+          "whatWillBeProven": "The extension lane validates build/package/release prerequisites and fails early on publish-path drift."
+        },
+        {
+          "riskOrUnknown": "Subsystem checks passing while the assembled public release path is still broken",
+          "retireIn": "S05",
+          "whatWillBeProven": "One release candidate can be replayed through binaries, installer, docs deploy, registry/packages-site health, and extension release checks as a single public-ready path."
+        }
+      ],
+      "verification_contract": "Contract verification uses named shell verifiers, workflow-local smoke commands, artifact checks, registry/package CLI assertions, installer smoke runs, and file-level contract sweeps tied to the real release surfaces.",
+      "verification_integration": "Integration verification must exercise the real `meshpkg` ↔ registry HTTP contract, GitHub workflow composition, release assets, docs deployment, and live registry/packages-site health checks.",
+      "verification_operational": "Operational verification must prove tag/release promotion behavior, Fly deploy health, installer/use-after-install smoke, and external publication-path readiness checks.",
+      "verification_uat": "Human verification is optional and non-blocking; the package website and release pages can be spot-checked, but milestone acceptance should rest on the automated public-path proof bundle.",
+      "definition_of_done": [
+        "Real release, package, and deploy surfaces are covered by named verifiers or workflows instead of artifact-only build steps.",
+        "`meshpkg` publish, install, download, and lockfile behavior are proven end to end against the real registry contract.",
+        "Released `meshc` and `meshpkg` assets are shown to be installable and runnable through the documented installer path.",
+        "The extension release lane validates packaged-artifact and publish prerequisites before public publication.",
+        "A final assembled release proof exists that checks the full public path instead of treating each subsystem in isolation.",
+        "The milestone leaves full editor syntax parity and mature test-framework capability to later milestones instead of smearing them into delivery-truth work."
+      ],
+      "requirement_coverage": "Covers: R045, R007, R046. Partially covers: R047, R021. Leaves for later: R048, full syntax-completeness/editor breadth, and package-experience polish in M037. Orphan risks: none.",
+      "boundary_map_markdown": "## Boundary Map\n\n### S01 → S02\nProduces:\n- `scripts/verify-meshpkg-e2e.sh` → authoritative publish/search/download/install/lockfile verifier against the real registry contract\n- release-scoped package naming contract → one safe package namespace pattern CI can reuse without hand-built tribal knowledge\n\nConsumes:\n- nothing (first slice)\n\n### S01 → S03\nProduces:\n- verified package publish/download/checksum contract for released `meshpkg`\n\nConsumes:\n- nothing (first slice)\n\n### S02 → S03\nProduces:\n- `.github/workflows/release.yml` verification contract → named jobs and entrypoints that gate packaging on real proofs\n- `scripts/verify-release-truth.sh` → CI-facing aggregator over the authoritative verifiers\n\nConsumes from S01:\n- `scripts/verify-meshpkg-e2e.sh`\n\n### S02 → S04\nProduces:\n- shared workflow conventions and log surfaces for release and publish lanes\n\nConsumes from S01:\n- the real package verifier and registry contract\n\n### S03 → S05\nProduces:\n- `scripts/verify-install-path.sh` → release-asset and installer smoke proof for `meshc` and `meshpkg`\n- released asset/checksum contract → exact files and hashes the final assembly proof expects\n\nConsumes from S01:\n- real package download/checksum contract\n\nConsumes from S02:\n- authoritative release verification lane\n\n### S04 → S05\nProduces:\n- extension prepublish/package validation contract for `.vsix` release artifacts and publish prerequisites\n\nConsumes from S02:\n- authoritative release verification lane"
+    },
+    {
+      "id": "M035",
+      "title": "",
+      "status": "queued",
+      "depends_on": [],
+      "created_at": "2026-03-26T18:21:13.742Z",
+      "completed_at": null,
+      "vision": "",
+      "success_criteria": [],
+      "key_risks": [],
+      "proof_strategy": [],
+      "verification_contract": "",
+      "verification_integration": "",
+      "verification_operational": "",
+      "verification_uat": "",
+      "definition_of_done": [],
+      "requirement_coverage": "",
+      "boundary_map_markdown": ""
+    },
+    {
+      "id": "M036",
+      "title": "",
+      "status": "queued",
+      "depends_on": [],
+      "created_at": "2026-03-26T18:21:26.821Z",
+      "completed_at": null,
+      "vision": "",
+      "success_criteria": [],
+      "key_risks": [],
+      "proof_strategy": [],
+      "verification_contract": "",
+      "verification_integration": "",
+      "verification_operational": "",
+      "verification_uat": "",
+      "definition_of_done": [],
+      "requirement_coverage": "",
+      "boundary_map_markdown": ""
+    },
+    {
+      "id": "M037",
+      "title": "",
+      "status": "queued",
+      "depends_on": [],
+      "created_at": "2026-03-26T18:21:33.842Z",
+      "completed_at": null,
+      "vision": "",
+      "success_criteria": [],
+      "key_risks": [],
+      "proof_strategy": [],
+      "verification_contract": "",
+      "verification_integration": "",
+      "verification_operational": "",
+      "verification_uat": "",
+      "definition_of_done": [],
+      "requirement_coverage": "",
+      "boundary_map_markdown": ""
     }
   ],
   "slices": [
@@ -743,6 +875,118 @@
       "proof_level": "final-assembly\n- Real runtime required: yes\n- Human/UAT required: no",
       "integration_closure": "- Upstream surfaces consumed: `scripts/verify-m033-s02.sh`, `scripts/verify-m033-s03.sh`, `scripts/verify-m033-s04.sh`, `website/docs/docs/databases/index.md`, `website/docs/docs/production-backend-proof/index.md`, `compiler/meshc/tests/e2e_m033_s01.rs`, `mesher/storage/queries.mpl`, `mesher/storage/writer.mpl`, `mesher/migrations/20260216120000_create_initial_schema.mpl`, `mesher/storage/schema.mpl`, and `compiler/meshc/src/migrate.rs`.\n- New wiring introduced in this slice: the public database docs are rewritten around the real neutral-vs-PG-vs-escape-hatch contract, and `scripts/verify-m033-s05.sh` becomes the serial wrapper plus docs-truth gate for the assembled M033 proof stack.\n- What remains before the milestone is truly usable end-to-end: nothing for M033 once the docs build and `bash scripts/verify-m033-s05.sh` both pass.",
       "observability_impact": "- Acceptance commands: `npm --prefix website run build` and `bash scripts/verify-m033-s05.sh` must both pass.\n- Runtime signals: `scripts/verify-m033-s05.sh` should preserve per-phase logs under `.tmp/m033-s05/verify/` and name whether docs build, docs truth, S02, S03, or S04 failed first.\n- Inspection surfaces: `website/docs/docs/databases/index.md`, `.tmp/m033-s05/verify/*.log`, and the underlying slice verifier logs.\n- Failure visibility: docs drift should fail on missing exact API names / file anchors / proof commands; runtime proof drift should surface the first failing delegated verifier without parallelizing the shared Postgres port 5432 flow; never log DSNs or other secrets.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M034",
+      "id": "S01",
+      "title": "Real registry publish/install proof",
+      "status": "pending",
+      "risk": "high",
+      "depends": [],
+      "demo": "A release-scoped package can be published to the real registry path and installed with `meshpkg`, with checksum, metadata, download, and lockfile truth rechecked.",
+      "created_at": "2026-03-26T18:35:26.602Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Prove the real Mesh registry path end-to-end by making scoped published packages installable/buildable, adding one canonical live verifier for publish→metadata→download→install→lockfile→consumer-build truth, and tightening the remaining registry/package-manager contract edges that would otherwise allow false-green release confidence.",
+      "success_criteria": "## Must-Haves\n\n- Scoped packages installed under `.mesh/packages/<owner>/<package>@<version>` build without manual filesystem surgery, and both `meshc` and `mesh-lsp` treat the installed leaf directory as the package root instead of stopping at the owner directory.\n- `scripts/verify-m034-s01.sh` publishes a unique owner-scoped proof version to the real registry, then rechecks metadata SHA, downloaded tarball SHA, quoted-manifest install, `mesh.lock` source/version/sha pins, consumer `meshc build`, duplicate publish rejection, registry search/detail endpoints, and exact package-page visibility while persisting phase logs under `.tmp/m034-s01/verify/`.\n- The public package-manager contract is honest: registry publish/download no longer permit metadata-only success signals, scoped dependency docs show quoted TOML keys, and named install is described as fetch+lockfile truth rather than pretending it edits `mesh.toml`.\n\n## Threat Surface\n\n- **Abuse**: publish-token misuse, replay/duplicate publish attempts against immutable versions, and proof scripts that trust counters or homepage counts instead of blob/download/build truth.\n- **Data exposure**: publish token material in verifier/CI context, package tarball contents, and registry metadata; no new PII is involved, and verifier logs must never print secrets.\n- **Input trust**: untrusted tarball bytes and headers at publish time, untrusted registry JSON during install, and scoped dependency/version strings written into temporary proof manifests.\n\n## Requirement Impact\n\n- **Requirements touched**: R007 directly; advances the package-manager proof surfaces called out for R045 and R046; supports the public visibility side of R047.\n- **Re-verify**: scoped registry install/build, lockfile SHA/source pinning, duplicate publish immutability, registry metadata/download/search endpoints, and exact package detail-page visibility.\n- **Decisions revisited**: D070, D071, D073.\n\n## Verification\n\n- `cargo test -p meshc --test e2e_m034_s01 -- --nocapture` (`compiler/meshc/tests/e2e_m034_s01.rs`)\n- `cargo test -p mesh-lsp scoped_installed_package -- --nocapture` (`compiler/mesh-lsp/src/analysis.rs` unit tests)\n- `bash scripts/verify-m034-s01.sh`",
+      "proof_level": "- This slice proves: integration\n- Real runtime required: yes\n- Human/UAT required: no",
+      "integration_closure": "- Upstream surfaces consumed: `compiler/meshpkg/src/install.rs`, `compiler/meshc/src/discovery.rs`, `compiler/mesh-lsp/src/analysis.rs`, `registry/src/routes/publish.rs`, `registry/src/routes/metadata.rs`, `registry/src/routes/download.rs`, `packages-website/src/routes/packages/[...name]/+page.server.js`, and `website/docs/docs/tooling/index.md`.\n- New wiring introduced in this slice: `scripts/verify-m034-s01.sh`, durable proof-package fixtures under `scripts/fixtures/m034-s01-*`, and named `e2e_m034_s01` regressions that pin the scoped-package discovery contract.\n- What remains before the milestone is truly usable end-to-end: S02 must run the verifier in CI/release lanes, and S03 must prove the released binaries/installers against the same real registry surfaces.",
+      "observability_impact": "- Runtime signals: `meshpkg --json` publish/install output, registry metadata/version/search responses, duplicate publish HTTP 409, downloaded tarball SHA, and `mesh.lock` contents.\n- Inspection surfaces: `.tmp/m034-s01/verify/`, `bash scripts/verify-m034-s01.sh`, `cargo test -p meshc --test e2e_m034_s01 -- --nocapture`, and `cargo test -p mesh-lsp scoped_installed_package -- --nocapture`.\n- Failure visibility: verifier phases should record the failing command, endpoint/build phase, and the last observed package/version/SHA so a future agent can localize the break quickly.\n- Redaction constraints: never echo publish tokens or credential-file contents; logs may mention only env var names and non-secret package coordinates.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M034",
+      "id": "S02",
+      "title": "Authoritative CI verification lane",
+      "status": "pending",
+      "risk": "high",
+      "depends": [
+        "S01"
+      ],
+      "demo": "PR and release verification rerun the real Mesh proof surfaces, including the package-manager path, instead of stopping at artifact builds.",
+      "created_at": "2026-03-26T18:35:26.604Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Turn the repo’s build-oriented workflows into a truthful verification lane that fails before merge or release on real toolchain, package, and deploy regressions.",
+      "success_criteria": "- A named verification job composes the existing backend/tooling proof surfaces with the S01 package verifier.\n- Obvious regressions in covered surfaces fail CI before artifact packaging or publication.\n- Workflow/docs truthfully identify which commands are the authoritative release gates.",
+      "proof_level": "Workflow-level proof with replayable verifiers.",
+      "integration_closure": "Consumes the S01 package verifier and existing backend/tooling verifiers, then exposes one CI entrypoint that later release and extension lanes can reuse.",
+      "observability_impact": "Adds stable job names, artifact logs, and verifier entrypoints so false-green releases are diagnosable from CI output.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M034",
+      "id": "S03",
+      "title": "Release assets and installer truth",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S01",
+        "S02"
+      ],
+      "demo": "Released `meshc` and `meshpkg` artifacts are proven installable and runnable through the documented installer path instead of only being uploaded.",
+      "created_at": "2026-03-26T18:35:26.604Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Prove that tagged release assets and the documented install scripts actually yield usable `meshc` and `meshpkg` binaries.",
+      "success_criteria": "- Release assets and checksums are verified against installer expectations.\n- Installer smoke runs prove `meshc` and `meshpkg` become runnable through the documented path.\n- Failure surfaces point to asset, checksum, or installer drift instead of generic release breakage.",
+      "proof_level": "Real release-asset and installer smoke proof.",
+      "integration_closure": "Consumes CI gate outputs and package/binary artifacts, then closes the release-asset → installer → usable-tool boundary.",
+      "observability_impact": "Adds named installer/release smoke logs and asset/checksum diagnostics suitable for public-release debugging.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M034",
+      "id": "S04",
+      "title": "Extension release path hardening",
+      "status": "pending",
+      "risk": "medium",
+      "depends": [
+        "S02"
+      ],
+      "demo": "The VS Code extension publish lane validates the packaged extension and release prerequisites before public publication.",
+      "created_at": "2026-03-26T18:35:26.605Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Make the extension release path honest and repeatable by validating package/build/publish prerequisites before the public marketplace steps.",
+      "success_criteria": "- The extension lane runs prepublish validation and packaged-artifact checks instead of blind packaging-only success.\n- The release workflow clearly separates package validation from public publish steps.\n- Extension release failures surface actionable packaging or workflow drift.",
+      "proof_level": "Release-lane validation proof.",
+      "integration_closure": "Consumes the CI verification contract and turns the separate extension release workflow into a bounded, diagnosable publish lane.",
+      "observability_impact": "Adds stable extension packaging logs/checks so marketplace-facing failures are caught earlier and explained better.",
+      "sequence": 0,
+      "replan_triggered_at": null
+    },
+    {
+      "milestone_id": "M034",
+      "id": "S05",
+      "title": "Full public release assembly proof",
+      "status": "pending",
+      "risk": "high",
+      "depends": [
+        "S01",
+        "S02",
+        "S03",
+        "S04"
+      ],
+      "demo": "One release candidate is proven across binaries, installer, docs deployment, registry/packages-site health, and extension release checks as a single public-ready flow.",
+      "created_at": "2026-03-26T18:35:26.605Z",
+      "completed_at": null,
+      "full_summary_md": "",
+      "full_uat_md": "",
+      "goal": "Prove the assembled public release path end to end so Mesh can claim release truth instead of subsystem-by-subsystem green lights.",
+      "success_criteria": "- Release-candidate replay covers binaries, installer, docs deploy, registry/packages-site health, and extension-lane readiness in one flow.\n- The final proof can be rerun from named scripts/workflows without hand-assembled tribal knowledge.\n- The milestone closes with one canonical public-release acceptance path.",
+      "proof_level": "Assembled live release proof.",
+      "integration_closure": "Consumes all earlier slice outputs and closes the full GitHub release plus Fly deploy plus registry/package-site plus extension-release boundary.",
+      "observability_impact": "Adds one top-level public-release verifier and canonical logs/runbook references so future release failures localize quickly.",
       "sequence": 0,
       "replan_triggered_at": null
     }
@@ -1742,6 +1986,146 @@
       "observability_impact": "- Signals added/changed: `scripts/verify-m033-s05.sh` should emit named phase boundaries and per-phase logs under `.tmp/m033-s05/verify/`.\n- How a future agent inspects this: rerun `bash scripts/verify-m033-s05.sh` or inspect `.tmp/m033-s05/verify/*.log` to see whether docs build, docs truth, S02, S03, or S04 failed first.\n- Failure state exposed: missing public strings, docs build errors, or the first failing underlying verifier should be surfaced without parallel log interleaving or secret-bearing DSNs.",
       "full_plan_md": "",
       "sequence": 0
+    },
+    {
+      "milestone_id": "M034",
+      "slice_id": "S01",
+      "id": "T01",
+      "title": "Taught meshc and mesh-lsp to discover scoped installed package roots from mesh.toml leaves and added scoped package regressions that prove the natural cache layout builds and analyzes cleanly.",
+      "status": "complete",
+      "one_liner": "Taught meshc and mesh-lsp to discover scoped installed package roots from mesh.toml leaves and added scoped package regressions that prove the natural cache layout builds and analyzes cleanly.",
+      "narrative": "Added manifest-driven installed-package root discovery to compiler and LSP analysis so both walk `.mesh/packages` recursively until they reach the first descendant containing `mesh.toml`, then resolve modules relative to that leaf. This preserves the scoped on-disk cache layout while naturally skipping package-root `main.mpl`. Switched `meshc` and `mesh-lsp` package scans to use those roots, added direct compiler and LSP regressions for scoped and flat layouts, added a new `e2e_m034_s01` consumer build/run proof, and recorded the repo-local gotcha in `.gsd/KNOWLEDGE.md`. During verification I corrected the test fixtures to export `message` publicly and added `tempfile` to `mesh-lsp` dev-dependencies so the new temp-project LSP tests compile.",
+      "verification_result": "Passed `cargo test -p meshc --test e2e_m034_s01 -- --nocapture`, `cargo test -p mesh-lsp scoped_installed_package -- --nocapture`, and `cargo test -p meshc test_build_project_discovers_scoped_installed_package_modules -- --nocapture`. These cover the scoped consumer build/run path, direct compiler package-root drift, and LSP analysis of scoped plus flat installed-package layouts. Slice-level verifier/script and docs-contract checks remain owned by T02/T03 and were not expected to pass yet.",
+      "duration": "",
+      "completed_at": "2026-03-26T19:54:27.148Z",
+      "blocker_discovered": false,
+      "deviations": "Added a direct `meshc` unit regression in `compiler/meshc/src/discovery.rs` so package-root drift fails earlier than the end-to-end import proof. Added `tempfile` to `compiler/mesh-lsp/Cargo.toml` dev-dependencies to support temp-project analysis fixtures.",
+      "known_issues": "None.",
+      "key_files": [
+        "compiler/meshc/src/discovery.rs",
+        "compiler/mesh-lsp/src/analysis.rs",
+        "compiler/meshc/tests/e2e_m034_s01.rs",
+        "compiler/mesh-lsp/Cargo.toml",
+        ".gsd/KNOWLEDGE.md"
+      ],
+      "key_decisions": [
+        "Treat the first descendant under `.mesh/packages` containing `mesh.toml` as the installed package root and stop descending there.",
+        "Preserve the existing scoped cache layout and align `meshc`/`mesh-lsp` around manifest-leaf discovery instead of flattening installed packages."
+      ],
+      "full_summary_md": "---\nid: T01\nparent: S01\nmilestone: M034\nkey_files:\n  - compiler/meshc/src/discovery.rs\n  - compiler/mesh-lsp/src/analysis.rs\n  - compiler/meshc/tests/e2e_m034_s01.rs\n  - compiler/mesh-lsp/Cargo.toml\n  - .gsd/KNOWLEDGE.md\nkey_decisions:\n  - Treat the first descendant under `.mesh/packages` containing `mesh.toml` as the installed package root and stop descending there.\n  - Preserve the existing scoped cache layout and align `meshc`/`mesh-lsp` around manifest-leaf discovery instead of flattening installed packages.\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-03-26T19:54:27.148Z\nblocker_discovered: false\n---\n\n# T01: Taught meshc and mesh-lsp to discover scoped installed package roots from mesh.toml leaves and added scoped package regressions that prove the natural cache layout builds and analyzes cleanly.\n\n**Taught meshc and mesh-lsp to discover scoped installed package roots from mesh.toml leaves and added scoped package regressions that prove the natural cache layout builds and analyzes cleanly.**\n\n## What Happened\n\nAdded manifest-driven installed-package root discovery to compiler and LSP analysis so both walk `.mesh/packages` recursively until they reach the first descendant containing `mesh.toml`, then resolve modules relative to that leaf. This preserves the scoped on-disk cache layout while naturally skipping package-root `main.mpl`. Switched `meshc` and `mesh-lsp` package scans to use those roots, added direct compiler and LSP regressions for scoped and flat layouts, added a new `e2e_m034_s01` consumer build/run proof, and recorded the repo-local gotcha in `.gsd/KNOWLEDGE.md`. During verification I corrected the test fixtures to export `message` publicly and added `tempfile` to `mesh-lsp` dev-dependencies so the new temp-project LSP tests compile.\n\n## Verification\n\nPassed `cargo test -p meshc --test e2e_m034_s01 -- --nocapture`, `cargo test -p mesh-lsp scoped_installed_package -- --nocapture`, and `cargo test -p meshc test_build_project_discovers_scoped_installed_package_modules -- --nocapture`. These cover the scoped consumer build/run path, direct compiler package-root drift, and LSP analysis of scoped plus flat installed-package layouts. Slice-level verifier/script and docs-contract checks remain owned by T02/T03 and were not expected to pass yet.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `cargo test -p meshc --test e2e_m034_s01 -- --nocapture` | 0 | ✅ pass | 15900ms |\n| 2 | `cargo test -p mesh-lsp scoped_installed_package -- --nocapture` | 0 | ✅ pass | 7000ms |\n| 3 | `cargo test -p meshc test_build_project_discovers_scoped_installed_package_modules -- --nocapture` | 0 | ✅ pass | 20000ms |\n\n\n## Deviations\n\nAdded a direct `meshc` unit regression in `compiler/meshc/src/discovery.rs` so package-root drift fails earlier than the end-to-end import proof. Added `tempfile` to `compiler/mesh-lsp/Cargo.toml` dev-dependencies to support temp-project analysis fixtures.\n\n## Known Issues\n\nNone.\n\n## Files Created/Modified\n\n- `compiler/meshc/src/discovery.rs`\n- `compiler/mesh-lsp/src/analysis.rs`\n- `compiler/meshc/tests/e2e_m034_s01.rs`\n- `compiler/mesh-lsp/Cargo.toml`\n- `.gsd/KNOWLEDGE.md`\n",
+      "description": "Close the hard blocker from research: real registry installs already extract scoped packages to `.mesh/packages/<owner>/<package>@<version>`, but both `meshc` and `mesh-lsp` currently stop one directory too early and therefore treat the owner directory as the package root. Preserve the scoped on-disk layout, teach both analyzers to recurse to leaf package roots containing `mesh.toml`, and pin the contract with named regressions that prove a consumer can import a module from a scoped installed package without manual flattening.\n\n## Load Profile\n\n- **Shared resources**: repeated filesystem walks under `.mesh/packages` during builds and editor analysis.\n- **Per-operation cost**: recursive directory traversal plus parse/typecheck of each discovered package root.\n- **10x breakpoint**: deeply nested or version-heavy package caches would hurt build/LSP latency first, so discovery must stay deterministic and skip non-package directories cheaply.\n\n## Negative Tests\n\n- **Malformed inputs**: owner directories with no `mesh.toml`, hidden directories/files, and package trees that contain only `main.mpl`.\n- **Error paths**: nested non-package directories should be skipped instead of panicking or compiling package-root `main.mpl` as a normal module.\n- **Boundary conditions**: both `.mesh/packages/<owner>/<package>@<version>` and flat `.mesh/packages/<package>@<version>` layouts resolve the same import/module naming rules.\n\n## Steps\n\n1. Extract or add a shared package-root discovery rule in `compiler/meshc/src/discovery.rs` that finds leaf package directories containing `mesh.toml` anywhere under `.mesh/packages`, while still ignoring hidden paths and package-root `main.mpl`.\n2. Mirror the same scoped-package discovery semantics in `compiler/mesh-lsp/src/analysis.rs` so editor diagnostics/hover/go-to-definition stay aligned with `meshc build`.\n3. Add `compiler/meshc/tests/e2e_m034_s01.rs` coverage that lays out a temp consumer plus scoped installed package tree and proves the consumer builds without manual filesystem moves.\n4. Add or extend `compiler/mesh-lsp/src/analysis.rs` unit tests so nested scoped package roots analyze cleanly and do not regress back to the owner-directory bug.\n\n## Must-Haves\n\n- [ ] Scoped installed packages build from their natural nested owner/package cache path.\n- [ ] `meshc` and `mesh-lsp` share the same package-root expectation for scoped installs.\n- [ ] Named regressions fail specifically on discovery drift instead of surfacing later as a vague `module not found` release failure.",
+      "estimate": "2h",
+      "files": [
+        "compiler/meshc/src/discovery.rs",
+        "compiler/mesh-lsp/src/analysis.rs",
+        "compiler/meshc/tests/e2e_m034_s01.rs"
+      ],
+      "verify": "`cargo test -p meshc --test e2e_m034_s01 scoped_installed_package_builds -- --nocapture`\n`cargo test -p mesh-lsp scoped_installed_package -- --nocapture`",
+      "inputs": [
+        "`compiler/meshc/src/discovery.rs`",
+        "`compiler/mesh-lsp/src/analysis.rs`"
+      ],
+      "expected_output": [
+        "`compiler/meshc/src/discovery.rs`",
+        "`compiler/mesh-lsp/src/analysis.rs`",
+        "`compiler/meshc/tests/e2e_m034_s01.rs`"
+      ],
+      "observability_impact": "- Signals added/changed: named scoped-package build and analysis regressions.\n- How a future agent inspects this: rerun the `scoped_installed_package` test filters in `compiler/meshc/tests/e2e_m034_s01.rs` and `compiler/mesh-lsp/src/analysis.rs`.\n- Failure state exposed: whether drift came from package-root discovery, module naming, or editor/runtime divergence.",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M034",
+      "slice_id": "S01",
+      "id": "T02",
+      "title": "Add the canonical real-registry publish/install verifier and proof fixtures",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Once scoped installs compile locally, create the single repo-local proof surface that later CI work can call unchanged. The verifier must use one owner-scoped proof package name plus a unique version per run, isolate credentials under `.tmp/m034-s01/home`, publish to the real registry with `meshpkg --json`, and then recheck API, download, lockfile, consumer build, duplicate publish rejection, and public discoverability instead of trusting artifact builds or homepage counts.\n\n## Failure Modes\n\n| Dependency | On error | On timeout | On malformed response |\n|------------|----------|-----------|----------------------|\n| Real registry API / R2 | Fail the active phase, persist status/body/logs under `.tmp/m034-s01/verify/`, and stop without retrying the same version. | Fail fast with the package/version coordinate recorded for operator review. | Treat any non-JSON or missing field as proof failure; do not infer success from partial output. |\n| Packages website SSR | Only check it after publish/install truth passes; persist the exact URL/body snapshot on failure. | Allow one bounded wait/retry, then fail the visibility phase. | Treat missing package/version text as a visibility failure, not as a soft warning. |\n| Local `meshpkg` / `meshc` binaries | Stop immediately and keep stdout/stderr in the phase log. | N/A | Reject non-JSON `meshpkg --json` output and stop the proof. |\n\n## Load Profile\n\n- **Shared resources**: immutable registry versions, download counters, real network calls, and the temporary credential/home directories under `.tmp/m034-s01/`.\n- **Per-operation cost**: one real publish, multiple metadata/search/detail fetches, one tarball download/hash, one install, one consumer build, and one duplicate-publish check.\n- **10x breakpoint**: version collisions and flaky network calls fail first, so the verifier must generate unique versions and keep phase logs for reruns instead of retrying blindly.\n\n## Negative Tests\n\n- **Malformed inputs**: missing `MESH_PUBLISH_OWNER`, missing `MESH_PUBLISH_TOKEN`, missing/invalid version override, or templates that fail to render a quoted scoped dependency key.\n- **Error paths**: duplicate publish must return 409, missing metadata/search/detail fields must fail the proof, and any SHA mismatch between publish metadata, downloaded tarball, and `mesh.lock` must stop the script.\n- **Boundary conditions**: exact package detail URL, search endpoint visibility, and a consumer that installs from `mesh.toml` using a quoted scoped dependency key.\n\n## Steps\n\n1. Add durable proof-package and consumer fixture templates under `scripts/fixtures/` so the verifier creates reproducible temp workspaces instead of hand-writing files inline.\n2. Implement `scripts/verify-m034-s01.sh` with phase helpers patterned after the existing M033 verifier style: isolated HOME/credentials, unique per-run version generation, JSON publish/install parsing, direct registry HTTP checks, tarball SHA validation, lockfile assertions, consumer build, and duplicate publish rejection.\n3. Verify public visibility using the exact package detail/search surfaces rather than homepage package counts, and store every phase log/artifact under `.tmp/m034-s01/verify/` for later debugging.\n4. Keep the verifier small and CI-ready: explicit env contract, deterministic temp paths, no secret echo, and no dependency on unreleased installer artifacts or workflow YAML.\n\n## Must-Haves\n\n- [ ] `scripts/verify-m034-s01.sh` is the authoritative publish→metadata→download→install→lockfile→build proof surface for this slice.\n- [ ] The verifier uses quoted scoped dependency keys in the consumer manifest and proves the installed dependency actually compiles.\n- [ ] Duplicate publish rejection, exact package detail/search visibility, and SHA/lockfile truth are all checked in the same run.\n- [ ] Every failure leaves phase-specific logs under `.tmp/m034-s01/verify/` without printing secrets.",
+      "estimate": "2.5h",
+      "files": [
+        "scripts/verify-m034-s01.sh",
+        "scripts/fixtures/m034-s01-proof-package/mesh.toml.template",
+        "scripts/fixtures/m034-s01-proof-package/registry_proof.mpl",
+        "scripts/fixtures/m034-s01-consumer/mesh.toml.template",
+        "scripts/fixtures/m034-s01-consumer/main.mpl",
+        "compiler/meshpkg/src/install.rs"
+      ],
+      "verify": "`bash -n scripts/verify-m034-s01.sh`\n`bash scripts/verify-m034-s01.sh`",
+      "inputs": [
+        "`compiler/meshpkg/src/main.rs`",
+        "`compiler/meshpkg/src/publish.rs`",
+        "`compiler/meshpkg/src/install.rs`",
+        "`compiler/mesh-pkg/src/lockfile.rs`",
+        "`scripts/verify-m033-s01.sh`",
+        "`packages-website/src/routes/packages/[...name]/+page.server.js`",
+        "`packages-website/src/routes/search/+page.server.js`"
+      ],
+      "expected_output": [
+        "`scripts/verify-m034-s01.sh`",
+        "`scripts/fixtures/m034-s01-proof-package/mesh.toml.template`",
+        "`scripts/fixtures/m034-s01-proof-package/registry_proof.mpl`",
+        "`scripts/fixtures/m034-s01-consumer/mesh.toml.template`",
+        "`scripts/fixtures/m034-s01-consumer/main.mpl`"
+      ],
+      "observability_impact": "- Signals added/changed: phase-scoped verifier logs, saved JSON/API payloads, downloaded tarball/hash artifacts, and captured `mesh.lock`/build outputs.\n- How a future agent inspects this: start with `.tmp/m034-s01/verify/`, then rerun `bash scripts/verify-m034-s01.sh`.\n- Failure state exposed: the exact publish/install/visibility phase, endpoint, package/version, and stderr/stdout that broke.",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M034",
+      "slice_id": "S01",
+      "id": "T03",
+      "title": "Harden registry truth edges and align the named-install/scoped-key contract",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "The live verifier should not be able to report green while registry state is half-committed or the public docs lie about dependency declaration. Tighten publish/download ordering so blob truth exists before metadata/counters advance, correct `meshpkg install <name>` messaging to match its real fetch+lockfile behavior, and update the public tooling docs so scoped dependency examples use quoted TOML keys and the operator contract matches what the CLI actually does.\n\n## Failure Modes\n\n| Dependency | On error | On timeout | On malformed response |\n|------------|----------|-----------|----------------------|\n| Registry DB insert / R2 upload | Abort publish without leaving a metadata-only success path; surface 409 vs internal errors distinctly. | Fail the publish phase and record whether blob upload or DB persistence stalled. | Return an explicit failure instead of claiming success or leaving counters/metadata advanced. |\n| Registry object fetch / counter update | Return 404/explicit failure without incrementing counters when the blob is unavailable. | Fail the download phase without mutating counters. | Treat missing blob/metadata state as a release-blocking proof failure. |\n| CLI/docs consumers | Fail contract checks when output/docs still imply manifest mutation or omit quoted scoped dependency examples. | N/A | Treat stale contract text as drift to fix, not as a non-blocking note. |\n\n## Load Profile\n\n- **Shared resources**: versions table uniqueness, R2 object existence/lookups, registry download counters, and the live proof package namespace.\n- **Per-operation cost**: one blob existence/upload decision plus one DB insert per publish, and one object fetch plus counter update per successful download.\n- **10x breakpoint**: duplicate publish races and repeated object lookups would surface first, so the hardened path should stay idempotent and keep the verifier serialized to one version per run.\n\n## Negative Tests\n\n- **Malformed inputs**: duplicate name/version publishes, missing object state, and scoped dependency snippets written without quoted keys.\n- **Error paths**: duplicate publish must stay a 409, missing blob fetch must fail without counter inflation, and named install must leave `mesh.toml` unchanged while still updating `mesh.lock`.\n- **Boundary conditions**: existing blob reuse by SHA, exact latest-version metadata, and docs/CLI wording that distinguishes declared dependencies from one-off fetches.\n\n## Steps\n\n1. Reorder `registry/src/routes/publish.rs` so object truth is established before the version row becomes the source of public metadata truth, while keeping README extraction and immutable-version handling intact.\n2. Reorder `registry/src/routes/download.rs` so counters move only after object fetch succeeds, and make the failure path visible instead of silently inflating download counts.\n3. Fix `compiler/meshpkg/src/install.rs` messaging/comments so named install is explicitly a fetch+lockfile operation, not a hidden `mesh.toml` mutation.\n4. Update `website/docs/docs/tooling/index.md` and extend `scripts/verify-m034-s01.sh` so the public/operator contract now covers quoted scoped dependency keys, named-install manifest stability, duplicate publish rejection, and the hardened failure expectations.\n\n## Must-Haves\n\n- [ ] Publish no longer leaves a version row as the public truth source before the blob exists.\n- [ ] Download counters advance only after object fetch succeeds.\n- [ ] CLI/docs explicitly state that named install fetches and locks a package but does not edit `mesh.toml`.\n- [ ] The verifier reruns the duplicate-publish and named-install contract checks against the hardened flow.",
+      "estimate": "2h",
+      "files": [
+        "registry/src/routes/publish.rs",
+        "registry/src/routes/download.rs",
+        "compiler/meshpkg/src/install.rs",
+        "website/docs/docs/tooling/index.md",
+        "scripts/verify-m034-s01.sh"
+      ],
+      "verify": "`bash scripts/verify-m034-s01.sh`\n`rg -n '\"your-login/your-package\" = \"1.0.0\"' website/docs/docs/tooling/index.md`\n`rg -n 'does not edit mesh.toml|updates mesh.lock' website/docs/docs/tooling/index.md compiler/meshpkg/src/install.rs`",
+      "inputs": [
+        "`registry/src/routes/publish.rs`",
+        "`registry/src/routes/download.rs`",
+        "`compiler/meshpkg/src/install.rs`",
+        "`website/docs/docs/tooling/index.md`",
+        "`scripts/verify-m034-s01.sh`"
+      ],
+      "expected_output": [
+        "`registry/src/routes/publish.rs`",
+        "`registry/src/routes/download.rs`",
+        "`compiler/meshpkg/src/install.rs`",
+        "`website/docs/docs/tooling/index.md`",
+        "`scripts/verify-m034-s01.sh`"
+      ],
+      "observability_impact": "- Signals added/changed: publish/download failures remain visible as 409/404 or explicit verifier phase failures instead of false-green metadata/counter state.\n- How a future agent inspects this: rerun `bash scripts/verify-m034-s01.sh` and inspect the publish/download phase logs under `.tmp/m034-s01/verify/`.\n- Failure state exposed: whether the break came from blob upload ordering, download object lookup, or stale named-install/scoped-key contract text.",
+      "full_plan_md": "",
+      "sequence": 0
     }
   ],
   "decisions": [
@@ -2572,6 +2956,90 @@
       "revisable": "Yes",
       "made_by": "agent",
       "superseded_by": null
+    },
+    {
+      "seq": 3378,
+      "id": "D070",
+      "when_context": "M034 bootstrap",
+      "scope": "package-experience",
+      "decision": "Where the package-manager UX improvement wave should focus",
+      "choice": "Center package-manager experience improvements on the public packages website first, with CLI polish secondary, and do that after the underlying trust path is proven.",
+      "rationale": "The user said the package-manager UI is simple and chose website-first when asked where the improvement effort should center. Sequencing it after M034 keeps polish from outrunning truth.",
+      "revisable": "Yes — if later discussion or execution shows the biggest usability pain is actually CLI-first.",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 3379,
+      "id": "D071",
+      "when_context": "M034 bootstrap",
+      "scope": "scope",
+      "decision": "How to sequence the next Mesh maturity wave after M033",
+      "choice": "Split the next maturity wave into four milestones sequenced as M034 delivery truth, M035 test-framework hardening, M036 editor parity and multi-editor support, and M037 package experience polish.",
+      "rationale": "The user’s vision spans CI/CD hardening, package-manager end-to-end proof, test-framework readiness, editor support, and package UI improvement. Splitting these into four milestones preserves the full ambition without collapsing unlike work into one mushy milestone.",
+      "revisable": "Yes — if execution evidence shows one milestone should merge or split further.",
+      "made_by": "collaborative",
+      "superseded_by": null
+    },
+    {
+      "seq": 3380,
+      "id": "D072",
+      "when_context": "M034 bootstrap",
+      "scope": "editor-support",
+      "decision": "How serious multi-editor support should be",
+      "choice": "Treat non-VSCode editor support as a first-class milestone goal rather than a best-effort secondary story.",
+      "rationale": "The user explicitly rejected VS Code-only and best-effort secondary support, and wants a real path for Vim or another non-VSCode editor.",
+      "revisable": "Yes — once the first serious secondary editor target is chosen during M036 discussion.",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 3381,
+      "id": "D073",
+      "when_context": "M034 bootstrap",
+      "scope": "package-experience",
+      "decision": "Where the package-manager UX improvement wave should focus",
+      "choice": "Center package-manager experience improvements on the public packages website first, with CLI polish secondary, and do that after the underlying trust path is proven.",
+      "rationale": "The user said the package-manager UI is simple and chose website-first when asked where the improvement effort should center. Sequencing it after M034 keeps polish from outrunning truth.",
+      "revisable": "Yes — if later discussion or execution shows the biggest usability pain is actually CLI-first.",
+      "made_by": "human",
+      "superseded_by": null
+    },
+    {
+      "seq": 3383,
+      "id": "D074",
+      "when_context": "M034/S01 planning",
+      "scope": "release-verification",
+      "decision": "What should be the canonical proof surface for the real registry publish/install path",
+      "choice": "Use a repo-local `scripts/verify-m034-s01.sh` verifier with one owner-scoped proof package name, unique per-run versions, `meshpkg --json`, direct registry HTTP checks, lockfile inspection, consumer build proof, duplicate publish rejection, and exact package-page visibility checks.",
+      "rationale": "This creates one observable proof surface that later CI slices can call unchanged and avoids treating artifact builds, homepage counts, or undeclared assumptions as release confidence.",
+      "revisable": "Yes",
+      "made_by": "agent",
+      "superseded_by": null
+    },
+    {
+      "seq": 3384,
+      "id": "D075",
+      "when_context": "M034/S01 planning",
+      "scope": "release-verification",
+      "decision": "What should be the canonical proof surface for the real registry publish/install path",
+      "choice": "Use a repo-local `scripts/verify-m034-s01.sh` verifier with one owner-scoped proof package name, unique per-run versions, `meshpkg --json`, direct registry HTTP checks, lockfile inspection, consumer build proof, duplicate publish rejection, and exact package-page visibility checks.",
+      "rationale": "This creates one observable proof surface that later CI slices can call unchanged and avoids treating artifact builds, homepage counts, or undeclared assumptions as release confidence.",
+      "revisable": "Yes",
+      "made_by": "agent",
+      "superseded_by": null
+    },
+    {
+      "seq": 3385,
+      "id": "D076",
+      "when_context": "M034/S01 planning",
+      "scope": "package-manager",
+      "decision": "How scoped installed registry packages should be represented and discovered locally",
+      "choice": "Keep the current owner/package@version on-disk layout under `.mesh/packages` and fix `meshc`/`mesh-lsp` discovery to recurse to leaf directories containing `mesh.toml`, rather than sanitizing scoped package names into a flat cache key.",
+      "rationale": "This removes the real scoped-install build blocker without inventing a second name-encoding contract, preserves the registry/package name end-to-end, and keeps compiler and editor behavior aligned on the same package-root rule.",
+      "revisable": "Yes",
+      "made_by": "agent",
+      "superseded_by": null
     }
   ],
   "verification_evidence": [
@@ -3333,6 +3801,39 @@
       "verdict": "✅ pass",
       "duration_ms": 57,
       "created_at": "2026-03-26T04:36:20.937Z"
+    },
+    {
+      "id": 70,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M034",
+      "command": "cargo test -p meshc --test e2e_m034_s01 -- --nocapture",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 15900,
+      "created_at": "2026-03-26T19:54:27.148Z"
+    },
+    {
+      "id": 71,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M034",
+      "command": "cargo test -p mesh-lsp scoped_installed_package -- --nocapture",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 7000,
+      "created_at": "2026-03-26T19:54:27.148Z"
+    },
+    {
+      "id": 72,
+      "task_id": "T01",
+      "slice_id": "S01",
+      "milestone_id": "M034",
+      "command": "cargo test -p meshc test_build_project_discovers_scoped_installed_package_modules -- --nocapture",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 20000,
+      "created_at": "2026-03-26T19:54:27.148Z"
     }
   ]
 }

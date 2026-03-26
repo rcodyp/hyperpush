@@ -946,7 +946,10 @@ end
             "SELECT COALESCE(assigned_to::text, '') AS assigned_to FROM m033_expr_uuid_assigns WHERE id = $1",
             &["row-1"],
         );
-        assert_eq!(assigned_row.get("assigned_to").map(String::as_str), Some(""));
+        assert_eq!(
+            assigned_row.get("assigned_to").map(String::as_str),
+            Some("")
+        );
     });
 }
 

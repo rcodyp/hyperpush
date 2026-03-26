@@ -3,9 +3,7 @@
 //! These helpers intentionally own PostgreSQL-only DDL that should not be
 //! represented by the neutral `Migration.*` surface.
 
-use crate::collections::list::{
-    mesh_list_append, mesh_list_get, mesh_list_length, mesh_list_new,
-};
+use crate::collections::list::{mesh_list_append, mesh_list_get, mesh_list_length, mesh_list_new};
 use crate::collections::map::mesh_map_get;
 use crate::db::pool::{mesh_pool_execute, mesh_pool_query};
 use crate::io::{alloc_result, MeshResult};
@@ -24,7 +22,9 @@ fn quote_qualified_ident(value: &str, helper_name: &str) -> Result<String, Strin
     for part in value.split('.') {
         let trimmed = part.trim();
         if trimmed.is_empty() {
-            return Err(format!("{helper_name}: identifier `{value}` contains an empty segment"));
+            return Err(format!(
+                "{helper_name}: identifier `{value}` contains an empty segment"
+            ));
         }
         parts.push(quote_ident(trimmed));
     }
@@ -75,7 +75,9 @@ fn render_partitioned_table_entry(
 ) -> Result<PartitionedTableEntry, String> {
     let trimmed = column.trim();
     if trimmed.is_empty() {
-        return Err(format!("{helper_name}: invalid column definition `{column}`"));
+        return Err(format!(
+            "{helper_name}: invalid column definition `{column}`"
+        ));
     }
 
     if !trimmed.contains(':') {
@@ -84,15 +86,24 @@ fn render_partitioned_table_entry(
 
     let parts: Vec<&str> = trimmed.splitn(3, ':').collect();
     match parts.as_slice() {
-        [name, sql_type, constraints] if !name.trim().is_empty() => Ok(PartitionedTableEntry::Column {
-            name: name.trim().to_string(),
-            sql: format!("{} {} {}", quote_ident(name.trim()), sql_type.trim(), constraints.trim()),
-        }),
+        [name, sql_type, constraints] if !name.trim().is_empty() => {
+            Ok(PartitionedTableEntry::Column {
+                name: name.trim().to_string(),
+                sql: format!(
+                    "{} {} {}",
+                    quote_ident(name.trim()),
+                    sql_type.trim(),
+                    constraints.trim()
+                ),
+            })
+        }
         [name, sql_type] if !name.trim().is_empty() => Ok(PartitionedTableEntry::Column {
             name: name.trim().to_string(),
             sql: format!("{} {}", quote_ident(name.trim()), sql_type.trim()),
         }),
-        _ => Err(format!("{helper_name}: invalid column definition `{column}`")),
+        _ => Err(format!(
+            "{helper_name}: invalid column definition `{column}`"
+        )),
     }
 }
 
@@ -371,10 +382,7 @@ pub extern "C" fn mesh_pg_list_daily_partitions_before(
 }
 
 #[no_mangle]
-pub extern "C" fn mesh_pg_drop_partition(
-    pool: u64,
-    partition_name: *const MeshString,
-) -> *mut u8 {
+pub extern "C" fn mesh_pg_drop_partition(pool: u64, partition_name: *const MeshString) -> *mut u8 {
     unsafe {
         match build_drop_partition_sql((*partition_name).as_str()) {
             Ok(sql) => {
@@ -414,7 +422,8 @@ mod tests {
     }
 
     #[test]
-    fn migration_pg_schema_build_create_range_partitioned_table_sql_rejects_missing_partition_column() {
+    fn migration_pg_schema_build_create_range_partitioned_table_sql_rejects_missing_partition_column(
+    ) {
         let err = build_create_range_partitioned_table_sql(
             "events",
             &["id:UUID:PRIMARY KEY".to_string()],
@@ -444,13 +453,8 @@ mod tests {
 
     #[test]
     fn migration_pg_schema_build_create_gin_index_sql_renders_opclass() {
-        let sql = build_create_gin_index_sql(
-            "events",
-            "idx_events_tags",
-            "tags",
-            "jsonb_path_ops",
-        )
-        .expect("GIN index SQL should build");
+        let sql = build_create_gin_index_sql("events", "idx_events_tags", "tags", "jsonb_path_ops")
+            .expect("GIN index SQL should build");
         assert_eq!(
             sql,
             "CREATE INDEX IF NOT EXISTS \"idx_events_tags\" ON \"events\" USING GIN (\"tags\" \"jsonb_path_ops\")"
@@ -476,8 +480,8 @@ mod tests {
 
     #[test]
     fn migration_pg_schema_build_drop_partition_sql_quotes_identifier() {
-        let sql = build_drop_partition_sql("events_20260216")
-            .expect("drop partition SQL should build");
+        let sql =
+            build_drop_partition_sql("events_20260216").expect("drop partition SQL should build");
         assert_eq!(sql, "DROP TABLE IF EXISTS \"events_20260216\"");
     }
 }

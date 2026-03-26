@@ -1,0 +1,6 @@
+[package]
+name = "research/consumer"
+version = "0.1.0"
+
+[dependencies]
+"snowdamiz/mesh-slug" = "1.0.0"

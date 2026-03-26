@@ -193,7 +193,7 @@ fn parse_create_index_options(options: &str) -> Result<CreateIndexOptions, Strin
             "name" => {
                 if value.trim().is_empty() {
                     return Err(
-                        "Migration.create_index options: name must not be empty".to_string(),
+                        "Migration.create_index options: name must not be empty".to_string()
                     );
                 }
                 parsed.name = Some(value.trim().to_string());
@@ -585,12 +585,9 @@ mod tests {
 
     #[test]
     fn test_build_create_index_sql_multi_column() {
-        let sql = build_create_index_sql(
-            "orders",
-            &["user_id".to_string(), "status".to_string()],
-            "",
-        )
-        .expect("multi-column index SQL should build");
+        let sql =
+            build_create_index_sql("orders", &["user_id".to_string(), "status".to_string()], "")
+                .expect("multi-column index SQL should build");
         assert_eq!(
             sql,
             "CREATE INDEX IF NOT EXISTS \"idx_orders_user_id_status\" ON \"orders\" (\"user_id\", \"status\")"

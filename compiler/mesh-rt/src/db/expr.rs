@@ -493,7 +493,10 @@ mod tests {
             sql,
             "ts_rank(to_tsvector($1::regconfig, crypt($2, gen_salt($3, $4))), plainto_tsquery($5::regconfig, $6))"
         );
-        assert_eq!(params, vec!["english", "secret", "bf", "12", "english", "secret"]);
+        assert_eq!(
+            params,
+            vec!["english", "secret", "bf", "12", "english", "secret"]
+        );
     }
 
     #[test]

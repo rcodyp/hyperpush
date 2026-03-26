@@ -375,23 +375,15 @@ fn build_project_with_overlays(
 
     let packages_dir = project_root.join(".mesh").join("packages");
     if packages_dir.exists() {
-        for entry in std::fs::read_dir(&packages_dir)
-            .map_err(|e| format!("Failed to read .mesh/packages: {}", e))?
-        {
-            let entry = entry.map_err(|e| format!("Failed to read packages entry: {}", e))?;
-            let pkg_dir = entry.path();
-            if !pkg_dir.is_dir() {
-                continue;
-            }
-
-            let pkg_files = discover_mesh_files(&pkg_dir)?;
+        for package_root in discover_installed_package_roots(&packages_dir)? {
+            let pkg_files = discover_mesh_files(&package_root)?;
             for relative_path in &pkg_files {
                 let name = match path_to_module_name(relative_path) {
                     Some(name) => name,
                     None => continue,
                 };
 
-                let full_path = pkg_dir.join(relative_path);
+                let full_path = package_root.join(relative_path);
                 let source = read_source_with_overlays(&full_path, overlays)?;
                 let parse = mesh_parser::parse(&source);
                 graph.add_module(name, relative_path.clone(), false);
@@ -545,6 +537,56 @@ fn discover_recursive(root: &Path, dir: &Path, files: &mut Vec<PathBuf>) -> std:
     Ok(())
 }
 
+fn discover_installed_package_roots(packages_dir: &Path) -> Result<Vec<PathBuf>, String> {
+    let mut package_roots = Vec::new();
+    discover_installed_package_roots_recursive(packages_dir, &mut package_roots).map_err(|e| {
+        format!(
+            "Failed to walk installed packages under '{}': {}",
+            packages_dir.display(),
+            e
+        )
+    })?;
+    package_roots.sort();
+    Ok(package_roots)
+}
+
+fn discover_installed_package_roots_recursive(
+    dir: &Path,
+    package_roots: &mut Vec<PathBuf>,
+) -> std::io::Result<()> {
+    let mut child_dirs = Vec::new();
+    let mut has_manifest = false;
+
+    for entry in std::fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+
+        if name.starts_with('.') {
+            continue;
+        }
+
+        if path.is_dir() {
+            child_dirs.push(path);
+        } else if name == "mesh.toml" {
+            has_manifest = true;
+        }
+    }
+
+    if has_manifest {
+        package_roots.push(dir.to_path_buf());
+        return Ok(());
+    }
+
+    child_dirs.sort();
+    for child_dir in child_dirs {
+        discover_installed_package_roots_recursive(&child_dir, package_roots)?;
+    }
+
+    Ok(())
+}
+
 fn extract_imports(source_file: &SourceFile) -> Vec<String> {
     let mut imports = Vec::new();
     for item in source_file.items() {
@@ -630,6 +672,139 @@ fn build_import_context(
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    fn package_manifest(name: &str) -> String {
+        format!(
+            "[package]\nname = \"{}\"\nversion = \"1.0.0\"\n\n[dependencies]\n",
+            name
+        )
+    }
+
+    fn file_uri(path: &std::path::Path) -> String {
+        Url::from_file_path(path)
+            .expect("path should convert to file URI")
+            .to_string()
+    }
+
+    // ── Scoped installed package regressions ────────────────────────────
+
+    #[test]
+    fn scoped_installed_package_discovery_skips_owner_dirs_hidden_paths_and_manifestless_trees() {
+        let tmp = tempfile::tempdir().unwrap();
+        let packages_dir = tmp.path().join(".mesh/packages");
+
+        std::fs::create_dir_all(packages_dir.join("acme/greeter@1.0.0")).unwrap();
+        std::fs::write(
+            packages_dir.join("acme/greeter@1.0.0/mesh.toml"),
+            package_manifest("acme/greeter"),
+        )
+        .unwrap();
+
+        std::fs::create_dir_all(packages_dir.join("flat@1.0.0")).unwrap();
+        std::fs::write(
+            packages_dir.join("flat@1.0.0/mesh.toml"),
+            package_manifest("flat"),
+        )
+        .unwrap();
+
+        std::fs::create_dir_all(packages_dir.join("owner-only/inner")).unwrap();
+        std::fs::write(packages_dir.join("owner-only/inner/main.mpl"), "").unwrap();
+
+        std::fs::create_dir_all(packages_dir.join(".hidden/ignored@1.0.0")).unwrap();
+        std::fs::write(
+            packages_dir.join(".hidden/ignored@1.0.0/mesh.toml"),
+            package_manifest("ignored"),
+        )
+        .unwrap();
+
+        let roots = discover_installed_package_roots(&packages_dir).unwrap();
+        let relative_roots: Vec<String> = roots
+            .iter()
+            .map(|path| {
+                path.strip_prefix(&packages_dir)
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/")
+            })
+            .collect();
+
+        assert_eq!(relative_roots, vec!["acme/greeter@1.0.0", "flat@1.0.0"]);
+    }
+
+    #[test]
+    fn scoped_installed_package_analyzes_cleanly() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_dir = tmp.path().join("consumer");
+        let package_root = project_dir.join(".mesh/packages/acme/greeter@1.0.0");
+        let main_path = project_dir.join("main.mpl");
+
+        std::fs::create_dir_all(package_root.join("support")).unwrap();
+        std::fs::write(
+            &main_path,
+            "from Support.Message import message\n\nfn main() do\n  println(message())\nend\n",
+        )
+        .unwrap();
+        std::fs::write(
+            package_root.join("mesh.toml"),
+            package_manifest("acme/greeter"),
+        )
+        .unwrap();
+        std::fs::write(package_root.join("main.mpl"), "fn main() do\n  0\nend\n").unwrap();
+        std::fs::write(
+            package_root.join("support/message.mpl"),
+            "pub fn message() -> String do\n  \"hello from package\"\nend\n",
+        )
+        .unwrap();
+
+        let source = std::fs::read_to_string(&main_path).unwrap();
+        let result = analyze_document(&file_uri(&main_path), &source, &[]);
+        let messages = result
+            .diagnostics
+            .iter()
+            .map(|diag| diag.message.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(
+            messages.is_empty(),
+            "scoped installed packages should analyze without diagnostics, got: {:?}",
+            messages
+        );
+    }
+
+    #[test]
+    fn scoped_installed_package_flat_layout_analyzes_cleanly() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_dir = tmp.path().join("consumer");
+        let package_root = project_dir.join(".mesh/packages/greeter@1.0.0");
+        let main_path = project_dir.join("main.mpl");
+
+        std::fs::create_dir_all(&package_root).unwrap();
+        std::fs::write(
+            &main_path,
+            "from Greeting import message\n\nfn main() do\n  println(message())\nend\n",
+        )
+        .unwrap();
+        std::fs::write(package_root.join("mesh.toml"), package_manifest("greeter")).unwrap();
+        std::fs::write(
+            package_root.join("greeting.mpl"),
+            "pub fn message() -> String do\n  \"hello from flat package\"\nend\n",
+        )
+        .unwrap();
+
+        let source = std::fs::read_to_string(&main_path).unwrap();
+        let result = analyze_document(&file_uri(&main_path), &source, &[]);
+        let messages = result
+            .diagnostics
+            .iter()
+            .map(|diag| diag.message.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(
+            messages.is_empty(),
+            "flat installed packages should analyze without diagnostics, got: {:?}",
+            messages
+        );
+    }
 
     // ── Diagnostic Tests ──────────────────────────────────────────────────
 

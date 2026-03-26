@@ -237,13 +237,16 @@ fn stop_mesher(spawned: SpawnedMesher) -> StoppedMesher {
 
 fn assert_mesher_logs(logs: &StoppedMesher, config: &MesherConfig) {
     assert!(
-        logs.combined.contains("[Mesher] Connecting to PostgreSQL..."),
+        logs.combined
+            .contains("[Mesher] Connecting to PostgreSQL..."),
         "mesher logs never showed the Postgres connection banner:\n{}",
         logs.combined
     );
     assert!(
-        logs.combined
-            .contains(&format!("[Mesher] HTTP server starting on :{}", config.http_port)),
+        logs.combined.contains(&format!(
+            "[Mesher] HTTP server starting on :{}",
+            config.http_port
+        )),
         "mesher logs never showed the HTTP listener on :{}:\n{}",
         config.http_port,
         logs.combined
@@ -401,7 +404,8 @@ fn json_value_string(value: &Value) -> String {
 }
 
 fn json_array_signature(items: &[Value], fields: &[&str]) -> String {
-    items.iter()
+    items
+        .iter()
         .map(|item| {
             fields
                 .iter()
@@ -438,7 +442,11 @@ fn assert_nullable_timestamp(value: &Value, expected: &str, field: &str) {
     if expected.is_empty() {
         assert!(value.is_null(), "expected null for {field}, got {value}");
     } else {
-        assert_eq!(value.as_str(), Some(expected), "timestamp drifted for {field}");
+        assert_eq!(
+            value.as_str(),
+            Some(expected),
+            "timestamp drifted for {field}"
+        );
     }
 }
 
@@ -550,7 +558,9 @@ fn query_database_rows(database_url: &str, sql: &str, params: &[&str]) -> Vec<Db
     let result = native_pg_query(&mut conn, sql, params);
     native_pg_close(conn);
     let rows = result.unwrap_or_else(|e| panic!("query failed: {e}\nsql: {sql}"));
-    rows.into_iter().map(|row| row.into_iter().collect()).collect()
+    rows.into_iter()
+        .map(|row| row.into_iter().collect())
+        .collect()
 }
 
 fn query_single_row(database_url: &str, sql: &str, params: &[&str]) -> DbRow {
@@ -624,7 +634,13 @@ fn insert_org_and_project(database_url: &str, slug: &str) -> String {
     .expect("project id missing")
 }
 
-fn insert_issue(database_url: &str, project_id: &str, fingerprint: &str, title: &str, level: &str) -> String {
+fn insert_issue(
+    database_url: &str,
+    project_id: &str,
+    fingerprint: &str,
+    title: &str,
+    level: &str,
+) -> String {
     query_single_row(
         database_url,
         "INSERT INTO issues (project_id, fingerprint, title, level) VALUES ($1::uuid, $2, $3, $4) RETURNING id::text AS id",
@@ -936,16 +952,14 @@ fn copy_mpl_tree(src: &Path, dst: &Path) {
     if !src.exists() {
         panic!("source tree missing: {}", src.display());
     }
-    fs::create_dir_all(dst).unwrap_or_else(|e| {
-        panic!(
-            "failed to create destination tree {}: {}",
-            dst.display(),
-            e
-        )
-    });
+    fs::create_dir_all(dst)
+        .unwrap_or_else(|e| panic!("failed to create destination tree {}: {}", dst.display(), e));
 
-    for entry in fs::read_dir(src).unwrap_or_else(|e| panic!("failed to read {}: {}", src.display(), e)) {
-        let entry = entry.unwrap_or_else(|e| panic!("failed to read dir entry in {}: {}", src.display(), e));
+    for entry in
+        fs::read_dir(src).unwrap_or_else(|e| panic!("failed to read {}: {}", src.display(), e))
+    {
+        let entry = entry
+            .unwrap_or_else(|e| panic!("failed to read dir entry in {}: {}", src.display(), e));
         let path = entry.path();
         let target = dst.join(entry.file_name());
         if path.is_dir() {
@@ -1068,7 +1082,8 @@ fn e2e_m033_s03_basic_reads_issue_helpers() {
             &[&resolved_issue],
         );
 
-        let other_project_id = insert_org_and_project(MESHER_DATABASE_URL, "m033-s03-basic-issues-alt");
+        let other_project_id =
+            insert_org_and_project(MESHER_DATABASE_URL, "m033-s03-basic-issues-alt");
         insert_issue(
             MESHER_DATABASE_URL,
             &other_project_id,
@@ -1175,8 +1190,14 @@ end
                     && row.get("status").map(String::as_str) == Some("resolved")
             })
             .count();
-        assert_eq!(unresolved_default, 1, "default project unresolved issue count drifted");
-        assert_eq!(resolved_default, 1, "default project resolved issue count drifted");
+        assert_eq!(
+            unresolved_default, 1,
+            "default project unresolved issue count drifted"
+        );
+        assert_eq!(
+            resolved_default, 1,
+            "default project resolved issue count drifted"
+        );
     });
 }
 
@@ -1698,7 +1719,6 @@ end
     });
 }
 
-
 #[test]
 fn e2e_m033_s03_composed_reads_joined_issue_and_team_rows() {
     with_mesher_postgres("composed-joined-team", || {
@@ -1871,7 +1891,14 @@ fn e2e_m033_s03_composed_reads_joined_issue_and_team_rows() {
             );
             let expected_member_signature = rows_signature(
                 &member_rows,
-                &["id", "user_id", "email", "display_name", "role", "joined_at"],
+                &[
+                    "id",
+                    "user_id",
+                    "email",
+                    "display_name",
+                    "role",
+                    "joined_at",
+                ],
             );
             assert_eq!(
                 json_array_signature(
@@ -2265,8 +2292,14 @@ fn e2e_m033_s03_composed_reads_detail_and_issue_event_lists() {
                 .get("id")
                 .cloned()
                 .expect("missing page1 cursor id");
-            assert_eq!(page1_json["next_cursor"].as_str(), Some(cursor_received_at.as_str()));
-            assert_eq!(page1_json["next_cursor_id"].as_str(), Some(cursor_id.as_str()));
+            assert_eq!(
+                page1_json["next_cursor"].as_str(),
+                Some(cursor_received_at.as_str())
+            );
+            assert_eq!(
+                page1_json["next_cursor_id"].as_str(),
+                Some(cursor_id.as_str())
+            );
 
             let page2_path = format!(
                 "/api/v1/issues/{issue_id}/events?limit=2&cursor={}&cursor_id={}",
@@ -2296,14 +2329,26 @@ fn e2e_m033_s03_composed_reads_detail_and_issue_event_lists() {
                 "SELECT id::text AS id, project_id::text AS project_id, issue_id::text AS issue_id, level, message, fingerprint, COALESCE(exception::text, 'null') AS exception, COALESCE(stacktrace::text, '[]') AS stacktrace, COALESCE(breadcrumbs::text, '[]') AS breadcrumbs, COALESCE(tags::text, '{}') AS tags, COALESCE(extra::text, '{}') AS extra, COALESCE(user_context::text, 'null') AS user_context, COALESCE(sdk_name, '') AS sdk_name, COALESCE(sdk_version, '') AS sdk_version, received_at::text AS received_at FROM events WHERE id = $1::uuid",
                 &[&detail_event],
             );
-            assert_eq!(event["id"].as_str(), detail_row.get("id").map(String::as_str));
+            assert_eq!(
+                event["id"].as_str(),
+                detail_row.get("id").map(String::as_str)
+            );
             assert_eq!(
                 event["project_id"].as_str(),
                 detail_row.get("project_id").map(String::as_str)
             );
-            assert_eq!(event["issue_id"].as_str(), detail_row.get("issue_id").map(String::as_str));
-            assert_eq!(event["level"].as_str(), detail_row.get("level").map(String::as_str));
-            assert_eq!(event["message"].as_str(), detail_row.get("message").map(String::as_str));
+            assert_eq!(
+                event["issue_id"].as_str(),
+                detail_row.get("issue_id").map(String::as_str)
+            );
+            assert_eq!(
+                event["level"].as_str(),
+                detail_row.get("level").map(String::as_str)
+            );
+            assert_eq!(
+                event["message"].as_str(),
+                detail_row.get("message").map(String::as_str)
+            );
             assert_eq!(
                 event["fingerprint"].as_str(),
                 detail_row.get("fingerprint").map(String::as_str)
@@ -2314,7 +2359,10 @@ fn e2e_m033_s03_composed_reads_detail_and_issue_event_lists() {
             assert_eq!(event["tags"], db_json(&detail_row, "tags"));
             assert_eq!(event["extra"], db_json(&detail_row, "extra"));
             assert_eq!(event["user_context"], db_json(&detail_row, "user_context"));
-            assert_eq!(event["sdk_name"].as_str(), detail_row.get("sdk_name").map(String::as_str));
+            assert_eq!(
+                event["sdk_name"].as_str(),
+                detail_row.get("sdk_name").map(String::as_str)
+            );
             assert_eq!(
                 event["sdk_version"].as_str(),
                 detail_row.get("sdk_version").map(String::as_str)
@@ -2490,7 +2538,11 @@ fn e2e_m033_s03_composed_reads_alert_lists_and_predicates() {
                 "issue should no longer satisfy the new-issue predicate after the second event"
             );
 
-            let all_alerts_json = get_json(&config, &format!("/api/v1/projects/{project_id}/alerts"), 200);
+            let all_alerts_json = get_json(
+                &config,
+                &format!("/api/v1/projects/{project_id}/alerts"),
+                200,
+            );
             let all_alert_items = all_alerts_json
                 .as_array()
                 .expect("alerts response should be a JSON array");
@@ -2502,18 +2554,30 @@ fn e2e_m033_s03_composed_reads_alert_lists_and_predicates() {
             assert_eq!(all_alert_items.len(), alert_rows.len());
             for (item, row) in all_alert_items.iter().zip(alert_rows.iter()) {
                 assert_eq!(item["id"].as_str(), row.get("id").map(String::as_str));
-                assert_eq!(item["rule_id"].as_str(), row.get("rule_id").map(String::as_str));
+                assert_eq!(
+                    item["rule_id"].as_str(),
+                    row.get("rule_id").map(String::as_str)
+                );
                 assert_eq!(
                     item["project_id"].as_str(),
                     row.get("project_id").map(String::as_str)
                 );
-                assert_eq!(item["status"].as_str(), row.get("status").map(String::as_str));
-                assert_eq!(item["message"].as_str(), row.get("message").map(String::as_str));
+                assert_eq!(
+                    item["status"].as_str(),
+                    row.get("status").map(String::as_str)
+                );
+                assert_eq!(
+                    item["message"].as_str(),
+                    row.get("message").map(String::as_str)
+                );
                 assert_eq!(
                     item["rule_name"].as_str(),
                     row.get("rule_name").map(String::as_str)
                 );
-                assert_eq!(item["condition_snapshot"], db_json(row, "condition_snapshot"));
+                assert_eq!(
+                    item["condition_snapshot"],
+                    db_json(row, "condition_snapshot")
+                );
                 assert_eq!(
                     item["triggered_at"].as_str(),
                     row.get("triggered_at").map(String::as_str)
@@ -2544,12 +2608,19 @@ fn e2e_m033_s03_composed_reads_alert_lists_and_predicates() {
                 &[&project_id],
             );
             assert_eq!(active_alert_items.len(), active_rows.len());
-            assert_eq!(active_alert_items.len(), 1, "only the fresh rule should fire");
+            assert_eq!(
+                active_alert_items.len(),
+                1,
+                "only the fresh rule should fire"
+            );
             assert_eq!(
                 active_alert_items[0]["rule_name"].as_str(),
                 Some("Fresh new-issue rule")
             );
-            assert_eq!(active_rows[0].get("rule_id").map(String::as_str), Some(fresh_rule.as_str()));
+            assert_eq!(
+                active_rows[0].get("rule_id").map(String::as_str),
+                Some(fresh_rule.as_str())
+            );
 
             let fresh_alert_count = query_single_row(
                 MESHER_DATABASE_URL,
@@ -2768,7 +2839,10 @@ fn e2e_m033_s03_hard_reads_filtered_issue_cursor_and_health_summary() {
                 .cloned()
                 .expect("missing page1 cursor id");
             assert_eq!(page1_json["next_cursor"].as_str(), Some(cursor.as_str()));
-            assert_eq!(page1_json["next_cursor_id"].as_str(), Some(cursor_id.as_str()));
+            assert_eq!(
+                page1_json["next_cursor_id"].as_str(),
+                Some(cursor_id.as_str())
+            );
 
             let page2_path = format!(
                 "/api/v1/projects/{project_id}/issues?status=unresolved&level=error&assigned_to={assignee}&limit=1&cursor={}&cursor_id={}",
@@ -2805,8 +2879,14 @@ fn e2e_m033_s03_hard_reads_filtered_issue_cursor_and_health_summary() {
                 .get("id")
                 .cloned()
                 .expect("missing page2 cursor id");
-            assert_eq!(page2_json["next_cursor"].as_str(), Some(page2_cursor.as_str()));
-            assert_eq!(page2_json["next_cursor_id"].as_str(), Some(page2_cursor_id.as_str()));
+            assert_eq!(
+                page2_json["next_cursor"].as_str(),
+                Some(page2_cursor.as_str())
+            );
+            assert_eq!(
+                page2_json["next_cursor_id"].as_str(),
+                Some(page2_cursor_id.as_str())
+            );
 
             let page3_path = format!(
                 "/api/v1/projects/{project_id}/issues?status=unresolved&level=error&assigned_to={assignee}&limit=1&cursor={}&cursor_id={}",
@@ -2818,7 +2898,10 @@ fn e2e_m033_s03_hard_reads_filtered_issue_cursor_and_health_summary() {
             let page3_items = page3_json["data"]
                 .as_array()
                 .expect("filtered issue page 3 should expose a data array");
-            assert!(page3_items.is_empty(), "expected filtered issue page 3 to be empty");
+            assert!(
+                page3_items.is_empty(),
+                "expected filtered issue page 3 to be empty"
+            );
 
             let health_json = get_json(
                 &config,
@@ -2842,7 +2925,10 @@ fn e2e_m033_s03_hard_reads_filtered_issue_cursor_and_health_summary() {
                 .get("new_today")
                 .and_then(|value| value.parse::<u64>().ok())
                 .expect("new_today should parse as u64");
-            assert_eq!(health_json["unresolved_count"].as_u64(), Some(unresolved_expected));
+            assert_eq!(
+                health_json["unresolved_count"].as_u64(),
+                Some(unresolved_expected)
+            );
             assert_eq!(health_json["events_24h"].as_u64(), Some(events_expected));
             assert_eq!(health_json["new_today"].as_u64(), Some(new_today_expected));
         });

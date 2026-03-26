@@ -254,7 +254,13 @@ fn insert_org_and_project(database_url: &str, slug: &str) -> String {
     .expect("project id missing")
 }
 
-fn insert_issue(database_url: &str, project_id: &str, fingerprint: &str, title: &str, level: &str) -> String {
+fn insert_issue(
+    database_url: &str,
+    project_id: &str,
+    fingerprint: &str,
+    title: &str,
+    level: &str,
+) -> String {
     query_single_row(
         database_url,
         "INSERT INTO issues (project_id, fingerprint, title, level) VALUES ($1::uuid, $2, $3, $4) RETURNING id::text AS id",
@@ -298,16 +304,14 @@ fn copy_mpl_tree(src: &Path, dst: &Path) {
     if !src.exists() {
         panic!("source tree missing: {}", src.display());
     }
-    fs::create_dir_all(dst).unwrap_or_else(|e| {
-        panic!(
-            "failed to create destination tree {}: {}",
-            dst.display(),
-            e
-        )
-    });
+    fs::create_dir_all(dst)
+        .unwrap_or_else(|e| panic!("failed to create destination tree {}: {}", dst.display(), e));
 
-    for entry in fs::read_dir(src).unwrap_or_else(|e| panic!("failed to read {}: {}", src.display(), e)) {
-        let entry = entry.unwrap_or_else(|e| panic!("failed to read dir entry in {}: {}", src.display(), e));
+    for entry in
+        fs::read_dir(src).unwrap_or_else(|e| panic!("failed to read {}: {}", src.display(), e))
+    {
+        let entry = entry
+            .unwrap_or_else(|e| panic!("failed to read dir entry in {}: {}", src.display(), e));
         let path = entry.path();
         let target = dst.join(entry.file_name());
         if path.is_dir() {
@@ -391,8 +395,11 @@ fn parse_output_map(output: &str) -> OutputMap {
 }
 
 fn json_from_row(row: &DbRow, key: &str) -> Value {
-    serde_json::from_str(row.get(key).unwrap_or_else(|| panic!("missing {key} in row: {row:?}")))
-        .unwrap_or_else(|e| panic!("failed to parse json field {key}: {e}; row={row:?}"))
+    serde_json::from_str(
+        row.get(key)
+            .unwrap_or_else(|| panic!("missing {key} in row: {row:?}")),
+    )
+    .unwrap_or_else(|e| panic!("failed to parse json field {key}: {e}; row={row:?}"))
 }
 
 #[test]
@@ -590,10 +597,7 @@ end
             template,
             &[
                 ("__PROJECT_ID__", mesh_string_literal(&default_project_id)),
-                (
-                    "__SEARCH_QUERY__",
-                    mesh_string_literal("critical database"),
-                ),
+                ("__SEARCH_QUERY__", mesh_string_literal("critical database")),
             ],
         );
 
@@ -643,7 +647,11 @@ end
             "SELECT project_id::text AS project_id, issue_id::text AS issue_id, message FROM events ORDER BY message",
             &[],
         );
-        assert_eq!(rows.len(), 3, "e2e_m033_s02_search_event_rows expected 3 rows: {rows:?}");
+        assert_eq!(
+            rows.len(),
+            3,
+            "e2e_m033_s02_search_event_rows expected 3 rows: {rows:?}"
+        );
         assert!(
             rows.iter().any(|row| {
                 row.get("project_id").map(String::as_str) == Some(default_project_id.as_str())
@@ -680,8 +688,10 @@ fn e2e_m033_s02_jsonb_tag_helpers() {
         );
 
         let payload_one = r#"{"level":"error","message":"prod outage","tags":{"env":"prod","service":"api"},"extra":{"release":"1.0.0"}}"#;
-        let payload_two = r#"{"level":"warning","message":"prod slow","tags":{"env":"prod","service":"worker"}}"#;
-        let payload_three = r#"{"level":"info","message":"staging noise","tags":{"env":"staging"}}"#;
+        let payload_two =
+            r#"{"level":"warning","message":"prod slow","tags":{"env":"prod","service":"worker"}}"#;
+        let payload_three =
+            r#"{"level":"info","message":"staging noise","tags":{"env":"staging"}}"#;
         let payload_four = r#"{"level":"error","message":"untagged event"}"#;
 
         let template = r#"
@@ -732,10 +742,7 @@ end
                 ("__PAYLOAD_TWO__", mesh_string_literal(payload_two)),
                 ("__PAYLOAD_THREE__", mesh_string_literal(payload_three)),
                 ("__PAYLOAD_FOUR__", mesh_string_literal(payload_four)),
-                (
-                    "__TAG_JSON__",
-                    mesh_string_literal(r#"{"env":"prod"}"#),
-                ),
+                ("__TAG_JSON__", mesh_string_literal(r#"{"env":"prod"}"#)),
             ],
         );
 
@@ -767,7 +774,11 @@ end
             "SELECT message, tags::text AS tags, extra::text AS extra FROM events WHERE issue_id = $1::uuid ORDER BY message",
             &[&issue_id],
         );
-        assert_eq!(rows.len(), 4, "e2e_m033_s02_jsonb_event_rows expected 4 rows: {rows:?}");
+        assert_eq!(
+            rows.len(),
+            4,
+            "e2e_m033_s02_jsonb_event_rows expected 4 rows: {rows:?}"
+        );
 
         let prod_outage = rows
             .iter()
@@ -795,7 +806,8 @@ fn e2e_m033_s02_alert_rule_and_fire_helpers() {
         assert_command_success(&migrate_output, "meshc migrate mesher up");
 
         let project_id = default_project_id(MESHER_DATABASE_URL);
-        let event_rule_body = r#"{"name":"New issue pager","condition":{"condition_type":"new_issue"}}"#;
+        let event_rule_body =
+            r#"{"name":"New issue pager","condition":{"condition_type":"new_issue"}}"#;
         let threshold_rule_body = r#"{"name":"Error flood","condition":{"condition_type":"threshold","threshold":"5","window_minutes":"10"},"cooldown_minutes":"15","action":{"type":"email"}}"#;
 
         let template = r#"
@@ -843,10 +855,7 @@ end
             template,
             &[
                 ("__PROJECT_ID__", mesh_string_literal(&project_id)),
-                (
-                    "__EVENT_RULE_BODY__",
-                    mesh_string_literal(event_rule_body),
-                ),
+                ("__EVENT_RULE_BODY__", mesh_string_literal(event_rule_body)),
                 (
                     "__THRESHOLD_RULE_BODY__",
                     mesh_string_literal(threshold_rule_body),

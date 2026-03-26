@@ -237,7 +237,9 @@ fn query_database_rows(database_url: &str, sql: &str, params: &[&str]) -> Vec<Db
     let result = native_pg_query(&mut conn, sql, params);
     native_pg_close(conn);
     let rows = result.unwrap_or_else(|e| panic!("query failed: {e}\nsql: {sql}"));
-    rows.into_iter().map(|row| row.into_iter().collect()).collect()
+    rows.into_iter()
+        .map(|row| row.into_iter().collect())
+        .collect()
 }
 
 fn query_single_row(database_url: &str, sql: &str, params: &[&str]) -> DbRow {
@@ -289,7 +291,11 @@ fn relation_exists(database_url: &str, relation_name: &str) -> bool {
     !row_text(&row, "regclass").is_empty()
 }
 
-fn count_partitions_in_window(database_url: &str, start_offset_days: i64, end_offset_days: i64) -> i64 {
+fn count_partitions_in_window(
+    database_url: &str,
+    start_offset_days: i64,
+    end_offset_days: i64,
+) -> i64 {
     let start = start_offset_days.to_string();
     let end = end_offset_days.to_string();
     let row = query_single_row(
@@ -325,16 +331,14 @@ fn copy_mpl_tree(src: &Path, dst: &Path) {
     if !src.exists() {
         panic!("source tree missing: {}", src.display());
     }
-    fs::create_dir_all(dst).unwrap_or_else(|e| {
-        panic!(
-            "failed to create destination tree {}: {}",
-            dst.display(),
-            e
-        )
-    });
+    fs::create_dir_all(dst)
+        .unwrap_or_else(|e| panic!("failed to create destination tree {}: {}", dst.display(), e));
 
-    for entry in fs::read_dir(src).unwrap_or_else(|e| panic!("failed to read {}: {}", src.display(), e)) {
-        let entry = entry.unwrap_or_else(|e| panic!("failed to read dir entry in {}: {}", src.display(), e));
+    for entry in
+        fs::read_dir(src).unwrap_or_else(|e| panic!("failed to read {}: {}", src.display(), e))
+    {
+        let entry = entry
+            .unwrap_or_else(|e| panic!("failed to read dir entry in {}: {}", src.display(), e));
         let path = entry.path();
         let target = dst.join(entry.file_name());
         if path.is_dir() {
@@ -481,7 +485,11 @@ fn spawn_mesher(config: MesherConfig) -> SpawnedMesher {
     }
 }
 
-fn collect_stopped_mesher(mut child: Child, stdout_path: PathBuf, stderr_path: PathBuf) -> StoppedMesher {
+fn collect_stopped_mesher(
+    mut child: Child,
+    stdout_path: PathBuf,
+    stderr_path: PathBuf,
+) -> StoppedMesher {
     child.wait().expect("failed to collect mesher exit status");
 
     let stdout = fs::read_to_string(&stdout_path)
@@ -815,7 +823,8 @@ fn e2e_m033_s04_mesher_startup_bootstraps_partitions_and_logs() {
 
         let config = mesher_test_config();
         let spawned = spawn_mesher(config);
-        let wait_result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| wait_for_mesher(&config)));
+        let wait_result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| wait_for_mesher(&config)));
         let logs = stop_mesher(spawned);
         let settings_json = match wait_result {
             Ok(json) => json,
@@ -836,18 +845,22 @@ fn e2e_m033_s04_mesher_startup_bootstraps_partitions_and_logs() {
             "Mesher settings endpoint returned an unexpected sample_rate payload: {settings_json}"
         );
         assert!(
-            logs.combined.contains("[Mesher] Connecting to PostgreSQL..."),
+            logs.combined
+                .contains("[Mesher] Connecting to PostgreSQL..."),
             "Mesher startup logs never showed the Postgres connection banner:\n{}",
             logs.combined
         );
         assert!(
-            logs.combined.contains("[Mesher] Partition bootstrap succeeded (7 days ahead)"),
+            logs.combined
+                .contains("[Mesher] Partition bootstrap succeeded (7 days ahead)"),
             "Mesher startup logs never showed partition bootstrap success:\n{}",
             logs.combined
         );
         assert!(
-            logs.combined
-                .contains(&format!("[Mesher] HTTP server starting on :{}", config.http_port)),
+            logs.combined.contains(&format!(
+                "[Mesher] HTTP server starting on :{}",
+                config.http_port
+            )),
             "Mesher startup logs never showed the HTTP listener on :{}:\n{}",
             config.http_port,
             logs.combined

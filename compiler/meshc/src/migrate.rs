@@ -665,7 +665,8 @@ mod tests {
         assert!(content.contains("# Migration: create_users"));
         assert!(content.contains("Migration.create_table"));
         assert!(content.contains("Pg.create_extension(pool, \"pgcrypto\")?"));
-        assert!(!content.contains("Migration.execute(pool, \"CREATE EXTENSION IF NOT EXISTS pgcrypto\")?"));
+        assert!(!content
+            .contains("Migration.execute(pool, \"CREATE EXTENSION IF NOT EXISTS pgcrypto\")?"));
     }
 
     #[test]

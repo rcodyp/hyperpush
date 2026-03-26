@@ -13509,16 +13509,10 @@ fn map_builtin_name(name: &str) -> String {
         "pg_jsonb_contains" => "mesh_pg_jsonb_contains".to_string(),
         // ── M033/S04: Pg schema helpers ─────────────────────────────
         "pg_create_extension" => "mesh_pg_create_extension".to_string(),
-        "pg_create_range_partitioned_table" => {
-            "mesh_pg_create_range_partitioned_table".to_string()
-        },
+        "pg_create_range_partitioned_table" => "mesh_pg_create_range_partitioned_table".to_string(),
         "pg_create_gin_index" => "mesh_pg_create_gin_index".to_string(),
-        "pg_create_daily_partitions_ahead" => {
-            "mesh_pg_create_daily_partitions_ahead".to_string()
-        },
-        "pg_list_daily_partitions_before" => {
-            "mesh_pg_list_daily_partitions_before".to_string()
-        },
+        "pg_create_daily_partitions_ahead" => "mesh_pg_create_daily_partitions_ahead".to_string(),
+        "pg_list_daily_partitions_before" => "mesh_pg_list_daily_partitions_before".to_string(),
         "pg_drop_partition" => "mesh_pg_drop_partition".to_string(),
         // ── Phase 57: SQLite Transaction functions ──────────────────────
         "sqlite_begin" => "mesh_sqlite_begin".to_string(),

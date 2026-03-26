@@ -1054,7 +1054,11 @@ pub extern "C" fn mesh_repo_insert(pool: u64, table: *mut u8, fields: *mut u8) -
 ///
 /// `Repo.insert_expr(pool, table, expr_fields_map)` -> `Result<Map<String,String>, String>`
 #[no_mangle]
-pub extern "C" fn mesh_repo_insert_expr(pool: u64, table: *mut u8, expr_fields: *mut u8) -> *mut u8 {
+pub extern "C" fn mesh_repo_insert_expr(
+    pool: u64,
+    table: *mut u8,
+    expr_fields: *mut u8,
+) -> *mut u8 {
     unsafe {
         let table_str = mesh_str_ref(table);
         let (columns, exprs) = map_to_columns_and_exprs(expr_fields);
@@ -3620,7 +3624,11 @@ mod tests {
     fn test_insert_expr_sql_preserves_expr_param_order() {
         let (sql, params) = build_insert_expr_sql_pure(
             "users",
-            &["email".into(), "password_hash".into(), "display_name".into()],
+            &[
+                "email".into(),
+                "password_hash".into(),
+                "display_name".into(),
+            ],
             &[
                 SqlExpr::Value("alice@example.com".into()),
                 SqlExpr::Call {
@@ -3629,10 +3637,7 @@ mod tests {
                         SqlExpr::Value("secret".into()),
                         SqlExpr::Call {
                             name: "gen_salt".into(),
-                            args: vec![
-                                SqlExpr::Value("bf".into()),
-                                SqlExpr::Value("12".into()),
-                            ],
+                            args: vec![SqlExpr::Value("bf".into()), SqlExpr::Value("12".into())],
                         },
                     ],
                 },
