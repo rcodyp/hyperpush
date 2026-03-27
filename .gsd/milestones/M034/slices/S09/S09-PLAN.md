@@ -50,20 +50,67 @@ Done when: the remote refs and the saved hosted-workflow status payloads all agr
   - Files: scripts/verify-m034-s05.sh, .tmp/m034-s09/rollout/plan.md, .tmp/m034-s09/rollout/remote-refs.after.txt, .tmp/m034-s09/rollout/workflow-status.json, .tmp/m034-s09/rollout/workflow-urls.txt
   - Verify: bash -c 'set -euo pipefail; test -s .tmp/m034-s09/rollout/remote-refs.after.txt; test -s .tmp/m034-s09/rollout/workflow-status.json; test -s .tmp/m034-s09/rollout/workflow-urls.txt'
   - Blocker: `publish-extension.yml` completed with `conclusion: failure` on the correct rollout SHA (`c443270a8fe17419e9ca99b4755b90f3cb7af3a0`), so the slice cannot claim an all-green hosted evidence set. `release.yml` was still `in_progress` when the monitor stopped on the red extension caller lane, so its final conclusion was not captured by this task. Because the all-green hosted contract did not pass, T04’s planned `first-green` archive and full S05 replay are blocked pending investigation and likely replan of the failing hosted workflow lane.
-- [ ] **T04: Archive first-green exactly once and rerun the full assembled verifier** — Why: `R046` and the slice demo are only satisfied when the canonical wrapper proves the live package-manager path, public HTTP surfaces, and extension lane together on the fresh hosted rollout state.
-
-Files: `scripts/verify-m034-s05.sh`, `scripts/verify-m034-s06-remote-evidence.sh`, `.tmp/m034-s06/evidence/first-green/manifest.json`, `.tmp/m034-s05/verify/status.txt`, `.tmp/m034-s05/verify/phase-report.txt`, `.tmp/m034-s05/verify/public-http.log`
-
-Do:
-- With `.env` loaded, rerun the stop-after `remote-evidence` preflight and confirm it is green on the freshly rolled refs.
+- [x] **T04: Made extension reruns duplicate-safe, fixed the PowerShell strict-mode verifier helper, and added retry-covered local guards for the S01 metadata fetch path.** — Update the reroll-sensitive release surfaces before touching remote refs again.
+- Make `.github/workflows/publish-extension.yml` idempotent for reruns on the same `ext-v*` version so Open VSX/Marketplace duplicate publishes do not fail the caller workflow after the verified VSIX handoff has already passed.
+- Extend `scripts/verify-m034-s04-workflows.sh` so the workflow contract enforces the duplicate-safe publish semantics and still guarantees the exact proof artifact handoff.
+- Fix `scripts/verify-m034-s03.ps1` so `Invoke-LoggedCommand` does not throw under `Set-StrictMode -Version Latest` when `$LASTEXITCODE` has not been initialized, and add a focused PowerShell regression test that proves the helper treats the unset case as success.
+- Harden `scripts/verify-m034-s01.sh` around the package metadata/version/search fetches with a fail-closed retry budget so a single transient curl SSL timeout does not sink `release.yml`, and add a small local regression harness that proves the fetch path retries transport failure before failing.
+- Preserve durable diagnostics in the existing verifier artifact trees rather than inventing a new ad-hoc path.
+  - Estimate: 1h 30m
+  - Files: .github/workflows/publish-extension.yml, scripts/verify-m034-s04-workflows.sh, scripts/verify-m034-s03.ps1, scripts/verify-m034-s01.sh, scripts/tests/verify-m034-s03-last-exitcode.ps1, scripts/tests/verify-m034-s01-fetch-retry.sh
+  - Verify: bash scripts/verify-m034-s04-workflows.sh all
+pwsh -NoProfile -File scripts/tests/verify-m034-s03-last-exitcode.ps1
+bash scripts/tests/verify-m034-s01-fetch-retry.sh
+- [ ] **T05: Roll the repaired SHA onto the approved refs and capture all-green hosted evidence** — Once the local reroll blockers are repaired, produce one new rollout target and rerun the hosted evidence set on that exact commit.
+- Recompute the minimal repaired rollout commit relative to `origin/main`, record the exact target SHA plus before-state ref map under `.tmp/m034-s09/rollout/`, and update the approval payload with the new diff and ref moves.
+- Show the recorded summary and get explicit user confirmation before any outward GitHub action.
+- Move `main`, `v0.1.0`, and `ext-v0.3.0` onto the repaired SHA using the least-destructive path the remote state allows, then record the resulting after-state ref map.
+- Monitor `deploy.yml`, `authoritative-verification.yml`, `release.yml`, `deploy-services.yml`, `extension-release-proof.yml`, and `publish-extension.yml` until they are completed/success on the expected refs and `headSha`.
+- If any lane still fails, persist the failing job URLs plus `gh run view --log-failed` output under `.tmp/m034-s09/rollout/failed-jobs/` before stopping so the next blocker is self-explanatory rather than just 'workflow red'.
+  - Estimate: 1h 30m
+  - Files: .tmp/m034-s09/rollout/target-sha.txt, .tmp/m034-s09/rollout/remote-refs.before.txt, .tmp/m034-s09/rollout/plan.md, .tmp/m034-s09/rollout/apply_rollout.py, .tmp/m034-s09/rollout/monitor_workflows.py, .tmp/m034-s09/rollout/remote-refs.after.txt, .tmp/m034-s09/rollout/workflow-status.json, .tmp/m034-s09/rollout/workflow-urls.txt, .tmp/m034-s09/rollout/failed-jobs/
+  - Verify: bash -c 'set -euo pipefail; test -s .tmp/m034-s09/rollout/target-sha.txt; test -s .tmp/m034-s09/rollout/remote-refs.before.txt; test -s .tmp/m034-s09/rollout/remote-refs.after.txt; test -s .tmp/m034-s09/rollout/workflow-status.json; test -s .tmp/m034-s09/rollout/workflow-urls.txt'
+python3 - <<'PY'
+from pathlib import Path
+import json
+required = [
+    'deploy.yml',
+    'deploy-services.yml',
+    'authoritative-verification.yml',
+    'release.yml',
+    'extension-release-proof.yml',
+    'publish-extension.yml',
+]
+target = Path('.tmp/m034-s09/rollout/target-sha.txt').read_text().strip()
+status = json.loads(Path('.tmp/m034-s09/rollout/workflow-status.json').read_text())
+for name in required:
+    entry = status[name]
+    assert entry['headSha'] == target, (name, entry)
+    assert entry['status'] == 'completed', (name, entry)
+    assert entry['conclusion'] == 'success', (name, entry)
+print('workflow-status.json matches repaired rollout target and all-green hosted evidence')
+PY
+- [ ] **T06: Archive first-green exactly once and rerun the full assembled verifier** — With the repaired hosted evidence set green on the fresh rollout SHA, close the slice with the canonical assembled proof.
+- Load `.env`, rerun the stop-after `remote-evidence` preflight, and confirm it is green on the repaired refs and `headSha`.
 - If `.tmp/m034-s06/evidence/first-green/` is still absent, capture it exactly once through `scripts/verify-m034-s06-remote-evidence.sh` and validate the archived manifest plus remote-run summary.
-- Run the full `bash scripts/verify-m034-s05.sh` replay with `.env` loaded and confirm `public-http` and `s01-live-proof` both pass, including the S01 package-version evidence.
-
-Verify: stop-after preflight, archive helper, and final S05 replay all pass from the authenticated repo root.
-
-Done when: `first-green` exists with a passing manifest, `.tmp/m034-s05/verify/status.txt` is `ok`, the phase report reaches the final phases, and the full assembled verifier leaves a green package-manager/public-surface proof bundle.
+- Run the full `bash scripts/verify-m034-s05.sh` replay with `.env` loaded and confirm `remote-evidence`, `public-http`, and `s01-live-proof` all pass on the repaired hosted state.
+- Check the final proof bundle for `status.txt == ok`, a complete phase report, `public-http.log`, and the S01 package-version evidence so the slice demo is preserved in one truthful bundle.
   - Estimate: 1h
   - Files: scripts/verify-m034-s05.sh, scripts/verify-m034-s06-remote-evidence.sh, .tmp/m034-s06/evidence/first-green/manifest.json, .tmp/m034-s05/verify/status.txt, .tmp/m034-s05/verify/phase-report.txt, .tmp/m034-s05/verify/public-http.log
   - Verify: bash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; VERIFY_M034_S05_STOP_AFTER=remote-evidence bash scripts/verify-m034-s05.sh'
 bash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; bash scripts/verify-m034-s06-remote-evidence.sh first-green'
 bash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; bash scripts/verify-m034-s05.sh'
+python3 - <<'PY'
+from pathlib import Path
+import json
+root = Path('.tmp/m034-s06/evidence/first-green')
+assert (root / 'manifest.json').exists()
+assert Path('.tmp/m034-s05/verify/status.txt').read_text().strip() == 'ok'
+manifest = json.loads((root / 'manifest.json').read_text())
+assert manifest['s05ExitCode'] == 0, manifest
+assert manifest['stopAfterPhase'] == 'remote-evidence', manifest
+public_log = Path('.tmp/m034-s05/verify/public-http.log')
+assert public_log.exists(), public_log
+assert any(Path('.tmp/m034-s01/verify').rglob('package-version.txt'))
+print('assembled proof bundle is complete')
+PY

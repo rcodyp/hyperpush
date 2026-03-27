@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "exported_at": "2026-03-27T18:37:24.367Z",
+  "exported_at": "2026-03-27T18:56:08.138Z",
   "milestones": [
     {
       "id": "M001",
@@ -3902,6 +3902,121 @@
       "milestone_id": "M034",
       "slice_id": "S09",
       "id": "T04",
+      "title": "Made extension reruns duplicate-safe, fixed the PowerShell strict-mode verifier helper, and added retry-covered local guards for the S01 metadata fetch path.",
+      "status": "complete",
+      "one_liner": "Made extension reruns duplicate-safe, fixed the PowerShell strict-mode verifier helper, and added retry-covered local guards for the S01 metadata fetch path.",
+      "narrative": "Updated `.github/workflows/publish-extension.yml` so both registry publish steps pass `skipDuplicate: true` while still publishing the exact VSIX artifact handed off by the reusable proof workflow, then tightened `scripts/verify-m034-s04-workflows.sh` so the local workflow contract fails if either publish step drops that reroll-safe setting. Fixed `scripts/verify-m034-s03.ps1` by reading `$LASTEXITCODE` through `Get-Variable ... -ErrorAction SilentlyContinue` and treating the unset case as exit code `0`, which removes the hosted Windows strict-mode throw while preserving log capture. Hardened `scripts/verify-m034-s01.sh` so the metadata/version/search GETs retry curl transport failures inside the existing `.tmp/m034-s01/verify/...` tree and still fail closed on wrong HTTP statuses. Added focused local regressions for both helper surfaces (`scripts/tests/verify-m034-s03-last-exitcode.ps1` and `scripts/tests/verify-m034-s01-fetch-retry.sh`) and verified the carried-forward T03 rollout artifacts still capture the pre-T04 hosted blocker on the approved target SHA.",
+      "verification_result": "Passed the exact task-plan verification commands: `bash scripts/verify-m034-s04-workflows.sh all`, `pwsh -NoProfile -File scripts/tests/verify-m034-s03-last-exitcode.ps1`, and `bash scripts/tests/verify-m034-s01-fetch-retry.sh`. Also confirmed `.tmp/m034-s09/rollout/target-sha.txt`, `remote-refs.before.txt`, `remote-refs.after.txt`, `workflow-status.json`, and `workflow-urls.txt` still exist and that `workflow-status.json` still records the pre-T04 `publish-extension.yml` failure on the approved rollout SHA, so T04's local blocker fixes are cleanly separated from the later hosted reroll work.",
+      "duration": "",
+      "completed_at": "2026-03-27T18:56:07.893Z",
+      "blocker_discovered": false,
+      "deviations": "Installed Homebrew `powershell` locally so the planned `pwsh` regression command could be run on this host instead of being left unverified.",
+      "known_issues": "Hosted refs and workflow artifacts still reflect the pre-T04 reroll state from T03. `publish-extension.yml` remains recorded as a failure and `release.yml` was not rerun by this task. T05 still needs to produce a repaired rollout SHA and rerun the hosted evidence set.",
+      "key_files": [
+        ".github/workflows/publish-extension.yml",
+        "scripts/verify-m034-s04-workflows.sh",
+        "scripts/verify-m034-s03.ps1",
+        "scripts/verify-m034-s01.sh",
+        "scripts/tests/verify-m034-s03-last-exitcode.ps1",
+        "scripts/tests/verify-m034-s01-fetch-retry.sh",
+        ".gsd/KNOWLEDGE.md"
+      ],
+      "key_decisions": [
+        "Use HaaLeo/publish-vscode-extension's documented `skipDuplicate: true` mode on both publish steps and enforce it in the local workflow contract instead of masking duplicate reruns with `continue-on-error`.",
+        "Treat an unset PowerShell `$LASTEXITCODE` under strict mode as a successful pure-PowerShell command and preserve the verifier's log artifacts rather than letting the helper throw before artifact capture."
+      ],
+      "full_summary_md": "---\nid: T04\nparent: S09\nmilestone: M034\nkey_files:\n  - .github/workflows/publish-extension.yml\n  - scripts/verify-m034-s04-workflows.sh\n  - scripts/verify-m034-s03.ps1\n  - scripts/verify-m034-s01.sh\n  - scripts/tests/verify-m034-s03-last-exitcode.ps1\n  - scripts/tests/verify-m034-s01-fetch-retry.sh\n  - .gsd/KNOWLEDGE.md\nkey_decisions:\n  - Use HaaLeo/publish-vscode-extension's documented `skipDuplicate: true` mode on both publish steps and enforce it in the local workflow contract instead of masking duplicate reruns with `continue-on-error`.\n  - Treat an unset PowerShell `$LASTEXITCODE` under strict mode as a successful pure-PowerShell command and preserve the verifier's log artifacts rather than letting the helper throw before artifact capture.\nduration: \"\"\nverification_result: passed\ncompleted_at: 2026-03-27T18:56:07.895Z\nblocker_discovered: false\n---\n\n# T04: Made extension reruns duplicate-safe, fixed the PowerShell strict-mode verifier helper, and added retry-covered local guards for the S01 metadata fetch path.\n\n**Made extension reruns duplicate-safe, fixed the PowerShell strict-mode verifier helper, and added retry-covered local guards for the S01 metadata fetch path.**\n\n## What Happened\n\nUpdated `.github/workflows/publish-extension.yml` so both registry publish steps pass `skipDuplicate: true` while still publishing the exact VSIX artifact handed off by the reusable proof workflow, then tightened `scripts/verify-m034-s04-workflows.sh` so the local workflow contract fails if either publish step drops that reroll-safe setting. Fixed `scripts/verify-m034-s03.ps1` by reading `$LASTEXITCODE` through `Get-Variable ... -ErrorAction SilentlyContinue` and treating the unset case as exit code `0`, which removes the hosted Windows strict-mode throw while preserving log capture. Hardened `scripts/verify-m034-s01.sh` so the metadata/version/search GETs retry curl transport failures inside the existing `.tmp/m034-s01/verify/...` tree and still fail closed on wrong HTTP statuses. Added focused local regressions for both helper surfaces (`scripts/tests/verify-m034-s03-last-exitcode.ps1` and `scripts/tests/verify-m034-s01-fetch-retry.sh`) and verified the carried-forward T03 rollout artifacts still capture the pre-T04 hosted blocker on the approved target SHA.\n\n## Verification\n\nPassed the exact task-plan verification commands: `bash scripts/verify-m034-s04-workflows.sh all`, `pwsh -NoProfile -File scripts/tests/verify-m034-s03-last-exitcode.ps1`, and `bash scripts/tests/verify-m034-s01-fetch-retry.sh`. Also confirmed `.tmp/m034-s09/rollout/target-sha.txt`, `remote-refs.before.txt`, `remote-refs.after.txt`, `workflow-status.json`, and `workflow-urls.txt` still exist and that `workflow-status.json` still records the pre-T04 `publish-extension.yml` failure on the approved rollout SHA, so T04's local blocker fixes are cleanly separated from the later hosted reroll work.\n\n## Verification Evidence\n\n| # | Command | Exit Code | Verdict | Duration |\n|---|---------|-----------|---------|----------|\n| 1 | `bash scripts/verify-m034-s04-workflows.sh all` | 0 | ✅ pass | 579ms |\n| 2 | `pwsh -NoProfile -File scripts/tests/verify-m034-s03-last-exitcode.ps1` | 0 | ✅ pass | 2033ms |\n| 3 | `bash scripts/tests/verify-m034-s01-fetch-retry.sh` | 0 | ✅ pass | 451ms |\n| 4 | `python3 - <<'PYCHECK' ... verify rollout artifacts still capture the pre-T04 hosted blocker on the approved target SHA ... PYCHECK` | 0 | ✅ pass | 157ms |\n\n\n## Deviations\n\nInstalled Homebrew `powershell` locally so the planned `pwsh` regression command could be run on this host instead of being left unverified.\n\n## Known Issues\n\nHosted refs and workflow artifacts still reflect the pre-T04 reroll state from T03. `publish-extension.yml` remains recorded as a failure and `release.yml` was not rerun by this task. T05 still needs to produce a repaired rollout SHA and rerun the hosted evidence set.\n\n## Files Created/Modified\n\n- `.github/workflows/publish-extension.yml`\n- `scripts/verify-m034-s04-workflows.sh`\n- `scripts/verify-m034-s03.ps1`\n- `scripts/verify-m034-s01.sh`\n- `scripts/tests/verify-m034-s03-last-exitcode.ps1`\n- `scripts/tests/verify-m034-s01-fetch-retry.sh`\n- `.gsd/KNOWLEDGE.md`\n",
+      "description": "Update the reroll-sensitive release surfaces before touching remote refs again.\n- Make `.github/workflows/publish-extension.yml` idempotent for reruns on the same `ext-v*` version so Open VSX/Marketplace duplicate publishes do not fail the caller workflow after the verified VSIX handoff has already passed.\n- Extend `scripts/verify-m034-s04-workflows.sh` so the workflow contract enforces the duplicate-safe publish semantics and still guarantees the exact proof artifact handoff.\n- Fix `scripts/verify-m034-s03.ps1` so `Invoke-LoggedCommand` does not throw under `Set-StrictMode -Version Latest` when `$LASTEXITCODE` has not been initialized, and add a focused PowerShell regression test that proves the helper treats the unset case as success.\n- Harden `scripts/verify-m034-s01.sh` around the package metadata/version/search fetches with a fail-closed retry budget so a single transient curl SSL timeout does not sink `release.yml`, and add a small local regression harness that proves the fetch path retries transport failure before failing.\n- Preserve durable diagnostics in the existing verifier artifact trees rather than inventing a new ad-hoc path.",
+      "estimate": "1h 30m",
+      "files": [
+        ".github/workflows/publish-extension.yml",
+        "scripts/verify-m034-s04-workflows.sh",
+        "scripts/verify-m034-s03.ps1",
+        "scripts/verify-m034-s01.sh",
+        "scripts/tests/verify-m034-s03-last-exitcode.ps1",
+        "scripts/tests/verify-m034-s01-fetch-retry.sh"
+      ],
+      "verify": "bash scripts/verify-m034-s04-workflows.sh all\npwsh -NoProfile -File scripts/tests/verify-m034-s03-last-exitcode.ps1\nbash scripts/tests/verify-m034-s01-fetch-retry.sh",
+      "inputs": [
+        ".github/workflows/publish-extension.yml",
+        "scripts/verify-m034-s04-workflows.sh",
+        "scripts/verify-m034-s03.ps1",
+        "scripts/verify-m034-s01.sh",
+        ".tmp/m034-s09/rollout/workflow-status.json",
+        "gh run view 23661341870 --repo snowdamiz/mesh-lang --job 68933430479 --log-failed",
+        "gh run view 23661341416 --repo snowdamiz/mesh-lang --job 68932118207 --log-failed",
+        "gh run view 23661341416 --repo snowdamiz/mesh-lang --job 68933643822 --log-failed"
+      ],
+      "expected_output": [
+        ".github/workflows/publish-extension.yml",
+        "scripts/verify-m034-s04-workflows.sh",
+        "scripts/verify-m034-s03.ps1",
+        "scripts/verify-m034-s01.sh",
+        "scripts/tests/verify-m034-s03-last-exitcode.ps1",
+        "scripts/tests/verify-m034-s01-fetch-retry.sh"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M034",
+      "slice_id": "S09",
+      "id": "T05",
+      "title": "Roll the repaired SHA onto the approved refs and capture all-green hosted evidence",
+      "status": "pending",
+      "one_liner": "",
+      "narrative": "",
+      "verification_result": "",
+      "duration": "",
+      "completed_at": null,
+      "blocker_discovered": false,
+      "deviations": "",
+      "known_issues": "",
+      "key_files": [],
+      "key_decisions": [],
+      "full_summary_md": "",
+      "description": "Once the local reroll blockers are repaired, produce one new rollout target and rerun the hosted evidence set on that exact commit.\n- Recompute the minimal repaired rollout commit relative to `origin/main`, record the exact target SHA plus before-state ref map under `.tmp/m034-s09/rollout/`, and update the approval payload with the new diff and ref moves.\n- Show the recorded summary and get explicit user confirmation before any outward GitHub action.\n- Move `main`, `v0.1.0`, and `ext-v0.3.0` onto the repaired SHA using the least-destructive path the remote state allows, then record the resulting after-state ref map.\n- Monitor `deploy.yml`, `authoritative-verification.yml`, `release.yml`, `deploy-services.yml`, `extension-release-proof.yml`, and `publish-extension.yml` until they are completed/success on the expected refs and `headSha`.\n- If any lane still fails, persist the failing job URLs plus `gh run view --log-failed` output under `.tmp/m034-s09/rollout/failed-jobs/` before stopping so the next blocker is self-explanatory rather than just 'workflow red'.",
+      "estimate": "1h 30m",
+      "files": [
+        ".tmp/m034-s09/rollout/target-sha.txt",
+        ".tmp/m034-s09/rollout/remote-refs.before.txt",
+        ".tmp/m034-s09/rollout/plan.md",
+        ".tmp/m034-s09/rollout/apply_rollout.py",
+        ".tmp/m034-s09/rollout/monitor_workflows.py",
+        ".tmp/m034-s09/rollout/remote-refs.after.txt",
+        ".tmp/m034-s09/rollout/workflow-status.json",
+        ".tmp/m034-s09/rollout/workflow-urls.txt",
+        ".tmp/m034-s09/rollout/failed-jobs/"
+      ],
+      "verify": "bash -c 'set -euo pipefail; test -s .tmp/m034-s09/rollout/target-sha.txt; test -s .tmp/m034-s09/rollout/remote-refs.before.txt; test -s .tmp/m034-s09/rollout/remote-refs.after.txt; test -s .tmp/m034-s09/rollout/workflow-status.json; test -s .tmp/m034-s09/rollout/workflow-urls.txt'\npython3 - <<'PY'\nfrom pathlib import Path\nimport json\nrequired = [\n    'deploy.yml',\n    'deploy-services.yml',\n    'authoritative-verification.yml',\n    'release.yml',\n    'extension-release-proof.yml',\n    'publish-extension.yml',\n]\ntarget = Path('.tmp/m034-s09/rollout/target-sha.txt').read_text().strip()\nstatus = json.loads(Path('.tmp/m034-s09/rollout/workflow-status.json').read_text())\nfor name in required:\n    entry = status[name]\n    assert entry['headSha'] == target, (name, entry)\n    assert entry['status'] == 'completed', (name, entry)\n    assert entry['conclusion'] == 'success', (name, entry)\nprint('workflow-status.json matches repaired rollout target and all-green hosted evidence')\nPY",
+      "inputs": [
+        ".github/workflows/release.yml",
+        ".github/workflows/publish-extension.yml",
+        "packages-website/Dockerfile",
+        "scripts/verify-m034-s05.sh",
+        "scripts/verify-m034-s06-remote-evidence.sh",
+        ".tmp/m034-s09/rollout/plan.md",
+        ".tmp/m034-s09/rollout/apply_rollout.py",
+        ".tmp/m034-s09/rollout/monitor_workflows.py"
+      ],
+      "expected_output": [
+        ".tmp/m034-s09/rollout/target-sha.txt",
+        ".tmp/m034-s09/rollout/remote-refs.before.txt",
+        ".tmp/m034-s09/rollout/plan.md",
+        ".tmp/m034-s09/rollout/remote-refs.after.txt",
+        ".tmp/m034-s09/rollout/workflow-status.json",
+        ".tmp/m034-s09/rollout/workflow-urls.txt",
+        ".tmp/m034-s09/rollout/failed-jobs/"
+      ],
+      "observability_impact": "",
+      "full_plan_md": "",
+      "sequence": 0
+    },
+    {
+      "milestone_id": "M034",
+      "slice_id": "S09",
+      "id": "T06",
       "title": "Archive first-green exactly once and rerun the full assembled verifier",
       "status": "pending",
       "one_liner": "",
@@ -3915,7 +4030,7 @@
       "key_files": [],
       "key_decisions": [],
       "full_summary_md": "",
-      "description": "Why: `R046` and the slice demo are only satisfied when the canonical wrapper proves the live package-manager path, public HTTP surfaces, and extension lane together on the fresh hosted rollout state.\n\nFiles: `scripts/verify-m034-s05.sh`, `scripts/verify-m034-s06-remote-evidence.sh`, `.tmp/m034-s06/evidence/first-green/manifest.json`, `.tmp/m034-s05/verify/status.txt`, `.tmp/m034-s05/verify/phase-report.txt`, `.tmp/m034-s05/verify/public-http.log`\n\nDo:\n- With `.env` loaded, rerun the stop-after `remote-evidence` preflight and confirm it is green on the freshly rolled refs.\n- If `.tmp/m034-s06/evidence/first-green/` is still absent, capture it exactly once through `scripts/verify-m034-s06-remote-evidence.sh` and validate the archived manifest plus remote-run summary.\n- Run the full `bash scripts/verify-m034-s05.sh` replay with `.env` loaded and confirm `public-http` and `s01-live-proof` both pass, including the S01 package-version evidence.\n\nVerify: stop-after preflight, archive helper, and final S05 replay all pass from the authenticated repo root.\n\nDone when: `first-green` exists with a passing manifest, `.tmp/m034-s05/verify/status.txt` is `ok`, the phase report reaches the final phases, and the full assembled verifier leaves a green package-manager/public-surface proof bundle.",
+      "description": "With the repaired hosted evidence set green on the fresh rollout SHA, close the slice with the canonical assembled proof.\n- Load `.env`, rerun the stop-after `remote-evidence` preflight, and confirm it is green on the repaired refs and `headSha`.\n- If `.tmp/m034-s06/evidence/first-green/` is still absent, capture it exactly once through `scripts/verify-m034-s06-remote-evidence.sh` and validate the archived manifest plus remote-run summary.\n- Run the full `bash scripts/verify-m034-s05.sh` replay with `.env` loaded and confirm `remote-evidence`, `public-http`, and `s01-live-proof` all pass on the repaired hosted state.\n- Check the final proof bundle for `status.txt == ok`, a complete phase report, `public-http.log`, and the S01 package-version evidence so the slice demo is preserved in one truthful bundle.",
       "estimate": "1h",
       "files": [
         "scripts/verify-m034-s05.sh",
@@ -3925,12 +4040,13 @@
         ".tmp/m034-s05/verify/phase-report.txt",
         ".tmp/m034-s05/verify/public-http.log"
       ],
-      "verify": "bash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; VERIFY_M034_S05_STOP_AFTER=remote-evidence bash scripts/verify-m034-s05.sh'\nbash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; bash scripts/verify-m034-s06-remote-evidence.sh first-green'\nbash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; bash scripts/verify-m034-s05.sh'",
+      "verify": "bash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; VERIFY_M034_S05_STOP_AFTER=remote-evidence bash scripts/verify-m034-s05.sh'\nbash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; bash scripts/verify-m034-s06-remote-evidence.sh first-green'\nbash -c 'set -euo pipefail; test -f .env; set -a; source .env; set +a; bash scripts/verify-m034-s05.sh'\npython3 - <<'PY'\nfrom pathlib import Path\nimport json\nroot = Path('.tmp/m034-s06/evidence/first-green')\nassert (root / 'manifest.json').exists()\nassert Path('.tmp/m034-s05/verify/status.txt').read_text().strip() == 'ok'\nmanifest = json.loads((root / 'manifest.json').read_text())\nassert manifest['s05ExitCode'] == 0, manifest\nassert manifest['stopAfterPhase'] == 'remote-evidence', manifest\npublic_log = Path('.tmp/m034-s05/verify/public-http.log')\nassert public_log.exists(), public_log\nassert any(Path('.tmp/m034-s01/verify').rglob('package-version.txt'))\nprint('assembled proof bundle is complete')\nPY",
       "inputs": [
         "scripts/verify-m034-s05.sh",
         "scripts/verify-m034-s06-remote-evidence.sh",
-        ".tmp/m034-s09/rollout/remote-refs.after.txt",
-        ".tmp/m034-s09/rollout/workflow-status.json"
+        ".tmp/m034-s09/rollout/workflow-status.json",
+        ".tmp/m034-s09/rollout/target-sha.txt",
+        ".env"
       ],
       "expected_output": [
         ".tmp/m034-s06/evidence/first-green/manifest.json",
@@ -3938,7 +4054,7 @@
         ".tmp/m034-s05/verify/phase-report.txt",
         ".tmp/m034-s05/verify/public-http.log"
       ],
-      "observability_impact": "- Signals added/changed: the wrapper-owned `first-green` archive plus `.tmp/m034-s05/verify/*` capture the exact passing hosted evidence, public-http log, and final phase transitions.\n- How a future agent inspects this: read `.tmp/m034-s06/evidence/first-green/manifest.json`, `.tmp/m034-s06/evidence/first-green/remote-runs.json`, and `.tmp/m034-s05/verify/phase-report.txt`.\n- Failure state exposed: the first failing phase, missing public markers, or absent S01 package-version artifacts remain visible without rerunning the entire rollout.",
+      "observability_impact": "",
       "full_plan_md": "",
       "sequence": 0
     }
@@ -5154,6 +5270,18 @@
       "rationale": "T03 had to avoid git push, so the rollout used the GitHub Git data API. That API reproduced the same parent, tree, and message as the local synthetic commit but normalized the author/committer timestamp to UTC, which changed the commit hash. The user explicitly approved retargeting main, v0.1.0, and ext-v0.3.0 to the GitHub-created equivalent SHA.",
       "revisable": "Yes",
       "made_by": "collaborative",
+      "superseded_by": null
+    },
+    {
+      "seq": 3411,
+      "id": "D102",
+      "when_context": "M034/S09/T04",
+      "scope": "release-workflows",
+      "decision": "How hosted extension rerolls should handle already-published `ext-v*` versions",
+      "choice": "Enable `skipDuplicate: true` on both `publish-extension.yml` publish steps and enforce that contract in `scripts/verify-m034-s04-workflows.sh`, while keeping the exact proof-artifact handoff checks unchanged.",
+      "rationale": "The hosted reroll blocker was a duplicate Open VSX publish on the already-verified VSIX. Using the action's documented duplicate-safe mode makes reruns idempotent without masking missing-artifact or wrong-VSIX failures, because the workflow still verifies the proof output path before either publish step runs.",
+      "revisable": "Yes",
+      "made_by": "agent",
       "superseded_by": null
     }
   ],
@@ -8325,6 +8453,50 @@
       "verdict": "❌ fail",
       "duration_ms": 567600,
       "created_at": "2026-03-27T18:37:23.896Z"
+    },
+    {
+      "id": 289,
+      "task_id": "T04",
+      "slice_id": "S09",
+      "milestone_id": "M034",
+      "command": "bash scripts/verify-m034-s04-workflows.sh all",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 579,
+      "created_at": "2026-03-27T18:56:07.893Z"
+    },
+    {
+      "id": 290,
+      "task_id": "T04",
+      "slice_id": "S09",
+      "milestone_id": "M034",
+      "command": "pwsh -NoProfile -File scripts/tests/verify-m034-s03-last-exitcode.ps1",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 2033,
+      "created_at": "2026-03-27T18:56:07.893Z"
+    },
+    {
+      "id": 291,
+      "task_id": "T04",
+      "slice_id": "S09",
+      "milestone_id": "M034",
+      "command": "bash scripts/tests/verify-m034-s01-fetch-retry.sh",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 451,
+      "created_at": "2026-03-27T18:56:07.893Z"
+    },
+    {
+      "id": 292,
+      "task_id": "T04",
+      "slice_id": "S09",
+      "milestone_id": "M034",
+      "command": "python3 - <<'PYCHECK' ... verify rollout artifacts still capture the pre-T04 hosted blocker on the approved target SHA ... PYCHECK",
+      "exit_code": 0,
+      "verdict": "✅ pass",
+      "duration_ms": 157,
+      "created_at": "2026-03-27T18:56:07.893Z"
     }
   ]
 }

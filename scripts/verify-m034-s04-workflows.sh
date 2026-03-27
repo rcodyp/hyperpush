@@ -465,6 +465,9 @@ if publish.is_a?(Hash)
     unless open_vsx_with.is_a?(Hash) && open_vsx_with["extensionFile"] == "${{ needs.proof.outputs.verified_vsix_path }}"
       errors << "Open VSX publish step must publish the proof job's exact VSIX path"
     end
+    unless open_vsx_with.is_a?(Hash) && open_vsx_with["skipDuplicate"] == true
+      errors << "Open VSX publish step must enable skipDuplicate for reroll-safe reruns"
+    end
   else
     errors << "publish workflow must publish to Open VSX"
   end
@@ -483,6 +486,9 @@ if publish.is_a?(Hash)
     end
     unless marketplace_with.is_a?(Hash) && marketplace_with["extensionFile"] == "${{ needs.proof.outputs.verified_vsix_path }}"
       errors << "Marketplace publish step must publish the proof job's exact VSIX path"
+    end
+    unless marketplace_with.is_a?(Hash) && marketplace_with["skipDuplicate"] == true
+      errors << "Marketplace publish step must enable skipDuplicate for reroll-safe reruns"
     end
   else
     errors << "publish workflow must publish to the Visual Studio Marketplace"
@@ -523,6 +529,10 @@ end
 
 if raw.scan("needs.proof.outputs.verified_vsix_artifact_name").length != 1
   errors << "publish workflow must use needs.proof.outputs.verified_vsix_artifact_name exactly once for artifact download"
+end
+
+if raw.scan("skipDuplicate: true").length != 2
+  errors << "publish workflow must enable skipDuplicate on both publish steps"
 end
 
 if errors.empty?
