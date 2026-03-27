@@ -113,41 +113,81 @@ for workflow, ref_name in expected.items():
     assert entry['headSha'], (workflow, entry)
 PY
   - Blocker: `deploy-services.yml` is red on `v0.1.0` because the `packages-website` runtime Docker layer reruns `npm install --omit=dev --ignore-scripts` and fails with a Vite / Svelte peer-dependency `ERESOLVE` conflict. `release.yml` is red on `v0.1.0` because multiple `Verify release assets (...)` jobs fail: Unix installer smoke builds cannot find `libmesh_rt.a`, macOS checksum generation assumes `sha256sum`, and the Windows checksum step has broken PowerShell `Select-Object -First 1,` syntax. T03 cannot truthfully claim `.tmp/m034-s06/evidence/first-green/` until those hosted regressions are fixed.
-- [ ] **T03: Capture the authoritative `first-green` hosted-evidence bundle and validate its manifest** — Once the candidate-tag runs are actually green, the slice still is not done until the repo-owned wrapper preserves that truth under the reserved `first-green` label. This task performs the one final stop-after capture, reruns the contract tests if earlier tasks touched the wrapper, and validates the archived manifest and copied verifier artifacts so milestone closeout can rely on the bundle directly.
+- [x] **T03: Reworked the packages-website Docker image to prune builder dependencies instead of reinstalling runtime packages, eliminating the hosted ERESOLVE failure path.** — Reproduce the hosted `deploy-services.yml` failure from the saved tag-run logs and the current `packages-website` container build, then remove the runtime-stage dependency installation path that triggers the Vite/Svelte peer-resolution `ERESOLVE`. Prefer a container layout that carries a production-safe dependency set forward from build time instead of re-resolving peers during the runtime image build. Keep the Fly deploy workflow contract truthful and leave a repo-local reproduction log.
 
-## Failure Modes
+Steps:
+1. Use `.tmp/m034-s08/tag-rollout/deploy-services-v0.1.0-log-failed.txt` plus the current `packages-website/Dockerfile` to reproduce the failing runtime install path locally.
+2. Update the packages website image build so the runtime stage no longer reruns the failing `npm install --omit=dev --ignore-scripts` resolution step.
+3. Touch `.github/workflows/deploy-services.yml` or its verifier only if the deploy contract itself must change to stay truthful.
 
-| Dependency | On error | On timeout | On malformed response |
-|------------|----------|-----------|----------------------|
-| `scripts/verify-m034-s06-remote-evidence.sh` | Fail closed and inspect the copied `phase-report.txt` / `remote-runs.json` instead of fabricating a green bundle. | Treat timeout as a verifier regression and preserve the partial archive staging logs if any exist. | Treat missing manifest fields, wrong `current-phase`, or missing workflow summaries as archive failure. |
-| `.env` / authenticated hosted checks | Stop with the missing key names only; never echo secret values. | N/A | Treat auth or credential drift as a hard blocker because the final bundle must come from the canonical wrapper. |
-| Hosted workflow state from T02 | Refuse to claim `first-green` if any required workflow is still red or tied to the wrong ref. | Keep the last saved T02 status snapshot and stop. | Treat incomplete `workflow-status.json` or green-but-stale runs as failure. |
+Must-haves:
+- The old peer-resolution failure is reproduced or otherwise explained by a deterministic local check.
+- A local Docker build for `packages-website` completes without the runtime-stage `ERESOLVE` failure.
+- Any workflow/verifier edits preserve the current deploy-services ownership and health-check contract.
+  - Estimate: 45m
+  - Files: packages-website/Dockerfile, packages-website/package.json, packages-website/package-lock.json, .github/workflows/deploy-services.yml, scripts/verify-m034-s05-workflows.sh, .tmp/m034-s08/tag-rollout/deploy-services-v0.1.0-log-failed.txt, .tmp/m034-s08/deploy-services-local-build.log
+  - Verify: bash -c 'set -euo pipefail; mkdir -p .tmp/m034-s08; docker build -f packages-website/Dockerfile packages-website | tee .tmp/m034-s08/deploy-services-local-build.log'
+bash scripts/verify-m034-s05-workflows.sh
+- [ ] **T04: Repair `release.yml` release-asset verification so the hosted candidate tag can pass on Unix, macOS, and Windows.** — Use the saved `release.yml` tag-run failure logs to repair the repo-owned release verification path instead of hand-waving around hosted drift. The fixes must cover the real blockers recorded by T02: the staged smoke path must truthfully satisfy the `libmesh_rt.a` requirement where the verifier expects it, checksum generation must no longer assume `sha256sum` on macOS, and the Windows checksum archive selection must use valid PowerShell syntax. Update the workflow-contract verifiers in the same task so local proof encodes the repaired hosted contract.
 
-## Load Profile
+Steps:
+1. Reproduce the failing `Verify release assets (...)` expectations from `.tmp/m034-s08/tag-rollout/release-v0.1.0-log-failed.txt` and the current `.github/workflows/release.yml` plus staged installer proof scripts.
+2. Repair the release workflow and any repo-owned helper scripts so the Unix/macOS/Windows verification jobs are truthful for the staged assets they consume.
+3. Update `scripts/verify-m034-s02-workflows.sh` and `scripts/verify-m034-s05-workflows.sh` if their current assertions encode the broken hosted behavior.
+4. Keep the documented installer mirrors in `website/docs/public/` aligned if the underlying helper logic changes.
 
-- **Shared resources**: one final stop-after S05 replay plus the archived evidence directory `.tmp/m034-s06/evidence/first-green/`.
-- **Per-operation cost**: contract tests, one authenticated archive-helper run, and one manifest validation pass.
-- **10x breakpoint**: repeated claims of the reserved label would destroy the first-green proof, so this task must run exactly once after T02 says the hosted runs are ready.
+Must-haves:
+- No `Verify release assets (...)` step depends on a host-only checksum tool assumption.
+- The Windows checksum selection path is valid PowerShell instead of the broken `Select-Object -First 1,` form.
+- The repo-owned workflow verifiers pass only when the repaired release contract is present.
+  - Estimate: 1h 15m
+  - Files: .github/workflows/release.yml, scripts/verify-m034-s03.sh, scripts/verify-m034-s02-workflows.sh, scripts/verify-m034-s05-workflows.sh, tools/install/install.sh, tools/install/install.ps1, website/docs/public/install.sh, website/docs/public/install.ps1, .tmp/m034-s08/tag-rollout/release-v0.1.0-log-failed.txt, .tmp/m034-s08/release-workflow-proof.log
+  - Verify: bash -c 'set -euo pipefail; mkdir -p .tmp/m034-s08; bash scripts/verify-m034-s02-workflows.sh | tee .tmp/m034-s08/release-workflow-proof.log'
+bash scripts/verify-m034-s05-workflows.sh
+bash scripts/verify-m034-s03.sh
+- [ ] **T05: Retarget the candidate tags on the repaired rollout commit and refresh the hosted run snapshots.** — After T03 and T04 land, the old candidate-tag runs are still tied to the broken rollout commit, so they are not acceptable evidence. This task first confirms the repaired rollout SHA on local `HEAD` and `origin/main`, then asks for explicit approval before any outward mutation. After approval, retarget or recreate `v0.1.0` and `ext-v0.3.0` on the repaired rollout commit, monitor the hosted runs, and persist durable snapshots that distinguish the new runs from the stale red ones by ref name and `headSha`.
 
-## Negative Tests
+Steps:
+1. Confirm the intended rollout SHA from local `HEAD`, `origin/main`, and the version files that derive `v0.1.0` / `ext-v0.3.0`.
+2. Present the exact outward action needed to retarget or recreate the two existing remote tags, and wait for explicit user approval before mutating any remote ref.
+3. Update the remote tags on the repaired rollout commit, then use the rollout monitor to capture `release.yml`, `deploy-services.yml`, and `publish-extension.yml` run payloads plus any failed job logs under `.tmp/m034-s08/tag-rollout/`.
+4. Stop only when the monitored runs are completed green on the expected refs and `headSha`, or when a new concrete hosted blocker is captured.
 
-- **Malformed inputs**: reserved label already exists, missing `.env`, or incomplete T02 workflow snapshots.
-- **Error paths**: wrapper exits non-zero, copied bundle lacks `remote-runs.json`, or any `remoteRunsSummary` entry stays red.
-- **Boundary conditions**: `first-green` must end with `status.txt=ok`, `current-phase.txt=stopped-after-remote-evidence`, `s05ExitCode=0`, and every summarized workflow marked `ok`.
+Must-haves:
+- No remote tag mutation happens before explicit user approval.
+- The saved status distinguishes stale earlier runs from the repaired reroll by `headSha` and ref.
+- `release.yml`, `deploy-services.yml`, and `publish-extension.yml` all settle green on the expected candidate tags before T06 starts.
+  - Estimate: 1h
+  - Files: compiler/meshc/Cargo.toml, compiler/meshpkg/Cargo.toml, tools/editors/vscode-mesh/package.json, .tmp/m034-s08/tag-rollout/tag-refs.txt, .tmp/m034-s08/tag-rollout/workflow-status.json, .tmp/m034-s08/tag-rollout/release-v0.1.0-view.json, .tmp/m034-s08/tag-rollout/deploy-services-v0.1.0-view.json, .tmp/m034-s08/tag-rollout/publish-extension-ext-v0.3.0-view.json, .tmp/m034-s08/tag-rollout/rollout_monitor.py
+  - Verify: bash -c 'set -euo pipefail; test -s .tmp/m034-s08/tag-rollout/tag-refs.txt; grep -F "refs/tags/v0.1.0" .tmp/m034-s08/tag-rollout/tag-refs.txt; grep -F "refs/tags/ext-v0.3.0" .tmp/m034-s08/tag-rollout/tag-refs.txt'
+python3 - <<'PY'
+import json
+from pathlib import Path
+summary = json.loads(Path('.tmp/m034-s08/tag-rollout/workflow-status.json').read_text())
+expected = {
+    'release.yml': 'v0.1.0',
+    'deploy-services.yml': 'v0.1.0',
+    'publish-extension.yml': 'ext-v0.3.0',
+}
+for workflow, ref_name in expected.items():
+    entry = summary[workflow]
+    assert entry['headBranch'] == ref_name, (workflow, entry)
+    assert entry['status'] == 'completed', (workflow, entry)
+    assert entry['conclusion'] == 'success', (workflow, entry)
+    assert entry['headSha'], (workflow, entry)
+PY
+- [ ] **T06: Capture the authoritative `first-green` hosted-evidence bundle and validate its manifest.** — Once T05 proves the repaired candidate tags are green, preserve that truth through the repo-owned wrapper exactly once. Reconfirm that `.tmp/m034-s06/evidence/first-green/` is still unused, rerun the S05/S06 contract tests if any wrapper or workflow-contract code changed earlier in the slice, then run `scripts/verify-m034-s06-remote-evidence.sh first-green` exactly once from the authenticated repo root. Validate the archived manifest and copied verifier artifacts so milestone closeout can consume the bundle directly without another hosted query.
 
-## Steps
+Steps:
+1. Confirm `first-green` is absent and that T05's `workflow-status.json` shows all required workflows green on the expected refs and `headSha`.
+2. Rerun the S05/S06 contract tests if earlier tasks touched the wrapper or workflow-contract logic.
+3. Run the canonical wrapper once with the reserved label and validate `status.txt`, `current-phase.txt`, `phase-report.txt`, `manifest.json`, and `remote-runs.json`.
+4. Leave the archive in place as the single authoritative first-green bundle for milestone closeout.
 
-1. Reconfirm that `.tmp/m034-s06/evidence/first-green/` is absent and that T02’s saved workflow snapshots are all green on the expected refs.
-2. Run the repo-owned wrapper exactly once with `bash scripts/verify-m034-s06-remote-evidence.sh first-green` from the `.env`-loaded repo root, and rerun the Node contract tests if T01 changed the wrapper or its tests.
-3. Validate the archived `status.txt`, `current-phase.txt`, `phase-report.txt`, `manifest.json`, and `remote-runs.json` so closeout can trust the bundle without another hosted query.
-4. Leave the bundle in place as the single authoritative first-green archive; do not overwrite it with follow-up retries.
-
-## Must-Haves
-
-- [ ] The final archive uses the reserved `first-green` label exactly once.
-- [ ] The wrapper remains the sole owner of the final hosted-evidence proof path.
-- [ ] `manifest.json` and `remote-runs.json` both show all required workflows green.
-- [ ] The task leaves a durable bundle that milestone validation can read without reconstructing hosted state.
+Must-haves:
+- `first-green` is claimed exactly once.
+- The wrapper stays the sole owner of the final hosted-evidence proof path.
+- The archived manifest and remote-run summary both show all required workflows green.
   - Estimate: 45m
   - Files: scripts/verify-m034-s06-remote-evidence.sh, scripts/tests/verify-m034-s05-contract.test.mjs, scripts/tests/verify-m034-s06-contract.test.mjs, .tmp/m034-s08/tag-rollout/workflow-status.json, .tmp/m034-s06/evidence/first-green/manifest.json, .tmp/m034-s06/evidence/first-green/remote-runs.json, .tmp/m034-s06/evidence/first-green/phase-report.txt
   - Verify: node --test scripts/tests/verify-m034-s05-contract.test.mjs scripts/tests/verify-m034-s06-contract.test.mjs

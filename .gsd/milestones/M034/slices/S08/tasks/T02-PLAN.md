@@ -1,12 +1,10 @@
 ---
-estimated_steps: 4
+estimated_steps: 25
 estimated_files: 8
-skills_used:
-  - github-workflows
-  - gh
+skills_used: []
 ---
 
-# T02: Push the candidate tags on the rolled-out commit and monitor the hosted workflow runs
+# T02: Created the candidate tags on the rolled-out SHA and captured the hosted blockers preventing a truthful first-green archive.
 
 This is the only outward-facing step in the slice. It must not happen speculatively. The task first proves the intended commit and tag names locally, asks the user for explicit approval to create and push `v0.1.0` and `ext-v0.3.0`, then watches the resulting hosted `push` runs until the candidate-tag workflows either go green or produce concrete failure evidence for the next iteration.
 

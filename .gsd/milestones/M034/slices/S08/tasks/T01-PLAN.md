@@ -1,12 +1,10 @@
 ---
-estimated_steps: 4
+estimated_steps: 25
 estimated_files: 6
-skills_used:
-  - github-workflows
-  - gh
+skills_used: []
 ---
 
-# T01: Refresh the pre-push evidence baseline and reserve the final bundle label
+# T01: Captured a fresh s08-prepush red hosted-evidence bundle, kept first-green unused, and marked the stale v0.1.0 directory as incomplete noise.
 
 The repo already has a misleading occupied `v0.1.0` evidence directory that is missing the files the archive helper requires. This task makes the final capture deterministic before any outward action: confirm the stale directory is incomplete, keep `first-green` unused, and archive one fresh red baseline under a dedicated non-final label so later tasks can distinguish real rollout progress from label-collision noise.
 
