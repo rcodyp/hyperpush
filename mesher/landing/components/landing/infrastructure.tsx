@@ -237,7 +237,7 @@ function MeshBackground() {
     <div ref={containerRef} className="absolute inset-0 pointer-events-none">
       <canvas ref={canvasRef} className="absolute inset-0" />
       {/* Radial fade so the cluster dissolves at edges */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_60%_at_75%_45%,transparent_0%,hsl(var(--background))_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_60%_at_75%_45%,transparent_0%,var(--background)_70%)]" />
     </div>
   )
 }
@@ -261,7 +261,7 @@ export function Infrastructure() {
             transition={{ duration: 0.5 }}
           >
             <p className="text-sm font-mono text-accent mb-4 uppercase tracking-wider">Infrastructure</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
               Powered by Mesh.
               <br />
               <span className="text-muted-foreground">Built for millions of errors.</span>
@@ -287,7 +287,7 @@ export function Infrastructure() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="bg-background/80 backdrop-blur-sm p-5"
+                  className="bg-background/80 backdrop-blur-sm p-4 sm:p-5"
                 >
                   <stat.icon className="w-4 h-4 text-accent mb-3" />
                   <p className="text-2xl font-bold text-foreground mb-0.5">{stat.value}</p>

@@ -52,7 +52,7 @@ export function Flywheel() {
             transition={{ duration: 0.5 }}
           >
             <p className="text-sm font-mono text-accent mb-4 uppercase tracking-wider">How It Works</p>
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
               Projects get funded.
               <br />
               Developers get paid.
@@ -84,13 +84,13 @@ export function Flywheel() {
                     viewport={{ once: true }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     onMouseEnter={() => handleMouseEnter(index)}
-                    className={`relative flex gap-6 p-6 rounded-xl border backdrop-blur-sm transition-colors ${
+                    className={`relative flex gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl border backdrop-blur-sm transition-colors ${
                       isActive
                         ? "border-accent/30 bg-card/50"
                         : "border-border bg-card/50"
                     }`}
                   >
-                    <span className={`text-5xl font-bold transition-colors ${
+                    <span className={`text-3xl sm:text-5xl font-bold transition-colors shrink-0 ${
                       isActive ? "text-accent/30" : "text-muted-foreground/20"
                     }`}>
                       {step.number}

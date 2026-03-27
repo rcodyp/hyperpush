@@ -61,7 +61,7 @@ export function OSSProgram() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="rounded-xl border border-accent/20 bg-card/50 backdrop-blur-sm p-8"
+            className="rounded-xl border border-accent/20 bg-card/50 backdrop-blur-sm p-6 sm:p-8"
           >
             <p className="text-sm font-mono text-accent uppercase tracking-wider mb-1">What you get</p>
             <p className="text-2xl font-bold mb-6">
@@ -77,10 +77,10 @@ export function OSSProgram() {
               ))}
             </ul>
             <div className="mt-6 pt-6 border-t border-border">
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Spots remaining</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground shrink-0">Spots remaining</p>
                 <div className="flex items-center gap-2">
-                  <div className="flex gap-1">
+                  <div className="hidden sm:flex gap-1">
                     {Array.from({ length: 10 }).map((_, i) => (
                       <div
                         key={i}

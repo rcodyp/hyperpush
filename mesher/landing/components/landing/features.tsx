@@ -48,7 +48,7 @@ export function Features() {
           className="max-w-2xl mb-16"
         >
           <p className="text-sm font-mono text-accent mb-4 uppercase tracking-wider">Features</p>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
             Production error tracking.
             <br />
             <span className="text-muted-foreground">Built-in economics.</span>
@@ -63,7 +63,7 @@ export function Features() {
           {features.map((feature) => (
             <div
               key={feature.title}
-              className="bg-background p-8 md:p-10 group hover:bg-card transition-colors"
+              className="bg-background p-6 sm:p-8 md:p-10 group hover:bg-card transition-colors"
             >
               <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center mb-6 group-hover:bg-accent/10 transition-colors">
                 <feature.icon className="w-6 h-6 text-accent" />

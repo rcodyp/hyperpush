@@ -58,7 +58,7 @@ assert manifest['stopAfterPhase'] == 'remote-evidence'
 assert manifest['s05ExitCode'] != 0
 assert not Path('.tmp/m034-s06/evidence/first-green').exists()
 PY
-- [ ] **T02: Push the candidate tags on the rolled-out commit and monitor the hosted workflow runs** — This is the only outward-facing step in the slice. It must not happen speculatively. The task first proves the intended commit and tag names locally, asks the user for explicit approval to create and push `v0.1.0` and `ext-v0.3.0`, then watches the resulting hosted `push` runs until the candidate-tag workflows either go green or produce concrete failure evidence for the next iteration.
+- [x] **T02: Created the candidate tags on the rolled-out SHA and captured the hosted blockers preventing a truthful first-green archive.** — This is the only outward-facing step in the slice. It must not happen speculatively. The task first proves the intended commit and tag names locally, asks the user for explicit approval to create and push `v0.1.0` and `ext-v0.3.0`, then watches the resulting hosted `push` runs until the candidate-tag workflows either go green or produce concrete failure evidence for the next iteration.
 
 ## Failure Modes
 
@@ -112,6 +112,7 @@ for workflow, ref_name in expected.items():
     assert entry['conclusion'] == 'success', (workflow, entry)
     assert entry['headSha'], (workflow, entry)
 PY
+  - Blocker: `deploy-services.yml` is red on `v0.1.0` because the `packages-website` runtime Docker layer reruns `npm install --omit=dev --ignore-scripts` and fails with a Vite / Svelte peer-dependency `ERESOLVE` conflict. `release.yml` is red on `v0.1.0` because multiple `Verify release assets (...)` jobs fail: Unix installer smoke builds cannot find `libmesh_rt.a`, macOS checksum generation assumes `sha256sum`, and the Windows checksum step has broken PowerShell `Select-Object -First 1,` syntax. T03 cannot truthfully claim `.tmp/m034-s06/evidence/first-green/` until those hosted regressions are fixed.
 - [ ] **T03: Capture the authoritative `first-green` hosted-evidence bundle and validate its manifest** — Once the candidate-tag runs are actually green, the slice still is not done until the repo-owned wrapper preserves that truth under the reserved `first-green` label. This task performs the one final stop-after capture, reruns the contract tests if earlier tasks touched the wrapper, and validates the archived manifest and copied verifier artifacts so milestone closeout can rely on the bundle directly.
 
 ## Failure Modes

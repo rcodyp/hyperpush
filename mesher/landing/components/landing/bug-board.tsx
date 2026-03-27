@@ -59,7 +59,7 @@ export function BugBoard() {
           className="text-center max-w-2xl mx-auto mb-16"
         >
           <p className="text-sm font-mono text-accent mb-4 uppercase tracking-wider">Public Bug Board</p>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
             Browse bugs. Pick one. Get paid.
           </h2>
           <p className="text-lg text-muted-foreground text-pretty">
@@ -76,16 +76,16 @@ export function BugBoard() {
           className="rounded-xl border border-border bg-card overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
-            <div className="flex items-center gap-4">
-              <h3 className="font-semibold">Live Issues</h3>
-              <Badge variant="outline" className="font-mono text-accent border-accent/30">
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border bg-muted/30">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <h3 className="font-semibold text-sm sm:text-base">Live Issues</h3>
+              <Badge variant="outline" className="font-mono text-xs text-accent border-accent/30">
                 47 Open
               </Badge>
             </div>
-            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
+            <Button variant="ghost" size="sm" className="gap-1.5 sm:gap-2 text-muted-foreground text-xs sm:text-sm px-2 sm:px-3">
               View All
-              <ArrowUpRight className="w-4 h-4" />
+              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </Button>
           </div>
 
@@ -98,19 +98,19 @@ export function BugBoard() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
-                className="flex items-center gap-4 p-4 hover:bg-muted/20 transition-colors cursor-pointer group"
+                className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-muted/20 transition-colors cursor-pointer group"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
                     <span className="text-xs font-mono text-muted-foreground">{bug.id}</span>
                     <Badge className={`text-xs ${severityColors[bug.severity]}`}>
                       {bug.severity}
                     </Badge>
                   </div>
-                  <p className="font-medium truncate group-hover:text-accent transition-colors">
+                  <p className="font-medium text-sm sm:text-base truncate group-hover:text-accent transition-colors">
                     {bug.title}
                   </p>
-                  <p className="text-sm text-muted-foreground font-mono">{bug.project}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground font-mono">{bug.project}</p>
                 </div>
 
                 <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
@@ -118,8 +118,8 @@ export function BugBoard() {
                   {bug.timeOpen}
                 </div>
 
-                <div className="text-right">
-                  <p className="font-semibold text-foreground">{bug.bounty}</p>
+                <div className="text-right shrink-0">
+                  <p className="font-semibold text-sm sm:text-base text-foreground">{bug.bounty}</p>
                   <p className="text-xs text-muted-foreground">Bounty</p>
                 </div>
               </motion.div>

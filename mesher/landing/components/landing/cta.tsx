@@ -20,7 +20,7 @@ export function CTA() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 text-balance">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-6 text-balance">
             Track errors. Fund your project.
             <br />
             Reward the people who help.

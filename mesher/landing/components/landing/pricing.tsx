@@ -76,7 +76,7 @@ export function Pricing() {
           className="text-center max-w-2xl mx-auto mb-16"
         >
           <p className="text-sm font-mono text-accent mb-4 uppercase tracking-wider">Pricing</p>
-          <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight mb-6 text-balance">
             Free to start.
             <br />
             <span className="text-muted-foreground">Scale when you need to.</span>
@@ -90,7 +90,7 @@ export function Pricing() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden">
+        <div className="grid lg:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden">
           {tiers.map((tier, index) => (
             <motion.div
               key={tier.name}
@@ -98,7 +98,7 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className={`relative p-8 md:p-10 ${
+              className={`relative p-6 sm:p-8 md:p-10 ${
                 tier.popular 
                   ? "bg-card border-t-2 border-t-accent" 
                   : "bg-background"
