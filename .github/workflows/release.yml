@@ -112,30 +112,41 @@ jobs:
           # LLVMSupport.lib. When statically linked into a Rust binary via
           # llvm-sys, these collide with ucrt.lib's heap symbols (LNK2005).
           #
-          # Fix: remove the rpmalloc object(s) from LLVMSupport.lib and
-          # provide a no-op stub for rpmalloc_linker_reference (called by
-          # InitLLVM.cpp.obj to force-pull rpmalloc at link time).
+          # Fix: extract all objects, remove the rpmalloc ones, compile a
+          # stub for rpmalloc_linker_reference, and rebuild the library.
           $supportLib = "$LLVM_DIR\lib\LLVMSupport.lib"
-          $llvmLib = "$LLVM_DIR\bin\llvm-lib.exe"
+          $llvmAr = "$LLVM_DIR\bin\llvm-ar.exe"
           $clang = "$LLVM_DIR\bin\clang.exe"
-          if ((Test-Path $supportLib) -and (Test-Path $llvmLib)) {
-            Write-Host "Stripping rpmalloc objects from LLVMSupport.lib..."
-            $listing = & $llvmLib /LIST $supportLib 2>&1
-            $rpMembers = $listing | Where-Object { $_ -match "rpmalloc|rpnew|malloc\.c" }
-            foreach ($m in $rpMembers) {
-              $m = $m.Trim()
-              if ($m) {
-                Write-Host "  Removing: $m"
-                & $llvmLib /REMOVE:$m $supportLib
-              }
+          if ((Test-Path $supportLib) -and (Test-Path $llvmAr)) {
+            $workDir = "$LLVM_DIR\lib\_rpmalloc_strip"
+            New-Item -ItemType Directory -Force -Path $workDir | Out-Null
+            Push-Location $workDir
+
+            Write-Host "Extracting LLVMSupport.lib members..."
+            & $llvmAr x $supportLib
+
+            # Remove rpmalloc-related objects
+            $rpFiles = Get-ChildItem -Filter "*.obj" | Where-Object { $_.Name -match "rpmalloc" }
+            foreach ($f in $rpFiles) {
+              Write-Host "  Removing: $($f.Name)"
+              Remove-Item $f.FullName -Force
             }
+
             # Provide stub so InitLLVM.cpp.obj's reference resolves
-            $stubC = "$LLVM_DIR\lib\rpmalloc_stub.c"
-            $stubObj = "$LLVM_DIR\lib\rpmalloc_stub.obj"
+            $stubC = Join-Path $workDir "rpmalloc_stub.c"
+            $stubObj = Join-Path $workDir "rpmalloc_stub.obj"
             Set-Content $stubC "void rpmalloc_linker_reference(void) {}"
             & $clang -c -o $stubObj $stubC
-            & $llvmLib $supportLib $stubObj
-            Remove-Item $stubC, $stubObj -Force -ErrorAction SilentlyContinue
+            Remove-Item $stubC -Force
+
+            # Rebuild the library from all remaining objects
+            Write-Host "Rebuilding LLVMSupport.lib without rpmalloc..."
+            Remove-Item $supportLib -Force
+            $objs = (Get-ChildItem -Filter "*.obj").FullName
+            & $llvmAr rcs $supportLib @objs
+
+            Pop-Location
+            Remove-Item $workDir -Recurse -Force
             Write-Host "Done — rpmalloc stripped, stub added."
           }
 
@@ -479,25 +490,35 @@ jobs:
 
           # Strip rpmalloc from LLVMSupport.lib (same fix as Build job above)
           $supportLib = "$LLVM_DIR\lib\LLVMSupport.lib"
-          $llvmLib = "$LLVM_DIR\bin\llvm-lib.exe"
+          $llvmAr = "$LLVM_DIR\bin\llvm-ar.exe"
           $clang = "$LLVM_DIR\bin\clang.exe"
-          if ((Test-Path $supportLib) -and (Test-Path $llvmLib)) {
-            Write-Host "Stripping rpmalloc objects from LLVMSupport.lib..."
-            $listing = & $llvmLib /LIST $supportLib 2>&1
-            $rpMembers = $listing | Where-Object { $_ -match "rpmalloc|rpnew|malloc\.c" }
-            foreach ($m in $rpMembers) {
-              $m = $m.Trim()
-              if ($m) {
-                Write-Host "  Removing: $m"
-                & $llvmLib /REMOVE:$m $supportLib
-              }
+          if ((Test-Path $supportLib) -and (Test-Path $llvmAr)) {
+            $workDir = "$LLVM_DIR\lib\_rpmalloc_strip"
+            New-Item -ItemType Directory -Force -Path $workDir | Out-Null
+            Push-Location $workDir
+
+            Write-Host "Extracting LLVMSupport.lib members..."
+            & $llvmAr x $supportLib
+
+            $rpFiles = Get-ChildItem -Filter "*.obj" | Where-Object { $_.Name -match "rpmalloc" }
+            foreach ($f in $rpFiles) {
+              Write-Host "  Removing: $($f.Name)"
+              Remove-Item $f.FullName -Force
             }
-            $stubC = "$LLVM_DIR\lib\rpmalloc_stub.c"
-            $stubObj = "$LLVM_DIR\lib\rpmalloc_stub.obj"
+
+            $stubC = Join-Path $workDir "rpmalloc_stub.c"
+            $stubObj = Join-Path $workDir "rpmalloc_stub.obj"
             Set-Content $stubC "void rpmalloc_linker_reference(void) {}"
             & $clang -c -o $stubObj $stubC
-            & $llvmLib $supportLib $stubObj
-            Remove-Item $stubC, $stubObj -Force -ErrorAction SilentlyContinue
+            Remove-Item $stubC -Force
+
+            Write-Host "Rebuilding LLVMSupport.lib without rpmalloc..."
+            Remove-Item $supportLib -Force
+            $objs = (Get-ChildItem -Filter "*.obj").FullName
+            & $llvmAr rcs $supportLib @objs
+
+            Pop-Location
+            Remove-Item $workDir -Recurse -Force
             Write-Host "Done — rpmalloc stripped, stub added."
           }
 
