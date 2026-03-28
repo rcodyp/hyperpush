@@ -127,18 +127,22 @@ jobs:
           # into the LLVM prefix lib dir so the linker finds it without
           # a global LIB override (which previously caused duplicate symbols).
           vcpkg install libxml2:x64-windows-static
-          $src = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\lib\libxml2s.lib"
+          $vcpkgLib = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static\lib"
           $dest = "$env:USERPROFILE\llvm\lib\libxml2s.lib"
-          if (-not (Test-Path $src)) {
-            # Fallback: try the non-static triplet
-            $src = "$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows\lib\libxml2s.lib"
+          # vcpkg names it libxml2.lib; LLVM expects libxml2s.lib
+          $candidates = @("$vcpkgLib\libxml2s.lib", "$vcpkgLib\libxml2.lib", "$vcpkgLib\xml2s.lib", "$vcpkgLib\xml2.lib")
+          Write-Host "Scanning for libxml2 in $vcpkgLib ..."
+          Get-ChildItem $vcpkgLib -Filter "*xml2*" | ForEach-Object { Write-Host "  found: $($_.FullName)" }
+          $src = $null
+          foreach ($c in $candidates) {
+            if (Test-Path $c) { $src = $c; break }
           }
-          if (-not (Test-Path $src)) {
-            Write-Error "libxml2s.lib not found after vcpkg install"
+          if (-not $src) {
+            Write-Error "No libxml2 .lib found in $vcpkgLib"
             exit 1
           }
           Copy-Item $src $dest -Force
-          Write-Host "Copied libxml2s.lib to $dest"
+          Write-Host "Copied $src -> $dest"
 
       # ── Rust Toolchain ────────────────────────────────────────────
 
