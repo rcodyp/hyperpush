@@ -54,7 +54,7 @@ jobs:
         id: cache-llvm
         with:
           path: ~/llvm
-          key: llvm-21.1.8-v3-${{ matrix.target }}
+          key: llvm-21.1.8-v4-${{ matrix.target }}
 
       - name: Install LLVM 21 (Homebrew)
         if: matrix.llvm_method == 'brew'
@@ -106,6 +106,38 @@ jobs:
           7z x llvm.tar -o"$env:USERPROFILE"
           Rename-Item "$env:USERPROFILE\clang+llvm-${LLVM_VERSION}-x86_64-pc-windows-msvc" $LLVM_DIR
           Remove-Item llvm.tar.xz, llvm.tar -Force
+
+          # The LLVM 21 prebuilt tarball is built with LLVM_ENABLE_RPMALLOC=ON,
+          # which embeds rpmalloc's malloc/free/realloc/calloc overrides into
+          # LLVMSupport.lib. When statically linked into a Rust binary via
+          # llvm-sys, these collide with ucrt.lib's heap symbols (LNK2005).
+          #
+          # Fix: remove the rpmalloc object(s) from LLVMSupport.lib and
+          # provide a no-op stub for rpmalloc_linker_reference (called by
+          # InitLLVM.cpp.obj to force-pull rpmalloc at link time).
+          $supportLib = "$LLVM_DIR\lib\LLVMSupport.lib"
+          $llvmLib = "$LLVM_DIR\bin\llvm-lib.exe"
+          $clang = "$LLVM_DIR\bin\clang.exe"
+          if ((Test-Path $supportLib) -and (Test-Path $llvmLib)) {
+            Write-Host "Stripping rpmalloc objects from LLVMSupport.lib..."
+            $listing = & $llvmLib /LIST $supportLib 2>&1
+            $rpMembers = $listing | Where-Object { $_ -match "rpmalloc|rpnew|malloc\.c" }
+            foreach ($m in $rpMembers) {
+              $m = $m.Trim()
+              if ($m) {
+                Write-Host "  Removing: $m"
+                & $llvmLib /REMOVE:$m $supportLib
+              }
+            }
+            # Provide stub so InitLLVM.cpp.obj's reference resolves
+            $stubC = "$LLVM_DIR\lib\rpmalloc_stub.c"
+            $stubObj = "$LLVM_DIR\lib\rpmalloc_stub.obj"
+            Set-Content $stubC "void rpmalloc_linker_reference(void) {}"
+            & $clang -c -o $stubObj $stubC
+            & $llvmLib $supportLib $stubObj
+            Remove-Item $stubC, $stubObj -Force -ErrorAction SilentlyContinue
+            Write-Host "Done — rpmalloc stripped, stub added."
+          }
 
       - name: Set LLVM prefix (Linux tarball)
         if: matrix.llvm_method == 'tarball' && runner.os == 'Linux'
@@ -444,6 +476,30 @@ jobs:
           7z x llvm.tar -o"$env:USERPROFILE"
           Rename-Item "$env:USERPROFILE\clang+llvm-${LLVM_VERSION}-x86_64-pc-windows-msvc" $LLVM_DIR
           Remove-Item llvm.tar.xz, llvm.tar -Force
+
+          # Strip rpmalloc from LLVMSupport.lib (same fix as Build job above)
+          $supportLib = "$LLVM_DIR\lib\LLVMSupport.lib"
+          $llvmLib = "$LLVM_DIR\bin\llvm-lib.exe"
+          $clang = "$LLVM_DIR\bin\clang.exe"
+          if ((Test-Path $supportLib) -and (Test-Path $llvmLib)) {
+            Write-Host "Stripping rpmalloc objects from LLVMSupport.lib..."
+            $listing = & $llvmLib /LIST $supportLib 2>&1
+            $rpMembers = $listing | Where-Object { $_ -match "rpmalloc|rpnew|malloc\.c" }
+            foreach ($m in $rpMembers) {
+              $m = $m.Trim()
+              if ($m) {
+                Write-Host "  Removing: $m"
+                & $llvmLib /REMOVE:$m $supportLib
+              }
+            }
+            $stubC = "$LLVM_DIR\lib\rpmalloc_stub.c"
+            $stubObj = "$LLVM_DIR\lib\rpmalloc_stub.obj"
+            Set-Content $stubC "void rpmalloc_linker_reference(void) {}"
+            & $clang -c -o $stubObj $stubC
+            & $llvmLib $supportLib $stubObj
+            Remove-Item $stubC, $stubObj -Force -ErrorAction SilentlyContinue
+            Write-Host "Done — rpmalloc stripped, stub added."
+          }
 
       - name: Set LLVM prefix for Windows smoke verifier
         if: runner.os == 'Windows'
