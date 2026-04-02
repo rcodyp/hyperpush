@@ -4,9 +4,9 @@
 
 Mesh is a programming language and backend application platform repository aimed at being trustworthy for real backend and distributed-systems work, not just toy examples. The repo contains the compiler, runtime, formatter, LSP, REPL, package tooling, docs site, package registry, packages website, landing site, and dogfood applications used to pressure-test the language.
 
-M047 is complete. The repo now has a truthful clustered-route wrapper implementation plus native and Docker proof that the Todo starter's selected read routes execute through explicit-count clustered route wrappers end to end. M048 is active: S01 closed the compiler/build/test entrypoint seam, S02 extended the same default-plus-override contract through `mesh-lsp`, `meshc lsp`, the repo-owned Neovim and VS Code hosts, and `meshpkg publish`, S03 added installer-backed `meshc update` / `meshpkg update` commands plus a retained staged-release acceptance rail, and S04 reset editor syntax plus init-time Mesh skills to the current `@cluster` / interpolation / clustered-runtime truth. S05 remains to assemble the milestone proof and reconcile the minimal public touchpoints.
+M048 is complete. The repo now ships a default-plus-override executable-entry contract across compiler build/test, `mesh-lsp`, editor hosts, and `meshpkg publish`; installer-backed `meshc update` / `meshpkg update`; truthful editor grammar and init-time Mesh skill guidance for `@cluster` plus both interpolation forms; and one retained closeout rail (`bash scripts/verify-m048-s05.sh`) plus bounded public docs that keep first-contact tooling claims honest.
 
-The current wave is a public-surface reset aimed at new evaluators: configurable entrypoints, toolchain self-update, editor and init-skill parity, a cleaner scaffold/example story, evaluator-facing docs instead of a proof-maze, Mesher as the deeper real reference app, and deploy truth that matches what the site claims.
+The current wave continues the evaluator-facing public-surface reset: M049 will replace stale scaffold/example surfaces with current Mesh patterns, M050 will rewrite public docs into evaluator-facing material instead of a proof maze, M051 will retire `reference-backend/` in favor of `mesher/` as the deeper living reference app, and later milestones will align landing/packages/deploy surfaces with that same truthful story.
 
 ## Core Value
 
@@ -34,10 +34,10 @@ Recent distributed-runtime state:
 - M046 closed the route-free clustered proof wave: `tiny-cluster/`, rebuilt `cluster-proof/`, and `meshc init --clustered` now share one tiny `1 + 1` clustered-work contract, and the authoritative closeout rail is `bash scripts/verify-m046-s06.sh`
 - M047 completed the public cutover to source-first `@cluster`, carried replication counts through runtime truth, shipped `HTTP.clustered(...)`, and updated the Todo scaffold, docs, and closeout rails around that shipped route wrapper
 
-Public docs and repo teaching surfaces are still uneven in ways the next wave needs to fix:
-- the default-plus-override `[package].entrypoint` contract now spans compiler build, test discovery, LSP, editor hosts, and `meshpkg publish`, and the reset wave now also includes explicit installer-backed `meshc update` / `meshpkg update` commands proven against a retained staged release server rail in `compiler/meshc/tests/e2e_m048_s03.rs`
-- editor syntax and init-time Mesh skills now have retained parity rails for `@cluster`, both interpolation forms, and clustered-runtime teaching truth: `bash scripts/verify-m036-s01.sh`, `NEOVIM_BIN="${NEOVIM_BIN:-nvim}" bash scripts/verify-m036-s02.sh syntax`, `node --test scripts/tests/verify-m036-s02-contract.test.mjs`, and `node --test scripts/tests/verify-m048-s04-skill-contract.test.mjs`
-- public docs still expose proof-heavy surfaces centered on `reference-backend/`, `tiny-cluster/`, and `cluster-proof/`
+Public docs and repo teaching surfaces are still uneven in ways the next wave needs to fix, even though M048's first-contact surfaces are now truthful:
+- the default-plus-override `[package].entrypoint` contract now spans compiler build, test discovery, LSP, editor hosts, and `meshpkg publish`; first-contact docs also point at the retained `bash scripts/verify-m048-s05.sh` closeout rail and keep `main.mpl` as the simple default while documenting override entries such as `lib/start.mpl`
+- the reset wave now includes explicit installer-backed `meshc update` / `meshpkg update` commands, bounded VS Code same-file-definition wording, manifest-first editor proof, and retained parity rails for `@cluster`, both interpolation forms, and clustered-runtime teaching truth: `bash scripts/verify-m036-s01.sh`, `NEOVIM_BIN="${NEOVIM_BIN:-nvim}" bash scripts/verify-m036-s02.sh syntax`, `node --test scripts/tests/verify-m036-s02-contract.test.mjs`, `node --test scripts/tests/verify-m048-s04-skill-contract.test.mjs`, and the assembled `bash scripts/verify-m048-s05.sh`
+- broader public docs still expose proof-heavy surfaces centered on `reference-backend/`, `tiny-cluster/`, and `cluster-proof/`
 - the landing site still reflects stale product positioning rather than Mesh's actual language story
 - `reference-backend/` still exists even though the next wave is expected to retire it in favor of `mesher/`
 
@@ -73,7 +73,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M045: Language-Owned Clustered Example Simplification — make the primary clustered example tiny, docs-grade, and fully language/runtime-owned instead of proof-app-shaped
 - [x] M046: Language-Owned Tiny Cluster Proofs — make clustered work auto-triggered, decorator-declarable, route-free, and equally proven through `meshc init --clustered`, `tiny-cluster/`, and rebuilt `cluster-proof/`
 - [x] M047: Cluster Declaration Reset & Clustered Route Ergonomics — replace `clustered(work)` with `@cluster`, reset canonical examples/scaffolds to ordinary `@cluster` function names, continue the clustered-route wrapper work honestly, and ship a clear SQLite Todo scaffold with a complete Dockerfile that makes clustering obvious without looking like a proof app
-- [ ] M048: Entrypoint Flexibility & Tooling Truth Reset — make entrypoints configurable, add toolchain self-update, and align editors plus init-time skills with the current language/runtime contract
+- [x] M048: Entrypoint Flexibility & Tooling Truth Reset — make entrypoints configurable, add toolchain self-update, and align editors plus init-time skills with the current language/runtime contract
 - [ ] M049: Scaffold & Example Reset — support SQLite or Postgres scaffolds, generate checked-in examples, and replace proof-app-shaped public teaching surfaces
 - [ ] M050: Public Docs Truth Reset — make docs evaluator-facing, remove proof-maze public material, and re-test commands and code samples one by one
 - [ ] M051: Mesher as the Living Reference App — retire `reference-backend/`, keep `mesher/` healthy, and modernize it as the deeper real reference app

@@ -215,35 +215,35 @@ This file is the explicit capability and coverage contract for the project.
 
 ### R112 — Mesh projects keep `main.mpl` as the default executable entrypoint but may override it in `mesh.toml` with a different path and file name.
 - Class: core-capability
-- Status: active
+- Status: validated
 - Description: A Mesh project should build, test, analyze, and package from `main.mpl` by default, but allow an optional manifest override such as `lib/start.mpl` when the project wants a different executable entry file.
 - Why it matters: The current hardcoded `main.mpl` rule leaks into compiler, editor, and package surfaces and makes ordinary project layout choices feel artificially constrained.
 - Source: user
 - Primary owning slice: M048/S01
 - Supporting slices: M048/S02
-- Validation: mapped
+- Validation: Validated by M048 closeout: S01 shipped the shared `[package].entrypoint` contract for compiler build and `meshc test`, S02 propagated the same override-entry truth into `mesh-lsp`, `meshc lsp`, Neovim, VS Code, and `meshpkg publish`, and fresh `bash scripts/verify-m048-s05.sh` passed the `m048-s01-entrypoint`, `m048-s02-lsp-neovim`, `m048-s02-vscode`, and `m048-s02-publish` phases.
 - Notes: Keep the simple default. The new contract is default-plus-override, not a second mandatory project layout.
 
 ### R113 — `meshc` and `meshpkg` expose explicit binary self-update commands through the existing release/install path.
 - Class: admin/support
-- Status: active
+- Status: validated
 - Description: The Mesh toolchain should have intentional self-update commands for installed binaries instead of requiring users to rediscover the installer flow manually.
 - Why it matters: Updating the compiler and package manager should be part of the product surface, not tribal knowledge.
 - Source: user
 - Primary owning slice: M048/S03
 - Supporting slices: M048/S05
-- Validation: mapped
+- Validation: Validated by M048 closeout: `meshc update` and `meshpkg update` now ship through the shared installer-backed updater seam, and fresh `bash scripts/verify-m048-s05.sh` passed the `m048-s03-toolchain-update-core`, `m048-s03-toolchain-update-help`, `m048-s03-toolchain-update-cli`, and `m048-s03-toolchain-update-e2e` phases, replaying the staged-download and installed-repair rails.
 - Notes: This requirement is about binary self-update, not project dependency upgrades.
 
 ### R114 — VS Code, Vim, and init-time Mesh skills reflect the current clustered and interpolation syntax truthfully.
 - Class: quality-attribute
-- Status: active
+- Status: validated
 - Description: Official editor grammars and the Mesh init-time LLM skill bundle should understand `@cluster`, both string interpolation forms, and the current clustered/runtime teaching model.
 - Why it matters: If the language syntax and its teaching surfaces drift apart, new evaluators see a stale or misleading language.
 - Source: user
 - Primary owning slice: M048/S04
 - Supporting slices: M048/S02, M048/S05
-- Validation: mapped
+- Validation: Validated by M048 closeout: S02 made manifest-first editor rooting and diagnostics truthful for override-entry projects, S04 reset grammar and skill surfaces to current `@cluster` and interpolation behavior, and fresh `bash scripts/verify-m048-s05.sh` passed the `m048-s02-lsp-neovim`, `m048-s02-vscode`, `m048-s04-shared-grammar`, `m048-s04-neovim-syntax`, `m048-s04-neovim-contract`, and `m048-s04-skill-contract` phases.
 - Notes: This includes both syntax highlighting parity and clustering-aware skill content.
 
 ### R115 — The Todo scaffold supports either SQLite or Postgres and uses current Mesh patterns instead of stale starter conventions.
@@ -1488,9 +1488,9 @@ This file is the explicit capability and coverage contract for the project.
 | R109 | anti-feature | out-of-scope | none | none | n/a |
 | R110 | anti-feature | out-of-scope | none | none | n/a |
 | R111 | constraint | out-of-scope | none | none | n/a |
-| R112 | core-capability | active | M048/S01 | M048/S02 | mapped |
-| R113 | admin/support | active | M048/S03 | M048/S05 | mapped |
-| R114 | quality-attribute | active | M048/S04 | M048/S02, M048/S05 | mapped |
+| R112 | core-capability | validated | M048/S01 | M048/S02 | validated |
+| R113 | admin/support | validated | M048/S03 | M048/S05 | validated |
+| R114 | quality-attribute | validated | M048/S04 | M048/S02, M048/S05 | validated |
 | R115 | launchability | active | M049/S01 (provisional) | M049/S02 (provisional) | mapped |
 | R116 | quality-attribute | active | M049/S02 (provisional) | M049/S01 (provisional) | mapped |
 | R117 | quality-attribute | active | M050/S01 (provisional) | M050/S02 (provisional) | mapped |
