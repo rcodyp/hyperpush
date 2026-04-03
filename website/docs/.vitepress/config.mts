@@ -9,8 +9,8 @@ export default defineConfig({
   title: 'Mesh',
   description: 'The Mesh Programming Language',
 
-  // Built-in dark mode with FOUC prevention
-  appearance: true,
+  // Respect system preference by default; user can override via toggle
+  appearance: 'auto',
 
   // Enable clean URLs
   cleanUrls: true,
@@ -25,18 +25,18 @@ export default defineConfig({
 
   // Site-wide SEO defaults
   head: [
-    ['script', {}, `;(() => {
-      const s = localStorage.getItem('vitepress-theme-appearance')
-      if (!s || s === 'auto') {
-        document.documentElement.classList.remove('dark')
-        localStorage.setItem('vitepress-theme-appearance', 'light')
-      }
-    })()`],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-icon-black.svg', media: '(prefers-color-scheme: light)' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo-icon-white.svg', media: '(prefers-color-scheme: dark)' }],
-    ['meta', { name: 'theme-color', content: '#ffffff' }],
+    ['meta', { name: 'theme-color', content: '#ffffff', media: '(prefers-color-scheme: light)' }],
+    ['meta', { name: 'theme-color', content: '#0d0d0d', media: '(prefers-color-scheme: dark)' }],
     ['meta', { property: 'og:site_name', content: 'Mesh Programming Language' }],
+    ['meta', { property: 'og:image', content: 'https://meshlang.dev/og-image.png' }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:image:alt', content: 'Mesh — Built for distributed systems. One annotation, native speed, auto-failover.' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: 'https://meshlang.dev/og-image.png' }],
+    ['meta', { name: 'twitter:site', content: '@meshlang' }],
   ],
 
   // Per-page dynamic SEO meta tags
@@ -44,13 +44,26 @@ export default defineConfig({
     const canonicalUrl = `https://meshlang.dev/${pageData.relativePath}`
       .replace(/index\.md$/, '')
       .replace(/\.md$/, '.html')
+
+    const isHome = pageData.relativePath === 'index.md'
+    const title = isHome
+      ? 'Mesh Programming Language'
+      : (pageData.title ? `${pageData.title} | Mesh` : 'Mesh Programming Language')
+    const description = pageData.description
+      || (isHome
+        ? 'One annotation to distribute work across a fleet. Built-in failover, load balancing, and exactly-once semantics — no orchestration layer required.'
+        : 'A language built for distributed systems and servers.')
+
     pageData.frontmatter.head ??= []
     pageData.frontmatter.head.push(
       ['link', { rel: 'canonical', href: canonicalUrl }],
-      ['meta', { property: 'og:title', content: pageData.title ? `${pageData.title} | Mesh` : 'Mesh Programming Language' }],
-      ['meta', { property: 'og:description', content: pageData.description || 'Expressive, concurrent, type-safe programming language.' }],
+      ['meta', { name: 'description', content: description }],
+      ['meta', { property: 'og:title', content: title }],
+      ['meta', { property: 'og:description', content: description }],
       ['meta', { property: 'og:url', content: canonicalUrl }],
-      ['meta', { property: 'og:type', content: 'article' }],
+      ['meta', { property: 'og:type', content: isHome ? 'website' : 'article' }],
+      ['meta', { name: 'twitter:title', content: title }],
+      ['meta', { name: 'twitter:description', content: description }],
     )
   },
 

@@ -26,8 +26,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <section class="relative border-t border-border py-24 md:py-32 overflow-hidden grain">
-    <!-- Layered backgrounds -->
+  <section class="relative border-t border-border py-24 md:py-32 overflow-hidden">
+    <!-- Background -->
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,var(--muted),transparent_70%)] opacity-50" />
     <div class="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]" style="background-image: linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px); background-size: 48px 48px;" />
 
@@ -38,10 +38,10 @@ onMounted(() => {
       </div>
 
       <h2 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-        Ready to build with Mesh?
+        Start building your distributed system
       </h2>
       <p class="mt-4 text-lg text-muted-foreground">
-        Get started in seconds. Works on macOS, Linux, and Windows.
+        Install Mesh in seconds. Works on macOS, Linux, and Windows.
       </p>
 
       <!-- Install command -->
@@ -64,8 +64,8 @@ onMounted(() => {
           Get Started
           <ArrowRight class="ml-1.5 size-4" />
         </Button>
-        <Button as="a" href="https://github.com/snowdamiz/mesh-lang" variant="outline" size="lg" class="h-12 px-8 rounded-lg text-base font-semibold">
-          GitHub
+        <Button as="a" href="/docs/distributed/" variant="outline" size="lg" class="h-12 px-8 rounded-lg text-base font-semibold">
+          Distributed Docs
         </Button>
       </div>
     </div>

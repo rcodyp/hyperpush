@@ -9,25 +9,28 @@ const { theme } = useData()
 
 const highlightedHtml = ref('')
 
-const heroCode = `service Counter do
-  fn init(n :: Int) -> Int do n end
-
-  call Increment() :: Int do |count|
-    (count + 1, count + 1)
-  end
-end
-
-fn handle_count(request) do
-  let pid = Process.whereis("counter")
-  let count = Counter.increment(pid)
-  HTTP.response(200, "Count: \#{count}")
+const heroCode = `# Add @cluster — Mesh handles placement, replication, failover
+@cluster pub fn process_order(order_id :: String) -> String do
+  let order = Repo.find(pool, Order, order_id)
+  let _ = Payment.charge(order)
+  "Done on \#{Node.self()}"
 end
 
 fn main() do
-  let _ = Process.register("counter", Counter.start(0))
+  let pool = Postgres.open(Env.get("DATABASE_URL"))
+  # Clustering, failover, load balancing — one call
+  let _ = Node.start_from_env()
 
-  HTTP.serve((HTTP.router()
-    |> HTTP.on_get("/count", handle_count)), 8080)
+  HTTP.serve(HTTP.router()
+    |> HTTP.on_post("/orders", fn(req) do
+      let id = Request.json(req)["id"]
+      let _ = Continuity.submit(id, process_order)
+      HTTP.response(202, "accepted")
+    end)
+    |> HTTP.on_get("/orders/:id", fn(req) do
+      let s = Continuity.status(Request.param(req, "id"))
+      HTTP.response(200, Json.encode(s))
+    end), 8080)
 end`
 
 onMounted(async () => {
@@ -41,7 +44,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="relative overflow-x-clip grain">
+  <section class="relative overflow-x-clip">
     <!-- Layered background: radial vignette + subtle grid -->
     <div class="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--border),transparent_70%)] opacity-60" />
     <div class="absolute inset-0 opacity-[0.02] dark:opacity-[0.04]" style="background-image: linear-gradient(var(--foreground) 1px, transparent 1px), linear-gradient(90deg, var(--foreground) 1px, transparent 1px); background-size: 48px 48px;" />
@@ -60,9 +63,9 @@ onMounted(async () => {
           </div>
 
           <h1 class="text-[1.75rem] font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-[4.25rem]" style="line-height: 1.1;">
-            Build concurrent systems with
+            The language built for
             <span class="relative inline-block">
-              confidence.
+              distributed systems.
               <svg class="absolute -bottom-1 left-0 w-full h-3 text-foreground/15" viewBox="0 0 200 12" preserveAspectRatio="none">
                 <path d="M0 9 Q50 0 100 7 Q150 14 200 5" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>
               </svg>
@@ -70,8 +73,7 @@ onMounted(async () => {
           </h1>
 
           <p class="mx-auto mt-6 max-w-lg text-lg text-muted-foreground sm:text-xl lg:mx-0" style="line-height: 1.7;">
-            Mesh combines Elixir-style concurrency with static type inference,
-            compiling to fast native binaries.
+            One annotation to distribute work across a fleet. Built-in failover, load balancing, and everything a server needs — no orchestration layer required.
           </p>
 
           <div class="mt-10 flex items-center justify-center gap-3 lg:justify-start">
@@ -84,28 +86,10 @@ onMounted(async () => {
               GitHub
             </Button>
           </div>
-
-          <!-- Social proof line -->
-          <div class="mt-8 flex items-center justify-center gap-6 lg:justify-start text-sm text-muted-foreground">
-            <span class="flex items-center gap-1.5">
-              <span class="font-mono font-bold text-foreground tabular-nums">29K+</span> req/s
-            </span>
-            <span class="h-3 w-px bg-border" />
-            <span class="flex items-center gap-1.5">
-              <span class="font-mono font-bold text-foreground tabular-nums">~5 MB</span> RSS
-            </span>
-            <span class="h-3 w-px bg-border" />
-            <span class="flex items-center gap-1.5">
-              <span class="font-mono font-bold text-foreground">LLVM</span> native
-            </span>
-          </div>
         </div>
 
         <!-- Right column: code block -->
         <div class="relative animate-fade-in-up" style="animation-delay: 200ms;">
-          <!-- Glow orb -->
-          <div class="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-80 rounded-full bg-foreground/[0.04] blur-3xl animate-glow-pulse" />
-
           <!-- Terminal -->
           <div class="relative overflow-hidden rounded-xl border border-border bg-card shadow-2xl ring-1 ring-foreground/[0.05]">
             <!-- Terminal header -->

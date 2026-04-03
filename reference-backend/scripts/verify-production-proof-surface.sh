@@ -8,14 +8,6 @@ README_FILE="README.md"
 RUNBOOK_FILE="reference-backend/README.md"
 SIDEBAR_FILE="website/docs/.vitepress/config.mts"
 GETTING_STARTED_FILE="website/docs/docs/getting-started/index.md"
-GENERIC_DOCS=(
-  "website/docs/docs/getting-started/index.md"
-  "website/docs/docs/web/index.md"
-  "website/docs/docs/databases/index.md"
-  "website/docs/docs/concurrency/index.md"
-  "website/docs/docs/tooling/index.md"
-  "website/docs/docs/testing/index.md"
-)
 PROOF_LINK="/docs/production-backend-proof/"
 RUNBOOK_REF="reference-backend/README.md"
 RUNBOOK_LINK="https://github.com/snowdamiz/mesh-lang/blob/main/reference-backend/README.md"
@@ -98,27 +90,84 @@ require_not_contains() {
 
 phase "checking prerequisites"
 require_command rg
+require_command python3
 
 phase "checking canonical files exist"
 require_file "$PROOF_PAGE"
 require_file "$README_FILE"
 require_file "$RUNBOOK_FILE"
 require_file "$SIDEBAR_FILE"
+require_file "$GETTING_STARTED_FILE"
 
-for doc in "${GENERIC_DOCS[@]}"; do
-  require_file "$doc"
-done
-
-phase "checking generic docs route to the canonical proof surface"
-for doc in "${GENERIC_DOCS[@]}"; do
-  require_contains "$doc" "$PROOF_LINK" "production proof link"
-  require_contains "$doc" "$RUNBOOK_REF" "reference backend runbook reference"
-done
-
-phase "checking landing page and sidebar route to the proof surface"
+phase "checking the landing page keeps the production proof surface public"
 require_contains "$README_FILE" "$PROOF_LINK" "production proof link"
 require_contains "$README_FILE" "$RUNBOOK_REF" "reference backend runbook reference"
-require_contains "$SIDEBAR_FILE" "$PROOF_LINK" "production proof sidebar entry"
+
+phase "checking the sidebar keeps the production proof surface public but secondary"
+if ! python3 - "$ROOT/$SIDEBAR_FILE" "$PROOF_LINK" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+config_path = Path(sys.argv[1])
+proof_link = sys.argv[2]
+text = config_path.read_text(errors='replace')
+sidebar_block_match = re.search(
+    r"sidebar:\s*{\s*'/docs/': \[(?P<block>[\s\S]*?)\n\s*\],\s*\n\s*},\s*\n\s*outline:",
+    text,
+    re.MULTILINE,
+)
+if not sidebar_block_match:
+    raise SystemExit('unable to locate /docs/ sidebar block')
+sidebar_block = sidebar_block_match.group('block')
+
+group_pattern = re.compile(
+    r"{\s*text:\s*'(?P<name>[^']+)'[\s\S]*?items:\s*\[(?P<items>[\s\S]*?)\]\s*,\s*}",
+    re.MULTILINE,
+)
+groups = {match.group('name'): match.group('items') for match in group_pattern.finditer(sidebar_block)}
+
+for required_group in ['Getting Started', 'Reference', 'Proof Surfaces']:
+    if required_group not in groups:
+        raise SystemExit(f'missing sidebar group: {required_group}')
+
+proof_items = groups['Proof Surfaces']
+proof_match = re.search(
+    r"text:\s*'Production Backend Proof'[\s\S]*?link:\s*'(?P<link>[^']+)'(?P<tail>[\s\S]*?)}\s*as any",
+    proof_items,
+    re.MULTILINE,
+)
+if not proof_match:
+    raise SystemExit('missing Production Backend Proof item inside Proof Surfaces')
+if proof_match.group('link') != proof_link:
+    raise SystemExit(
+        f'production proof link drifted: expected {proof_link!r}, got {proof_match.group("link")!r}'
+    )
+if 'includeInFooter: false' not in proof_match.group('tail'):
+    raise SystemExit('Production Backend Proof is no longer opted out of the footer chain')
+if proof_link in groups['Getting Started']:
+    raise SystemExit('Production Backend Proof drifted back into the Getting Started group')
+if sidebar_block.count(proof_link) != 1:
+    raise SystemExit(
+        f'expected the production proof link exactly once in the /docs/ sidebar, found {sidebar_block.count(proof_link)} copies'
+    )
+
+reference_index = sidebar_block.find("text: 'Reference'")
+proof_surfaces_index = sidebar_block.find("text: 'Proof Surfaces'")
+if reference_index == -1 or proof_surfaces_index == -1:
+    raise SystemExit('missing Reference or Proof Surfaces group ordering markers')
+if proof_surfaces_index <= reference_index:
+    raise SystemExit('Proof Surfaces no longer stays after Reference in the public docs graph')
+
+print('proof-sidebar-secondary: ok')
+PY
+then
+  fail "sidebar no longer keeps Production Backend Proof public-secondary"
+fi
+
+phase "checking the proof page opts out of the footer chain"
+require_contains "$PROOF_PAGE" 'prev: false' 'proof-page footer prev opt-out marker'
+require_contains "$PROOF_PAGE" 'next: false' 'proof-page footer next opt-out marker'
 
 phase "checking proof page points at the real runbook and verifier"
 require_contains "$PROOF_PAGE" "$RUNBOOK_REF" "reference backend runbook reference"

@@ -4,6 +4,19 @@ use serde_json::json;
 use std::path::{Path, PathBuf};
 use support::m046_route_free as route_free;
 
+const TODO_POSTGRES_README: &str = "examples/todo-postgres/README.md";
+const TODO_SQLITE_README: &str = "examples/todo-sqlite/README.md";
+const REFERENCE_BACKEND_RUNBOOK: &str = "reference-backend/README.md";
+const CUTOVER_RAIL: &str = "bash scripts/verify-m047-s04.sh";
+const CLOSEOUT_RAIL: &str = "bash scripts/verify-m047-s06.sh";
+const HISTORICAL_M046_CLOSEOUT_ALIAS: &str = "bash scripts/verify-m046-s06.sh";
+const HISTORICAL_M046_EQUAL_SURFACE_ALIAS: &str = "bash scripts/verify-m046-s05.sh";
+const HISTORICAL_M046_PACKAGE_ALIAS: &str = "bash scripts/verify-m046-s04.sh";
+const HISTORICAL_M045_CLOSEOUT_ALIAS: &str = "bash scripts/verify-m045-s05.sh";
+const HISTORICAL_M045_ASSEMBLED_ALIAS: &str = "bash scripts/verify-m045-s04.sh";
+const HISTORICAL_FAILOVER_SUBRAIL: &str = "bash scripts/verify-m045-s03.sh";
+const STALE_M046_AUTHORITY: &str = "`bash scripts/verify-m046-s06.sh` — the authoritative assembled closeout rail";
+
 struct ContractSources {
     verify_script: String,
     verify_m045_s04: String,
@@ -11,6 +24,7 @@ struct ContractSources {
     verify_m046_s04: String,
     verify_m046_s05: String,
     verify_m046_s06: String,
+    docs_config: String,
     readme: String,
     distributed_proof: String,
     distributed: String,
@@ -68,6 +82,46 @@ fn assert_clustered_surface_omits_routeful_drift(path_label: &str, source: &str)
     );
 }
 
+fn assert_onboarding_graph_config(path_label: &str, source: &str) {
+    assert_contains_all(
+        path_label,
+        source,
+        &[
+            "text: 'Getting Started'",
+            "text: 'Reference'",
+            "text: 'Proof Surfaces'",
+            "link: '/docs/getting-started/'",
+            "link: '/docs/getting-started/clustered-example/'",
+            "link: '/docs/distributed-proof/'",
+            "link: '/docs/production-backend-proof/'",
+            "includeInFooter: false",
+        ],
+    );
+
+    let getting_started_index = source
+        .find("text: 'Getting Started'")
+        .expect("missing Getting Started group");
+    let reference_index = source
+        .find("text: 'Reference'")
+        .expect("missing Reference group");
+    let proof_surfaces_index = source
+        .find("text: 'Proof Surfaces'")
+        .expect("missing Proof Surfaces group");
+
+    assert!(
+        getting_started_index < proof_surfaces_index,
+        "expected {path_label} to keep Proof Surfaces after Getting Started"
+    );
+    assert!(
+        reference_index < proof_surfaces_index,
+        "expected {path_label} to keep Proof Surfaces after Reference so proof pages stay secondary"
+    );
+    assert!(
+        source.matches("includeInFooter: false").count() >= 2,
+        "expected {path_label} to opt both proof pages out of the footer chain"
+    );
+}
+
 fn load_contract_sources(artifacts: &Path) -> ContractSources {
     let contract_artifacts = artifacts.join("contract");
     ContractSources {
@@ -94,6 +148,10 @@ fn load_contract_sources(artifacts: &Path) -> ContractSources {
         verify_m046_s06: route_free::read_and_archive(
             &repo_root().join("scripts/verify-m046-s06.sh"),
             &contract_artifacts.join("verify-m046-s06.sh"),
+        ),
+        docs_config: route_free::read_and_archive(
+            &repo_root().join("website/docs/.vitepress/config.mts"),
+            &contract_artifacts.join("docs.vitepress.config.mts"),
         ),
         readme: route_free::read_and_archive(
             &repo_root().join("README.md"),
@@ -143,6 +201,7 @@ fn m047_s04_authoritative_cutover_rail_replays_source_first_contract_and_snapsho
         &artifacts.join("scenario-meta.json"),
         &json!({
             "authoritative_verifier": "scripts/verify-m047-s04.sh",
+            "graph_contract": "scripts/tests/verify-m050-s01-onboarding-graph.test.mjs",
             "historical_wrapper_aliases": [
                 "scripts/verify-m046-s06.sh",
                 "scripts/verify-m046-s05.sh",
@@ -152,6 +211,7 @@ fn m047_s04_authoritative_cutover_rail_replays_source_first_contract_and_snapsho
             ],
             "public_surfaces": [
                 "README.md",
+                "website/docs/.vitepress/config.mts",
                 "website/docs/docs/distributed-proof/index.md",
                 "website/docs/docs/distributed/index.md",
                 "website/docs/docs/tooling/index.md",
@@ -170,6 +230,8 @@ fn m047_s04_authoritative_cutover_rail_replays_source_first_contract_and_snapsho
         "scripts/verify-m047-s04.sh",
         &sources.verify_script,
         &[
+            "node --test scripts/tests/verify-m050-s01-onboarding-graph.test.mjs",
+            "m050-s01-onboarding-graph",
             "cargo test -p mesh-parser m047_s04 -- --nocapture",
             "cargo test -p mesh-pkg m047_s04 -- --nocapture",
             "cargo test -p meshc --test e2e_m047_s01 -- --nocapture",
@@ -241,9 +303,14 @@ fn m047_s04_authoritative_cutover_rail_replays_source_first_contract_and_snapsho
 }
 
 #[test]
-fn m047_s04_public_docs_repoint_to_the_new_cutover_rail() {
+fn m047_s04_public_surfaces_keep_the_m050_onboarding_graph_and_proof_rails_discoverable() {
     let artifacts = artifact_dir("cutover-docs-contract");
     let sources = load_contract_sources(&artifacts);
+
+    assert_onboarding_graph_config(
+        "website/docs/.vitepress/config.mts",
+        &sources.docs_config,
+    );
 
     for (path_label, source) in [
         ("README.md", &sources.readme),
@@ -256,19 +323,24 @@ fn m047_s04_public_docs_repoint_to_the_new_cutover_rail() {
             path_label,
             source,
             &[
-                "`bash scripts/verify-m047-s04.sh` — the authoritative cutover rail for the source-first route-free clustered contract",
-                "`bash scripts/verify-m046-s06.sh` — the historical M046 closeout wrapper retained as a compatibility alias into the M047 cutover rail",
-                "`bash scripts/verify-m046-s05.sh` — the historical M046 equal-surface wrapper retained as a compatibility alias into the M047 cutover rail",
-                "`bash scripts/verify-m045-s05.sh` — the historical M045 closeout wrapper retained as a compatibility alias into the M047 cutover rail",
-                "examples/todo-postgres/README.md",
-                "examples/todo-sqlite/README.md",
+                TODO_POSTGRES_README,
+                TODO_SQLITE_README,
+                REFERENCE_BACKEND_RUNBOOK,
+                CUTOVER_RAIL,
+                CLOSEOUT_RAIL,
+                HISTORICAL_M046_CLOSEOUT_ALIAS,
+                HISTORICAL_M046_EQUAL_SURFACE_ALIAS,
+                HISTORICAL_M046_PACKAGE_ALIAS,
+                HISTORICAL_M045_CLOSEOUT_ALIAS,
+                HISTORICAL_M045_ASSEMBLED_ALIAS,
+                HISTORICAL_FAILOVER_SUBRAIL,
             ],
         );
         assert_omits_all(
             path_label,
             source,
             &[
-                "`bash scripts/verify-m046-s06.sh` — the authoritative assembled closeout rail",
+                STALE_M046_AUTHORITY,
                 "`bash scripts/verify-m046-s05.sh` — the lower-level equal-surface subrail",
                 "`bash scripts/verify-m045-s05.sh` — the historical wrapper name retained for replay and transition into the S06 closeout rail",
                 "tiny-cluster/README.md",
@@ -280,7 +352,7 @@ fn m047_s04_public_docs_repoint_to_the_new_cutover_rail() {
 }
 
 #[test]
-fn m047_s04_clustered_runbooks_treat_m046_and_m045_as_aliases_not_authority() {
+fn m047_s04_clustered_runbooks_keep_example_readmes_and_secondary_proof_surfaces_discoverable() {
     let artifacts = artifact_dir("cutover-runbook-contract");
     let sources = load_contract_sources(&artifacts);
 
@@ -295,12 +367,24 @@ fn m047_s04_clustered_runbooks_treat_m046_and_m045_as_aliases_not_authority() {
             &sources.clustered_example,
         ),
     ] {
-        assert_contains(path_label, source, "bash scripts/verify-m047-s04.sh");
-        assert_contains(path_label, source, "bash scripts/verify-m046-s06.sh");
-        assert_contains(path_label, source, "bash scripts/verify-m046-s05.sh");
-        assert_contains(path_label, source, "bash scripts/verify-m045-s05.sh");
-        assert_contains(path_label, source, "examples/todo-postgres/README.md");
-        assert_contains(path_label, source, "examples/todo-sqlite/README.md");
+        assert_contains_all(
+            path_label,
+            source,
+            &[
+                TODO_POSTGRES_README,
+                TODO_SQLITE_README,
+                REFERENCE_BACKEND_RUNBOOK,
+                "/docs/distributed-proof/",
+                CUTOVER_RAIL,
+                CLOSEOUT_RAIL,
+                HISTORICAL_M046_CLOSEOUT_ALIAS,
+                HISTORICAL_M046_EQUAL_SURFACE_ALIAS,
+                HISTORICAL_M046_PACKAGE_ALIAS,
+                HISTORICAL_M045_CLOSEOUT_ALIAS,
+                HISTORICAL_M045_ASSEMBLED_ALIAS,
+                HISTORICAL_FAILOVER_SUBRAIL,
+            ],
+        );
         assert_omits_all(
             path_label,
             source,
@@ -325,10 +409,11 @@ fn m047_s04_example_readmes_define_the_public_postgres_vs_sqlite_split() {
         "examples/todo-postgres/README.md",
         &sources.todo_postgres_readme,
         &[
-            "This project was generated by `meshc init --template todo-api --db postgres`.",
+            "meshc init --template todo-api --db postgres",
             "@cluster pub fn sync_todos()",
             "HTTP.clustered(1, ...)",
-            "meshc cluster continuity",
+            "GET /health",
+            "meshc cluster status",
             "DATABASE_URL",
         ],
     );
@@ -346,10 +431,12 @@ fn m047_s04_example_readmes_define_the_public_postgres_vs_sqlite_split() {
         "examples/todo-sqlite/README.md",
         &sources.todo_sqlite_readme,
         &[
-            "This project was generated by `meshc init --template todo-api --db sqlite`.",
-            "It is the honest local starter",
-            "no `work.mpl`, `HTTP.clustered(...)`, or `meshc cluster` story in this starter",
+            "meshc init --template todo-api --db sqlite",
             "meshc test .",
+            "GET /health",
+            "TODO_DB_PATH",
+            "meshc init --template todo-api --db postgres",
+            "meshc init --clustered",
         ],
     );
     assert_omits_all(
@@ -360,6 +447,7 @@ fn m047_s04_example_readmes_define_the_public_postgres_vs_sqlite_split() {
             "cluster-proof/README.md",
             "@cluster pub fn sync_todos()",
             "meshc cluster continuity",
+            "HTTP.clustered(1, ...)",
         ],
     );
 }
@@ -376,7 +464,7 @@ fn m047_s04_internal_fixture_readmes_stay_lower_level_contracts_after_the_move()
             "scripts/fixtures/clustered/tiny-cluster/",
             "cargo run -q -p meshc -- build scripts/fixtures/clustered/tiny-cluster",
             "cargo run -q -p meshc -- test scripts/fixtures/clustered/tiny-cluster/tests",
-            "bash scripts/verify-m047-s04.sh",
+            CUTOVER_RAIL,
         ],
     );
     assert_omits_all(
@@ -396,7 +484,7 @@ fn m047_s04_internal_fixture_readmes_stay_lower_level_contracts_after_the_move()
             "cargo run -q -p meshc -- build scripts/fixtures/clustered/cluster-proof",
             "cargo run -q -p meshc -- test scripts/fixtures/clustered/cluster-proof/tests",
             "docker build -f scripts/fixtures/clustered/cluster-proof/Dockerfile -t mesh-cluster-proof .",
-            "bash scripts/verify-m047-s04.sh",
+            CUTOVER_RAIL,
         ],
     );
     assert_omits_all(

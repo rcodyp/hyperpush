@@ -62,17 +62,25 @@ onMounted(() => {
 
     <div class="relative mx-auto max-w-5xl px-4">
       <!-- Section header -->
-      <div class="reveal text-center">
+      <div class="text-center">
         <div class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs font-medium text-muted-foreground mb-4">
           <Activity class="size-3.5" />
           Real-world benchmarks
         </div>
         <h2 class="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-          Fast enough for production
+          Native speed, expressive as Elixir
         </h2>
         <p class="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
           Benchmarked on dedicated Fly.io machines — 2 vCPU, 4 GB RAM, same region, private network. No synthetic games.
         </p>
+        <!-- Elixir callout -->
+        <div class="mt-6 inline-flex items-start gap-2.5 rounded-xl border border-border bg-muted/40 px-4 py-3 text-left max-w-lg">
+          <span class="mt-px text-sm">💧</span>
+          <p class="text-sm text-muted-foreground leading-relaxed">
+            <span class="font-semibold text-foreground">The meaningful number is Mesh vs Elixir.</span>
+            They share the same actor model — Mesh gets you <span class="font-medium text-foreground">2.3× the throughput</span> at less than half the latency, compiled to a native binary.
+          </p>
+        </div>
       </div>
 
       <!-- Tab switcher -->

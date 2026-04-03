@@ -60,9 +60,9 @@
   --accent-foreground: oklch(0.145 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.905 0 0);
-  --input: oklch(0.905 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.80 0 0);
+  --input: oklch(0.80 0 0);
+  --ring: oklch(0.60 0 0);
   --radius: 0.5rem;
   --sidebar: oklch(0.98 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
@@ -70,8 +70,8 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.955 0 0);
   --sidebar-accent-foreground: oklch(0.145 0 0);
-  --sidebar-border: oklch(0.905 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-border: oklch(0.80 0 0);
+  --sidebar-ring: oklch(0.60 0 0);
 }
 
 .dark {
@@ -91,17 +91,17 @@
   --accent-foreground: oklch(0.955 0 0);
   --destructive: oklch(0.396 0.141 25.723);
   --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.22 0 0);
-  --input: oklch(0.22 0 0);
-  --ring: oklch(0.439 0 0);
+  --border: oklch(0.32 0 0);
+  --input: oklch(0.32 0 0);
+  --ring: oklch(0.50 0 0);
   --sidebar: oklch(0.145 0 0);
   --sidebar-foreground: oklch(0.955 0 0);
   --sidebar-primary: oklch(0.955 0 0);
   --sidebar-primary-foreground: oklch(0.115 0 0);
   --sidebar-accent: oklch(0.2 0 0);
   --sidebar-accent-foreground: oklch(0.955 0 0);
-  --sidebar-border: oklch(0.22 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --sidebar-border: oklch(0.32 0 0);
+  --sidebar-ring: oklch(0.50 0 0);
 }
 
 @theme inline {
@@ -465,4 +465,58 @@
 
 .VPLocalSearchBox .no-results {
   color: var(--muted-foreground);
+}
+
+/* ──────────────────────────────────────────────────
+   Sidebar: hide scrollbar, keep scroll functionality
+   ────────────────────────────────────────────────── */
+/* Hide the reka-ui ScrollBar thumb in the sidebar */
+aside [data-slot="scroll-area-scrollbar"] {
+  display: none !important;
+}
+
+/* Also hide native scrollbars for the sidebar viewport */
+aside [data-slot="scroll-area-viewport"] {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge */
+}
+aside [data-slot="scroll-area-viewport"]::-webkit-scrollbar {
+  display: none;               /* Chrome/Safari */
+}
+
+/* ──────────────────────────────────────────────────
+   Navbar: slightly stronger border in light mode
+   ────────────────────────────────────────────────── */
+header.sticky {
+  border-bottom-color: var(--border) !important;
+}
+
+/* ──────────────────────────────────────────────────
+   Mobile: better tap targets and safe-area padding
+   ────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Hero headline sizing */
+  .hero-title {
+    font-size: 2rem !important;
+    line-height: 1.15 !important;
+  }
+
+  /* Prevent install command overflow on narrow screens */
+  code.install-cmd {
+    font-size: 0.7rem !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────
+   Prose: stronger horizontal rules and dividers
+   ────────────────────────────────────────────────── */
+.prose hr {
+  border-color: var(--border) !important;
+  opacity: 1 !important;
+}
+
+/* Docs layout dividers */
+.docs-content .border-t,
+.docs-content .border-b {
+  border-color: var(--border) !important;
 }

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { Zap, Cpu, Shield, Package } from 'lucide-vue-next'
+import { Network, Cpu, Shield, Package } from 'lucide-vue-next'
 import { useScrollReveal } from '@/composables/useScrollReveal'
 
 const { observe } = useScrollReveal()
 const items = ref<HTMLElement[]>([])
 
 const capabilities = [
-  { icon: Zap, stat: '100K+ Actors', description: 'Lightweight concurrency', detail: 'Per-actor GC' },
-  { icon: Cpu, stat: 'LLVM Native', description: 'Compiled binaries', detail: 'Zero overhead' },
+  { icon: Network, stat: 'Auto-Failover', description: 'Zero-config recovery', detail: 'Built-in continuity' },
+  { icon: Cpu, stat: 'LLVM Native', description: 'Compiled binaries', detail: 'No VM overhead' },
   { icon: Shield, stat: 'Type-Safe', description: 'Full inference', detail: 'Hindley-Milner' },
-  { icon: Package, stat: 'Batteries Included', description: 'HTTP, DB, WebSockets', detail: 'Built-in stdlib' },
+  { icon: Package, stat: 'Batteries Included', description: 'HTTP, Postgres, WS', detail: 'Full server stdlib' },
 ]
 
 onMounted(() => {

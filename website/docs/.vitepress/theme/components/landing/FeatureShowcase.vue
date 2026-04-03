@@ -10,103 +10,88 @@ interface Feature {
   filename: string
   badge: string
   code: string
+  visual?: boolean
 }
 
 const features: Feature[] = [
   {
     number: '01',
-    title: 'Lightweight Actors',
+    title: 'Cluster-Native Distribution',
     description:
-      'Spawn millions of lightweight actors with crash isolation and supervision trees. Each actor has its own heap and message queue — no shared-state headaches.',
-    filename: 'actors.mpl',
-    badge: 'Concurrency',
-    code: `service Counter do
-  fn init(n :: Int) -> Int do n end
-
-  call Increment() :: Int do |count|
-    (count + 1, count + 1)
-  end
-
-  call GetCount() :: Int do |count|
-    (count, count)
-  end
-
-  cast Reset() do |_count|
-    0
-  end
+      'Add @cluster to any function and Mesh handles placement, replication, and retry across your fleet. No queue infrastructure, no orchestrator — distribution is built into the language itself.',
+    filename: 'orders.mpl',
+    badge: 'Distribution',
+    code: `# One annotation — Mesh routes work across nodes
+@cluster pub fn process_order(order_id :: String) -> String do
+  let order = Repo.find(pool, Order, order_id)
+  let _ = Payment.charge(order)
+  "Done on \#{Node.self()}"
 end
 
-let pid = Counter.start(0)
-Counter.increment(pid)
-let count = Counter.get_count(pid)`,
+# Submit from any node — Mesh picks the best target
+let _ = Continuity.submit("order-42", process_order)
+
+# Query progress from anywhere in the cluster
+let status = Continuity.status("order-42")
+# {phase: "executing", owner_node: "worker-2@10.0.1.4"}
+# {phase: "completed", execution_node: "worker-2@10.0.1.4"}`,
   },
   {
     number: '02',
-    title: 'Pattern Matching',
+    title: 'Zero-Config Failover',
     description:
-      'First-class pattern matching with exhaustiveness checking. Destructure any value — structs, tuples, sum types, lists — and the compiler ensures you handle every case.',
-    filename: 'patterns.mpl',
-    badge: 'Safety',
-    code: `fn describe(value) do
-  case value do
-    0 -> "zero"
-    n when n > 0 -> "positive"
-    n when n < 0 -> "negative"
-  end
-end
+      'Set two environment variables and your nodes discover each other automatically. If the primary fails mid-task, the standby promotes and resumes work without any intervention — no external coordinator needed.',
+    filename: 'main.mpl',
+    badge: 'Resilience',
+    code: `fn main() do
+  # MESH_NODE_NAME=api-1@10.0.1.2:4370
+  # MESH_DISCOVERY_SEED=myapp.internal
+  let boot = Node.start_from_env()
 
-fn process(result) do
-  case result do
-    Ok(value) -> println("Got: \#{value}")
-    Err(msg) -> println("Error: \#{msg}")
+  case boot.role do
+    "primary" -> println("Primary ready, replicating to standby")
+    "standby" -> println("Standby watching primary")
   end
+
+  # If primary disappears:
+  #  → standby auto-promotes to primary
+  #  → in-flight work resumes on the new primary
+  #  → no manual retry, no external queue needed
 end`,
   },
   {
     number: '03',
-    title: 'Type Inference',
+    title: 'Full Server Stdlib',
     description:
-      'Hindley-Milner type inference means you rarely write type annotations. The compiler catches errors at compile time — no runtime type surprises.',
-    filename: 'types.mpl',
-    badge: 'Types',
-    code: `# Types are inferred -- no annotations needed
-let name = "Mesh"
-let numbers = [1, 2, 3, 4, 5]
-let doubled = numbers
-  |> List.map(fn(n) do n * 2 end)
-  |> List.filter(fn(n) do n > 4 end)
+      'HTTP, PostgreSQL, SQLite, WebSockets, migrations, rate limiting, background workers — all in the standard library. No package hunting, no driver setup, no glue code. Ship a production server with zero external dependencies.',
+    filename: 'server.mpl',
+    badge: 'Batteries Included',
+    code: `fn main() do
+  let pool = Postgres.open(Env.get("DATABASE_URL"))
 
-# Structs with inferred field types
-struct User do
-  name :: String
-  age :: Int
-end
-
-let user = User { name: "Alice", age: 30 }`,
+  HTTP.serve(HTTP.router()
+    |> HTTP.on_get("/users", fn(req) do
+      let users = Repo.all(pool, Query.select(User)
+        |> Query.where(fn(u) do u.active end)
+        |> Query.limit(100))
+      HTTP.response(200, Json.encode(users))
+    end)
+    # WebSockets on the same server, same process
+    |> HTTP.on_websocket("/live", fn(ws) do
+      let _ = Ws.send(ws, Json.encode({status: "connected"}))
+      Ws.loop(ws)
+    end), 8080)
+end`,
   },
   {
     number: '04',
-    title: 'Pipe Operators',
+    title: 'Built-in Observatory',
     description:
-      'Chain transformations naturally with the pipe operator. Use |N> to route values to any argument position — both read left to right.',
-    filename: 'pipes.mpl',
-    badge: 'Ergonomics',
-    code: `let result = "hello world"
-  |> String.split(" ")
-  |> List.map(fn(word) do
-    String.to_upper(word)
-  end)
-  |> String.join(", ")
-
-# result == "HELLO, WORLD"
-
-# Slot pipe: route value to any position
-fn insert_at(prefix, word, suffix) do
-  prefix <> word <> suffix
-end
-
-let tagged = "mesh" |2> insert_at("[", "]")
-# tagged == "[mesh]"`,
+      'A visual monitoring layer is coming built directly into Mesh — no Prometheus, no Grafana, no sidecar containers. See your nodes, watch actors spawn and die, observe data flowing across your cluster in real time.',
+    filename: 'mesh observatory',
+    badge: 'Coming Soon',
+    code: '',
+    visual: true,
   },
 ]
 
@@ -122,7 +107,9 @@ onMounted(async () => {
   try {
     const hl = await getHighlighter()
     features.forEach((feature, index) => {
-      highlighted.value[index] = highlightCode(hl, feature.code)
+      if (!feature.visual) {
+        highlighted.value[index] = highlightCode(hl, feature.code)
+      }
     })
   } catch {
     // Highlighting failed -- raw code fallback remains visible
@@ -137,10 +124,10 @@ onMounted(async () => {
       <div class="text-center">
         <div class="text-sm font-mono uppercase tracking-widest text-muted-foreground">Features</div>
         <h2 class="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-          What makes Mesh special
+          Distributed systems, simplified
         </h2>
         <p class="mx-auto mt-4 max-w-lg text-lg text-muted-foreground">
-          A language designed for building reliable, concurrent systems with minimal boilerplate.
+          The primitives for building reliable, scalable server infrastructure are built into the language itself.
         </p>
       </div>
 
@@ -156,7 +143,12 @@ onMounted(async () => {
           <div :class="{ 'lg:order-last': index % 2 === 1 }">
             <div class="flex items-center gap-3">
               <div class="font-mono text-sm font-bold text-muted-foreground/50">{{ feature.number }}</div>
-              <div class="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              <div
+                class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider"
+                :class="feature.visual
+                  ? 'bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300/50 dark:border-amber-700/40'
+                  : 'bg-muted text-muted-foreground'"
+              >
                 {{ feature.badge }}
               </div>
             </div>
@@ -169,7 +161,7 @@ onMounted(async () => {
           </div>
 
           <!-- Code block -->
-          <div class="group overflow-hidden rounded-xl border border-border bg-card shadow-lg transition-shadow duration-300 hover:shadow-xl ring-1 ring-foreground/[0.03]">
+          <div v-if="!feature.visual" class="group overflow-hidden rounded-xl border border-border bg-card shadow-lg transition-shadow duration-300 hover:shadow-xl ring-1 ring-foreground/[0.03]">
             <!-- Terminal chrome -->
             <div class="flex items-center gap-2 border-b border-border px-4 py-3 bg-muted/30">
               <div class="flex gap-1.5">
@@ -188,6 +180,95 @@ onMounted(async () => {
               v-else
               class="overflow-x-auto p-5 text-sm leading-relaxed text-foreground font-mono"
             ><code>{{ feature.code }}</code></pre>
+          </div>
+
+          <!-- Observatory visual preview -->
+          <div v-else class="overflow-hidden rounded-xl border border-border bg-card shadow-lg ring-1 ring-foreground/[0.03]">
+            <!-- Terminal chrome -->
+            <div class="flex items-center justify-between border-b border-border px-4 py-3 bg-muted/30">
+              <div class="flex items-center gap-2">
+                <div class="flex gap-1.5">
+                  <div class="size-3 rounded-full bg-[#ff5f57] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]" />
+                  <div class="size-3 rounded-full bg-[#febc2e] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]" />
+                  <div class="size-3 rounded-full bg-[#28c840] shadow-[inset_0_-1px_0_rgba(0,0,0,0.12)]" />
+                </div>
+                <span class="ml-2 text-xs text-muted-foreground font-medium">mesh observatory</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full border border-amber-400/40 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30">
+                Coming Soon
+              </span>
+            </div>
+
+            <!-- Visual content -->
+            <div class="p-6">
+              <!-- Node topology SVG -->
+              <div class="relative flex items-center justify-center py-4">
+                <svg viewBox="0 0 320 180" class="w-full max-w-xs" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <!-- Connection lines -->
+                  <line x1="160" y1="50" x2="68" y2="138" stroke="currentColor" stroke-width="1" class="text-border" stroke-dasharray="5 4"/>
+                  <line x1="160" y1="50" x2="252" y2="138" stroke="currentColor" stroke-width="1" class="text-border" stroke-dasharray="5 4"/>
+                  <line x1="68" y1="138" x2="252" y2="138" stroke="currentColor" stroke-width="1" class="text-border" stroke-dasharray="5 4"/>
+
+                  <!-- Traveling data dots — primary to worker-1 -->
+                  <circle r="3.5" class="fill-foreground/70">
+                    <animateMotion dur="2.4s" repeatCount="indefinite" begin="0s">
+                      <mpath>
+                        <path d="M160,50 L68,138"/>
+                      </mpath>
+                    </animateMotion>
+                  </circle>
+                  <!-- worker-1 to worker-2 -->
+                  <circle r="3.5" class="fill-foreground/50">
+                    <animateMotion dur="2.8s" repeatCount="indefinite" begin="0.9s">
+                      <mpath>
+                        <path d="M68,138 L252,138"/>
+                      </mpath>
+                    </animateMotion>
+                  </circle>
+                  <!-- worker-2 to primary -->
+                  <circle r="3.5" class="fill-foreground/60">
+                    <animateMotion dur="2.2s" repeatCount="indefinite" begin="1.6s">
+                      <mpath>
+                        <path d="M252,138 L160,50"/>
+                      </mpath>
+                    </animateMotion>
+                  </circle>
+
+                  <!-- Primary node -->
+                  <circle cx="160" cy="50" r="26" class="fill-card stroke-foreground/30" stroke-width="1.5"/>
+                  <circle cx="160" cy="50" r="26" class="fill-foreground/[0.04]"/>
+                  <text x="160" y="46" text-anchor="middle" font-size="8" class="fill-foreground/80" font-family="monospace" font-weight="600">primary</text>
+                  <text x="160" y="58" text-anchor="middle" font-size="7" class="fill-muted-foreground/70" font-family="monospace">node-1</text>
+                  <!-- health dot -->
+                  <circle cx="179" cy="31" r="4" class="fill-emerald-500/80"/>
+
+                  <!-- Worker 1 node -->
+                  <circle cx="68" cy="138" r="22" class="fill-card stroke-foreground/20" stroke-width="1.5"/>
+                  <text x="68" y="134" text-anchor="middle" font-size="7.5" class="fill-foreground/70" font-family="monospace">worker</text>
+                  <text x="68" y="145" text-anchor="middle" font-size="7" class="fill-muted-foreground/60" font-family="monospace">node-2</text>
+                  <circle cx="84" cy="121" r="3.5" class="fill-emerald-500/70"/>
+
+                  <!-- Worker 2 node -->
+                  <circle cx="252" cy="138" r="22" class="fill-card stroke-foreground/20" stroke-width="1.5"/>
+                  <text x="252" y="134" text-anchor="middle" font-size="7.5" class="fill-foreground/70" font-family="monospace">worker</text>
+                  <text x="252" y="145" text-anchor="middle" font-size="7" class="fill-muted-foreground/60" font-family="monospace">node-3</text>
+                  <circle cx="268" cy="121" r="3.5" class="fill-emerald-500/70"/>
+                </svg>
+              </div>
+
+              <!-- Feature tags -->
+              <div class="mt-2 flex flex-wrap gap-2 justify-center">
+                <span v-for="tag in ['Node Health', 'Actor Traces', 'Live Data Flow', 'Request Waterfall', 'Actor Mailboxes', 'Cluster Topology']"
+                  :key="tag"
+                  class="inline-flex items-center rounded-md bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
+                >
+                  {{ tag }}
+                </span>
+              </div>
+              <p class="mt-4 text-center text-xs text-muted-foreground/60 font-mono">
+                See your entire infrastructure as it operates — built in.
+              </p>
+            </div>
           </div>
         </div>
       </div>

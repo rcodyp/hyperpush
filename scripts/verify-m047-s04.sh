@@ -327,6 +327,7 @@ for rel in [
     'contract/verify-m046-s04.sh',
     'contract/verify-m046-s05.sh',
     'contract/verify-m046-s06.sh',
+    'contract/docs.vitepress.config.mts',
     'contract/README.md',
     'contract/distributed-proof.index.md',
 ]:
@@ -350,72 +351,105 @@ assert_path_absent \
   contract-root-cluster-proof \
   cluster-proof \
   'repo root still contains the retired cluster-proof proof package directory'
-assert_file_contains_regex \
-  contract-readme \
+
+for surface in \
   README.md \
-  'scripts/verify-m047-s04.sh' \
-  'README lost the authoritative M047 cutover rail reference'
-assert_file_contains_regex \
-  contract-proof \
   website/docs/docs/distributed-proof/index.md \
-  'scripts/verify-m047-s04.sh' \
-  'distributed-proof docs lost the authoritative M047 cutover rail reference'
-assert_file_contains_regex \
-  contract-tooling \
   website/docs/docs/tooling/index.md \
-  'scripts/verify-m047-s04.sh' \
-  'tooling docs lost the authoritative M047 cutover rail reference'
-assert_file_contains_regex \
-  contract-clustered-example \
   website/docs/docs/getting-started/clustered-example/index.md \
-  'scripts/verify-m047-s04.sh' \
-  'clustered example docs lost the authoritative M047 cutover rail reference'
-assert_file_contains_regex \
-  contract-distributed \
-  website/docs/docs/distributed/index.md \
-  'scripts/verify-m047-s04.sh' \
-  'distributed guide lost the authoritative M047 cutover rail reference'
+  website/docs/docs/distributed/index.md; do
+  safe_name="$(printf '%s' "$surface" | tr '/.' '__')"
+  assert_file_contains_regex \
+    "${safe_name}-cutover" \
+    "$surface" \
+    'scripts/verify-m047-s04.sh' \
+    "$surface lost the authoritative M047 cutover rail reference"
+  assert_file_contains_regex \
+    "${safe_name}-closeout" \
+    "$surface" \
+    'scripts/verify-m047-s06.sh' \
+    "$surface lost the secondary-proof closeout rail reference"
+  assert_file_contains_regex \
+    "${safe_name}-todo-postgres" \
+    "$surface" \
+    'examples/todo-postgres/README\.md' \
+    "$surface lost the public PostgreSQL starter reference"
+  assert_file_contains_regex \
+    "${safe_name}-todo-sqlite" \
+    "$surface" \
+    'examples/todo-sqlite/README\.md' \
+    "$surface lost the public SQLite starter reference"
+  assert_file_contains_regex \
+    "${safe_name}-reference-backend" \
+    "$surface" \
+    'reference-backend/README\.md' \
+    "$surface lost the deeper backend proof reference"
+  assert_file_contains_regex \
+    "${safe_name}-historical-m046-closeout" \
+    "$surface" \
+    'scripts/verify-m046-s06.sh' \
+    "$surface lost the retained M046 closeout alias"
+  assert_file_contains_regex \
+    "${safe_name}-historical-m046-equal" \
+    "$surface" \
+    'scripts/verify-m046-s05.sh' \
+    "$surface lost the retained M046 equal-surface alias"
+  assert_file_contains_regex \
+    "${safe_name}-historical-m046-package" \
+    "$surface" \
+    'scripts/verify-m046-s04.sh' \
+    "$surface lost the retained M046 package alias"
+  assert_file_contains_regex \
+    "${safe_name}-historical-m045-closeout" \
+    "$surface" \
+    'scripts/verify-m045-s05.sh' \
+    "$surface lost the retained M045 closeout alias"
+  assert_file_contains_regex \
+    "${safe_name}-historical-m045-assembled" \
+    "$surface" \
+    'scripts/verify-m045-s04.sh' \
+    "$surface lost the retained M045 assembled alias"
+  assert_file_contains_regex \
+    "${safe_name}-historical-m045-failover" \
+    "$surface" \
+    'scripts/verify-m045-s03.sh' \
+    "$surface lost the retained M045 failover subrail"
+  assert_file_lacks_regex \
+    "${safe_name}-old-authority" \
+    "$surface" \
+    '`bash scripts/verify-m046-s06.sh` — the authoritative assembled closeout rail' \
+    "$surface still teaches the M046 rail as authoritative"
+  assert_file_lacks_regex \
+    "${safe_name}-stale-fixtures" \
+    "$surface" \
+    'tiny-cluster/README\.md|cluster-proof/README\.md' \
+    "$surface still treats retained proof fixtures as public onboarding surfaces"
+done
+
 assert_file_contains_regex \
   contract-todo-postgres \
   examples/todo-postgres/README.md \
-  'meshc init --template todo-api --db postgres|HTTP\.clustered\(1, \.\.\.\)' \
+  'meshc init --template todo-api --db postgres|@cluster pub fn sync_todos\(\)|HTTP\.clustered\(1, \.\.\.\)|meshc cluster status|DATABASE_URL' \
   'todo-postgres README lost the serious shared/deployable starter contract'
-assert_file_contains_regex \
-  contract-todo-sqlite \
-  examples/todo-sqlite/README.md \
-  'meshc init --template todo-api --db sqlite|does not claim clustered placement, continuity, or operator surfaces' \
-  'todo-sqlite README lost the honest local starter contract'
-assert_file_lacks_regex \
-  contract-readme-old-authority \
-  README.md \
-  '`bash scripts/verify-m046-s06.sh` — the authoritative assembled closeout rail' \
-  'README still teaches the M046 rail as authoritative'
-assert_file_lacks_regex \
-  contract-proof-old-authority \
-  website/docs/docs/distributed-proof/index.md \
-  '`bash scripts/verify-m046-s06.sh` — the authoritative assembled closeout rail' \
-  'distributed-proof docs still teach the M046 rail as authoritative'
-assert_file_lacks_regex \
-  contract-readme-old-onboarding \
-  README.md \
-  'tiny-cluster/README\.md|cluster-proof/README\.md' \
-  'README still treats internal proof fixtures as public onboarding surfaces'
-assert_file_lacks_regex \
-  contract-proof-old-onboarding \
-  website/docs/docs/distributed-proof/index.md \
-  'tiny-cluster/README\.md|cluster-proof/README\.md' \
-  'distributed-proof docs still treat internal proof fixtures as public onboarding surfaces'
 assert_file_lacks_regex \
   contract-todo-postgres-old-runbook \
   examples/todo-postgres/README.md \
-  'tiny-cluster/README\.md|cluster-proof/README\.md' \
-  'todo-postgres README still points at retired proof-package runbooks'
-assert_file_lacks_regex \
-  contract-todo-sqlite-old-runbook \
+  'tiny-cluster/README\.md|cluster-proof/README\.md|clustered\(work\)' \
+  'todo-postgres README still points at retired proof fixtures or legacy clustered(work) wording'
+assert_file_contains_regex \
+  contract-todo-sqlite \
   examples/todo-sqlite/README.md \
-  'tiny-cluster/README\.md|cluster-proof/README\.md' \
-  'todo-sqlite README still points at retired proof-package runbooks'
+  'meshc init --template todo-api --db sqlite|meshc test \.|GET /health|TODO_DB_PATH|meshc init --template todo-api --db postgres|meshc init --clustered' \
+  'todo-sqlite README lost the honest local starter split'
+assert_file_lacks_regex \
+  contract-todo-sqlite-old-clustered \
+  examples/todo-sqlite/README.md \
+  'tiny-cluster/README\.md|cluster-proof/README\.md|@cluster pub fn sync_todos\(\)|meshc cluster continuity|HTTP\.clustered\(1, \.\.\.\)' \
+  'todo-sqlite README still claims clustered/public-proof behavior'
 record_phase contract-guards passed
+
+run_expect_success m050-s01-onboarding-graph 00-m050-s01-onboarding-graph no 1800 \
+  node --test scripts/tests/verify-m050-s01-onboarding-graph.test.mjs
 
 run_expect_success m047-s04-parser 00-m047-s04-parser yes 2400 \
   cargo test -p mesh-parser m047_s04 -- --nocapture
@@ -461,6 +495,7 @@ record_phase m047-s04-bundle-shape passed
 
 for expected_phase in \
   contract-guards \
+  m050-s01-onboarding-graph \
   m047-s04-parser \
   m047-s04-pkg \
   m047-s04-compiler \

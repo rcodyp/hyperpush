@@ -435,70 +435,45 @@ for surface in \
     'e2e_m047_s07' \
     "$surface lost the repo S07 clustered-route rail handoff"
   assert_file_contains_regex \
-    "${safe_name}-legacy-helper" \
+    "${safe_name}-todo-postgres" \
     "$surface" \
-    'execute_declared_work' \
-    "$surface lost the helper-shaped migration marker"
+    'examples/todo-postgres/README\.md' \
+    "$surface lost the public PostgreSQL starter reference"
   assert_file_contains_regex \
-    "${safe_name}-legacy-runtime" \
+    "${safe_name}-todo-sqlite" \
     "$surface" \
-    'Work\.execute_declared_work' \
-    "$surface lost the runtime helper migration marker"
+    'examples/todo-sqlite/README\.md' \
+    "$surface lost the public SQLite starter reference"
   assert_file_contains_regex \
-    "${safe_name}-explicit-count-wrapper" \
+    "${safe_name}-reference-backend" \
     "$surface" \
-    'HTTP\.clustered\(1, \.\.\.\)' \
-    "$surface lost the explicit-count PostgreSQL Todo read-route wrapper wording"
-  assert_file_contains_regex \
-    "${safe_name}-todo-read-route" \
-    "$surface" \
-    'GET /todos' \
-    "$surface lost the selected Todo read-route wording"
-  assert_file_contains_regex \
-    "${safe_name}-todo-read-route-id" \
-    "$surface" \
-    'GET /todos/:id' \
-    "$surface lost the selected Todo item-route wording"
-  assert_file_contains_regex \
-    "${safe_name}-todo-health-local" \
-    "$surface" \
-    'GET /health' \
-    "$surface lost the local health-route wording"
-  assert_file_contains_regex \
-    "${safe_name}-mutating-local" \
-    "$surface" \
-    'mutating routes stay local' \
-    "$surface lost the local mutating-route guard"
+    'reference-backend/README\.md' \
+    "$surface lost the deeper backend proof reference"
   assert_file_contains_regex \
     "${safe_name}-sqlite-template" \
     "$surface" \
     'meshc init --template todo-api --db sqlite' \
-    "$surface lost the explicit SQLite-local starter reference"
+    "$surface lost the explicit SQLite starter command"
   assert_file_contains_regex \
     "${safe_name}-postgres-template" \
     "$surface" \
     'meshc init --template todo-api --db postgres' \
-    "$surface lost the explicit PostgreSQL starter reference"
-  assert_file_contains_regex \
-    "${safe_name}-sqlite-local" \
+    "$surface lost the explicit PostgreSQL starter command"
+  assert_file_omits_regex \
+    "${safe_name}-old-authority" \
     "$surface" \
-    'single-node SQLite Todo API|honest local starter|honest local path' \
-    "$surface lost the SQLite-local contract wording"
-  assert_file_contains_regex \
-    "${safe_name}-postgres-starter" \
-    "$surface" \
-    'PostgreSQL Todo starter|shared/deployable starter' \
-    "$surface lost the PostgreSQL clustered-starter wording"
-  assert_file_contains_regex \
-    "${safe_name}-migration-shape" \
-    "$surface" \
-    '\[cluster\].*sync_todos\(\)' \
-    "$surface lost the source-first migration wording"
+    'authoritative assembled closeout rail' \
+    "$surface still treats proof closeout as a first-contact authority"
   assert_file_omits_regex \
     "${safe_name}-stale-generic-template" \
     "$surface" \
     'meshc init --template todo-api(?! --db (sqlite|postgres))' \
     "$surface still uses the unsplit generic todo template command"
+  assert_file_omits_regex \
+    "${safe_name}-stale-fixture-runbooks" \
+    "$surface" \
+    'tiny-cluster/README\.md|cluster-proof/README\.md' \
+    "$surface still presents retained proof fixtures as public onboarding surfaces"
   assert_file_omits_regex \
     "${safe_name}-stale-sqlite-clustered" \
     "$surface" \
@@ -509,13 +484,31 @@ for surface in \
     "$surface" \
     'HTTP\.clustered\(\.\.\.\) is still not shipped' \
     "$surface still claims HTTP.clustered(...) is unshipped"
-  assert_file_omits_regex \
-    "${safe_name}-stale-overclaim" \
-    "$surface" \
-    'HTTP\.clustered\(\.\.\.\).*already ships' \
-    "$surface still overclaims blanket HTTP.clustered(...) shipping authority"
- done
+done
+assert_file_contains_regex \
+  contract-readme-scaffold \
+  README.md \
+  'meshc init --clustered' \
+  'README lost the scaffold-first clustered entrypoint'
+assert_file_contains_regex \
+  contract-clustered-example-scaffold \
+  website/docs/docs/getting-started/clustered-example/index.md \
+  'meshc init --clustered' \
+  'Clustered Example lost the scaffold-first clustered entrypoint'
+assert_file_contains_regex \
+  contract-distributed-proof-prev \
+  website/docs/docs/distributed-proof/index.md \
+  'prev: false' \
+  'Distributed Proof lost the footer prev opt-out marker'
+assert_file_contains_regex \
+  contract-distributed-proof-next \
+  website/docs/docs/distributed-proof/index.md \
+  'next: false' \
+  'Distributed Proof lost the footer next opt-out marker'
 record_phase contract-guards passed
+
+run_expect_success m050-s01-onboarding-graph 00-m050-s01-onboarding-graph no 1800 \
+  node --test scripts/tests/verify-m050-s01-onboarding-graph.test.mjs
 
 run_expect_success m047-s05-replay 00-m047-s05-replay no 7200 \
   bash scripts/verify-m047-s05.sh
@@ -555,6 +548,7 @@ record_phase m047-s06-bundle-shape passed
 
 for expected_phase in \
   contract-guards \
+  m050-s01-onboarding-graph \
   m047-s05-replay \
   retain-m047-s05-verify \
   m047-s06-e2e \
