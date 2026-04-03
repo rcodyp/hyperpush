@@ -225,6 +225,11 @@ rm -rf "$RETAINED_M047_S04_VERIFY_DIR"
 cp -R .tmp/m047-s04/verify "$RETAINED_M047_S04_VERIFY_DIR"
 record_phase retain-m047-s04-verify passed
 
+run_expect_success m047-s05-pkg m047-s05-pkg yes 2400 \
+  cargo test -p meshc --test e2e_m047_s05 m047_s05_todo_fixture_contract_is_committed_and_helper_is_fixture_backed -- --nocapture
+run_expect_success m047-s05-tooling m047-s05-tooling yes 2400 \
+  cargo test -p meshc --test e2e_m047_s05 m047_s05_public_clustered_surfaces_use_source_first_names_and_todo_template -- --nocapture
+
 SNAPSHOT_BEFORE_E2E="$ARTIFACT_DIR/m047-s05-before.snapshot"
 capture_snapshot "$ARTIFACT_ROOT" "$SNAPSHOT_BEFORE_E2E"
 
@@ -296,3 +301,21 @@ cp -R "$RETAINED_M047_S05_ARTIFACTS_DIR" "$RETAINED_PROOF_BUNDLE_DIR/retained-m0
 [[ -f "$ARTIFACT_DIR/retained-m047-s05-artifacts.manifest.txt" ]] || fail_phase m047-s05-bundle-shape "missing retained Todo scaffold artifact manifest"
 printf '%s\n' "$RETAINED_PROOF_BUNDLE_DIR" >"$LATEST_PROOF_BUNDLE_PATH"
 record_phase m047-s05-bundle-shape passed
+
+for expected_phase in \
+  init \
+  m047-s04-replay \
+  retain-m047-s04-verify \
+  m047-s05-pkg \
+  m047-s05-tooling \
+  m047-s05-e2e \
+  m047-s05-docs-build \
+  retain-m047-s05-artifacts \
+  m047-s05-fixture-provenance \
+  m047-s05-bundle-shape; do
+  if ! rg -q "^${expected_phase}\\tpassed$" "$PHASE_REPORT_PATH"; then
+    fail_phase verifier-status "missing ${expected_phase} pass marker" "$ARTIFACT_DIR/full-contract.log" "$PHASE_REPORT_PATH"
+  fi
+done
+
+echo "verify-m047-s05: ok"

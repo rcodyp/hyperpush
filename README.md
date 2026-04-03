@@ -141,7 +141,7 @@ meshc init --template todo-api --db sqlite todo_api
 cd todo_api
 ```
 
-The SQLite Todo starter is the honest local starter: a single-node SQLite Todo API with generated package tests, local `/health`, actor-backed write rate limiting, and Docker packaging around the binary from `meshc build .`. It does not claim `work.mpl`, `HTTP.clustered(...)`, `meshc cluster`, or clustered/operator proof surfaces.
+The SQLite Todo starter is the honest local starter: a single-node SQLite Todo API with generated package tests, local `/health`, actor-backed write rate limiting, and Docker packaging around the binary from `meshc build .`. The SQLite Todo starter is intentionally local and is not a canonical clustered/operator proof surface. It does not claim `work.mpl`, `HTTP.clustered(...)`, `meshc cluster`, or clustered/operator proof surfaces.
 
 When you need the serious shared or deployable Todo path, generate the Postgres starter instead:
 
@@ -150,7 +150,7 @@ meshc init --template todo-api --db postgres shared_todo
 cd shared_todo
 ```
 
-The PostgreSQL Todo starter keeps the clustered-function contract source-first and route-free: `main.mpl` boots through `Node.start_from_env()`, `work.mpl` declares `@cluster pub fn sync_todos()`, `GET /todos` and `GET /todos/:id` dogfood explicit-count `HTTP.clustered(1, ...)`, `GET /health` plus mutating routes stay local, and the Dockerfile packages the binary produced by `meshc build .`.
+The PostgreSQL Todo starter is the fuller shared/deployable app layered on top of that same contract. The PostgreSQL Todo starter keeps the clustered-function contract source-first and route-free: `main.mpl` boots through `Node.start_from_env()`, `work.mpl` declares `@cluster pub fn sync_todos()`, `GET /todos` and `GET /todos/:id` dogfood explicit-count `HTTP.clustered(1, ...)`, `GET /health` plus mutating routes stay local, and the Dockerfile packages the binary produced by `meshc build .`.
 
 If you are migrating older clustered code, move `clustered(work)` into source-first `@cluster`, delete any `[cluster]` manifest stanza, and rename helper-shaped entries such as `execute_declared_work(...)` / `Work.execute_declared_work` to ordinary verbs like `add()` or `sync_todos()`. Keep the route-free `@cluster` surfaces canonical: the PostgreSQL Todo starter only dogfoods explicit-count `HTTP.clustered(1, ...)` on `GET /todos` and `GET /todos/:id`, while `GET /health` and mutating routes stay local. Default-count and two-node clustered-route behavior stay on the repo S07 rail (`cargo test -p meshc --test e2e_m047_s07 -- --nocapture`).
 
@@ -231,7 +231,7 @@ When you need the public clustered story, start with the scaffold and the genera
 - [`reference-backend/README.md`](https://github.com/snowdamiz/mesh-lang/blob/main/reference-backend/README.md) — the deeper backend proof surface once the starter examples stop being enough
 - [Distributed Proof](https://meshlang.dev/docs/distributed-proof/) — public map of the scaffold/examples-first story, the explicit SQLite-local vs PostgreSQL-clustered split, bounded automatic promotion, runtime-owned authority fields, stale-primary fencing, lower-level retained fixture rails, and the read-only Fly evidence path
 - `bash scripts/verify-m047-s04.sh` — the authoritative cutover rail for the source-first route-free clustered contract
-- `bash scripts/verify-m047-s05.sh` — the retained historical clustered Todo subrail kept behind the public starter contract
+- `bash scripts/verify-m047-s05.sh` — the retained historical clustered Todo subrail kept behind fixture-backed rails instead of the public starter contract
 - `cargo test -p meshc --test e2e_m047_s07 -- --nocapture` — the repo S07 rail for default-count and two-node `HTTP.clustered(...)` behavior beyond the PostgreSQL Todo starter's explicit-count read routes
 - `bash scripts/verify-m047-s06.sh` — the docs and retained-proof closeout rail that wraps S05, rebuilds docs truth, and owns the assembled `.tmp/m047-s06/verify` bundle
 - `bash scripts/verify-m046-s06.sh` — the historical M046 closeout wrapper retained as a compatibility alias into the M047 cutover rail

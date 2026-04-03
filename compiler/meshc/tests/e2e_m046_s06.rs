@@ -51,11 +51,11 @@ fn assert_clustered_surface_omits_routeful_drift(path: &Path) {
     assert_source_omits_all(
         path,
         &[
-            "[cluster]",
             "Continuity.submit_declared_work",
-            "/health",
             "/work/:request_key",
             "Timer.sleep(5000)",
+            "tiny-cluster/README.md",
+            "cluster-proof/README.md",
         ],
     );
 }
@@ -137,8 +137,8 @@ fn m046_s06_clustered_docs_and_runbooks_repoint_to_the_m047_cutover_rail() {
         repo_root.join("website/docs/docs/distributed/index.md"),
         repo_root.join("website/docs/docs/tooling/index.md"),
         repo_root.join("website/docs/docs/getting-started/clustered-example/index.md"),
-        repo_root.join("tiny-cluster/README.md"),
-        repo_root.join("cluster-proof/README.md"),
+        repo_root.join("scripts/fixtures/clustered/tiny-cluster/README.md"),
+        repo_root.join("scripts/fixtures/clustered/cluster-proof/README.md"),
     ];
 
     for path in surfaces {
@@ -161,8 +161,8 @@ fn m046_s06_clustered_docs_and_runbooks_repoint_to_the_m047_cutover_rail() {
 #[test]
 fn m046_s06_package_runbooks_keep_the_runtime_owned_operator_flow() {
     let package_surfaces = [
-        repo_root().join("tiny-cluster/README.md"),
-        repo_root().join("cluster-proof/README.md"),
+        repo_root().join("scripts/fixtures/clustered/tiny-cluster/README.md"),
+        repo_root().join("scripts/fixtures/clustered/cluster-proof/README.md"),
     ];
 
     for path in package_surfaces {

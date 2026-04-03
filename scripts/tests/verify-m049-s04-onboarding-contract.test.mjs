@@ -18,6 +18,8 @@ const filePaths = {
   clusteringSkill: 'tools/skill/mesh/skills/clustering/SKILL.md',
 }
 
+const retiredRepoRootDirs = ['tiny-cluster', 'cluster-proof']
+
 function readFrom(baseRoot, relativePath) {
   const absolutePath = path.join(baseRoot, relativePath)
   assert.ok(fs.existsSync(absolutePath), `missing ${relativePath}`)
@@ -62,6 +64,12 @@ function extractClusteredScaffoldReadme(scaffoldSource) {
 
 function validateOnboardingContract(baseRoot) {
   const errors = []
+
+  for (const relativePath of retiredRepoRootDirs) {
+    if (fs.existsSync(path.join(baseRoot, relativePath))) {
+      errors.push(`${relativePath} still exists as a repo-root proof package directory`)
+    }
+  }
 
   const readme = readFrom(baseRoot, filePaths.readme)
   const scaffoldSource = readFrom(baseRoot, filePaths.scaffold)
@@ -276,4 +284,19 @@ test('contract fails closed when the clustering skill collapses the scaffold/exa
   assert.ok(errors.some((error) => error.includes('tools/skill/mesh/skills/clustering/SKILL.md missing "examples/todo-postgres"')), errors.join('\n'))
   assert.ok(errors.some((error) => error.includes('tools/skill/mesh/skills/clustering/SKILL.md missing "examples/todo-sqlite"')), errors.join('\n'))
   assert.ok(errors.some((error) => error.includes('tools/skill/mesh/skills/clustering/SKILL.md still contains unsplit todo-api starter guidance')), errors.join('\n'))
+})
+
+test('contract fails closed when retired proof-package directories reappear at repo root', (t) => {
+  const tmpRoot = mkTmpDir(t, 'verify-m049-s04-root-dirs-')
+  for (const relativePath of Object.values(filePaths)) {
+    copyRepoFile(tmpRoot, relativePath)
+  }
+
+  for (const relativePath of retiredRepoRootDirs) {
+    writeTo(tmpRoot, path.join(relativePath, 'README.md'), `# ${relativePath}\n`)
+  }
+
+  const errors = validateOnboardingContract(tmpRoot)
+  assert.ok(errors.some((error) => error.includes('tiny-cluster still exists as a repo-root proof package directory')), errors.join('\n'))
+  assert.ok(errors.some((error) => error.includes('cluster-proof still exists as a repo-root proof package directory')), errors.join('\n'))
 })

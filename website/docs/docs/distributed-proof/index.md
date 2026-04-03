@@ -5,7 +5,7 @@ description: Public proof map for the scaffold/examples-first clustered story, t
 
 # Distributed Proof
 
-Mesh publishes one clustered onboarding story through the scaffold plus generated repo examples, with a deeper backend proof once the starters stop being enough:
+Mesh exposes one clustered-work story through two public clustered layers, plus one intentionally local starter:
 
 - [Clustered Example](/docs/getting-started/clustered-example/) — the public scaffold-first walkthrough for `meshc init --clustered`
 - [`examples/todo-postgres/README.md`](https://github.com/snowdamiz/mesh-lang/blob/main/examples/todo-postgres/README.md) — the serious shared/deployable PostgreSQL starter
@@ -20,7 +20,7 @@ The clustered public surfaces keep the same source-first runtime-owned contract,
 - the runtime automatically starts declared work at startup
 - operators inspect truth through `meshc cluster status`, continuity list, continuity record, and diagnostics
 - the PostgreSQL Todo starter keeps `work.mpl` route-free, dogfoods explicit-count `HTTP.clustered(1, ...)` on `GET /todos` and `GET /todos/:id`, and keeps `GET /health` plus mutating routes local instead of inventing package-owned cluster control planes
-- the SQLite starter stays outside this clustered proof surface on purpose: it is the honest local path rather than a hidden clustered mode
+- the SQLite starter stays outside this clustered proof surface on purpose: The SQLite Todo starter is the honest local path: single-node SQLite, generated package tests, and no `work.mpl`, `HTTP.clustered(...)`, or `meshc cluster` story
 
 If you are migrating older clustered code, move `clustered(work)` into source-first `@cluster`, delete any `[cluster]` manifest stanza, and rename helper-shaped entries such as `execute_declared_work(...)` / `Work.execute_declared_work` to ordinary verbs like `add()` or `sync_todos()`. Keep the route-free `@cluster` surfaces canonical: the PostgreSQL Todo starter only dogfoods explicit-count `HTTP.clustered(1, ...)` on `GET /todos` and `GET /todos/:id`, while `GET /health` and mutating routes stay local. Default-count and two-node clustered-route behavior stay on the repo S07 rail (`cargo test -p meshc --test e2e_m047_s07 -- --nocapture`).
 
@@ -31,7 +31,7 @@ If you are migrating older clustered code, move `clustered(work)` into source-fi
 - [`examples/todo-sqlite/README.md`](https://github.com/snowdamiz/mesh-lang/blob/main/examples/todo-sqlite/README.md) — the honest local single-node SQLite starter, not a clustered/operator proof surface
 - [`reference-backend/README.md`](https://github.com/snowdamiz/mesh-lang/blob/main/reference-backend/README.md) — the deeper backend proof surface after the starter examples
 - `bash scripts/verify-m047-s04.sh` — the authoritative cutover rail for the source-first route-free clustered contract
-- `bash scripts/verify-m047-s05.sh` — the retained historical clustered Todo subrail kept behind the public starter contract
+- `bash scripts/verify-m047-s05.sh` — the retained historical clustered Todo subrail kept behind fixture-backed rails instead of the public starter contract
 - `cargo test -p meshc --test e2e_m047_s07 -- --nocapture` — the repo S07 rail for default-count and two-node `HTTP.clustered(...)` behavior beyond the PostgreSQL Todo starter's explicit-count read routes
 - `bash scripts/verify-m047-s06.sh` — the docs and retained-proof closeout rail that wraps S05, rebuilds docs truth, and owns the assembled `.tmp/m047-s06/verify` bundle
 - `bash scripts/verify-m046-s06.sh` — the historical M046 closeout wrapper retained as a compatibility alias into the M047 cutover rail

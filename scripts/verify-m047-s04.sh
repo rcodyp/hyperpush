@@ -122,6 +122,17 @@ PY
   fi
 }
 
+assert_path_absent() {
+  local phase="$1"
+  local path="$2"
+  local description="$3"
+  local log_path="$ARTIFACT_DIR/${phase}.path-check.log"
+  if [[ -e "$path" ]]; then
+    printf '%s\n' "${description}: ${path} still exists" >"$log_path"
+    fail_phase "$phase" "$description" "$log_path" "$path"
+  fi
+}
+
 run_command() {
   local timeout_secs="$1"
   local log_path="$2"
@@ -331,6 +342,14 @@ PY
 
 record_phase contract-guards started
 printf 'contract-guards\n' >"$CURRENT_PHASE_PATH"
+assert_path_absent \
+  contract-root-tiny-cluster \
+  tiny-cluster \
+  'repo root still contains the retired tiny-cluster proof package directory'
+assert_path_absent \
+  contract-root-cluster-proof \
+  cluster-proof \
+  'repo root still contains the retired cluster-proof proof package directory'
 assert_file_contains_regex \
   contract-readme \
   README.md \

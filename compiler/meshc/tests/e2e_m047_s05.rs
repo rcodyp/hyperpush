@@ -195,7 +195,11 @@ fn m047_s05_todo_scaffold_runtime_truth_persists_natively_and_in_container() {
     );
     assert_contains("fixture init log", &init_log, "project_name=todo-starter");
     assert_contains("fixture init log", &init_log, "- mesh.toml");
-    assert_omits("fixture init log", &init_log, "meshc init --template todo-api");
+    assert_omits(
+        "fixture init log",
+        &init_log,
+        "meshc init --template todo-api",
+    );
 
     let manifest = todo::read_and_archive(
         &project_dir.join("mesh.toml"),
@@ -1472,15 +1476,20 @@ fn m047_s05_todo_fixture_contract_is_committed_and_helper_is_fixture_backed() {
         &repo_root().join("compiler/meshc/tests/support/m047_todo_scaffold.rs"),
         &artifacts.join("m047_todo_scaffold.rs"),
     );
-    let manifest = todo::read_and_archive(&fixture_root.join("mesh.toml"), &artifacts.join("mesh.toml"));
+    let manifest = todo::read_and_archive(
+        &fixture_root.join("mesh.toml"),
+        &artifacts.join("mesh.toml"),
+    );
     let main = todo::read_and_archive(&fixture_root.join("main.mpl"), &artifacts.join("main.mpl"));
     let work = todo::read_and_archive(&fixture_root.join("work.mpl"), &artifacts.join("work.mpl"));
     let router = todo::read_and_archive(
         &fixture_root.join("api").join("router.mpl"),
         &artifacts.join("api.router.mpl"),
     );
-    let readme =
-        todo::read_and_archive(&fixture_root.join("README.md"), &artifacts.join("README.md"));
+    let readme = todo::read_and_archive(
+        &fixture_root.join("README.md"),
+        &artifacts.join("README.md"),
+    );
     let dockerfile = todo::read_and_archive(
         &fixture_root.join("Dockerfile"),
         &artifacts.join("Dockerfile"),
@@ -1567,11 +1576,7 @@ fn m047_s05_todo_fixture_copy_rejects_unexpected_project_name() {
         &error_log,
         todo::TODO_FIXTURE_PACKAGE_NAME,
     );
-    assert_contains(
-        "fixture init error log",
-        &error_log,
-        "unexpected-name",
-    );
+    assert_contains("fixture init error log", &error_log, "unexpected-name");
     assert!(
         !workspace_dir.join("unexpected-name").exists(),
         "unexpected project name should not leave a generated project behind"
@@ -1634,11 +1639,11 @@ fn m047_s05_public_clustered_surfaces_use_source_first_names_and_todo_template()
         &artifacts.join("clustered-example.index.md"),
     );
     let tiny_cluster_work = todo::read_and_archive(
-        &repo_root().join("tiny-cluster/work.mpl"),
+        &repo_root().join("scripts/fixtures/clustered/tiny-cluster/work.mpl"),
         &artifacts.join("tiny-cluster.work.mpl"),
     );
     let cluster_proof_work = todo::read_and_archive(
-        &repo_root().join("cluster-proof/work.mpl"),
+        &repo_root().join("scripts/fixtures/clustered/cluster-proof/work.mpl"),
         &artifacts.join("cluster-proof.work.mpl"),
     );
     let tooling_e2e = todo::read_and_archive(
@@ -1754,6 +1759,8 @@ fn m047_s05_assembled_verifier_replays_cutover_and_todo_rails() {
 
     for needle in [
         "bash scripts/verify-m047-s04.sh",
+        "cargo test -p meshc --test e2e_m047_s05 m047_s05_todo_fixture_contract_is_committed_and_helper_is_fixture_backed -- --nocapture",
+        "cargo test -p meshc --test e2e_m047_s05 m047_s05_public_clustered_surfaces_use_source_first_names_and_todo_template -- --nocapture",
         "cargo test -p meshc --test e2e_m047_s05 -- --nocapture",
         "npm --prefix website run build",
         "status.txt",
@@ -1764,10 +1771,13 @@ fn m047_s05_assembled_verifier_replays_cutover_and_todo_rails() {
         "retained-m047-s04-verify",
         "retained-m047-s05-artifacts",
         "m047-s04-replay",
+        "m047-s05-pkg",
+        "m047-s05-tooling",
         "m047-s05-e2e",
         "m047-s05-docs-build",
         "m047-s05-fixture-provenance",
         "m047-s05-bundle-shape",
+        "verify-m047-s05: ok",
         "source=fixture-copy",
         "fixture_root_relative=scripts/fixtures/m047-s05-clustered-todo",
     ] {
