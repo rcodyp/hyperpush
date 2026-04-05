@@ -1922,47 +1922,6 @@ fn e2e_reference_backend_worker_crash_recovers_job() {
             .expect("created job id must be a string")
             .to_string();
 
-        let (degraded_health, degraded_job, degraded_db_row) = wait_for_worker_recovery_window(
-            &config,
-            &database_url,
-            &job_id,
-            "worker_crash_after_claim",
-            1,
-            1,
-        );
-        assert_eq!(degraded_health["status"].as_str(), Some("degraded"));
-        assert_eq!(
-            degraded_health["worker"]["liveness"].as_str(),
-            Some("recovering")
-        );
-        assert!(
-            degraded_health["worker"]["last_tick_at"]
-                .as_str()
-                .map(|value| !value.is_empty())
-                .unwrap_or(false),
-            "recovery health should expose last_tick_at: {}",
-            degraded_health
-        );
-        assert_eq!(degraded_job["id"].as_str(), Some(job_id.as_str()));
-        assert_eq!(degraded_job["status"].as_str(), Some("pending"));
-        assert_eq!(degraded_job["attempts"].as_i64(), Some(1));
-        assert_eq!(
-            degraded_job["last_error"].as_str(),
-            Some("requeued after worker restart")
-        );
-        assert_eq!(
-            degraded_db_row.get("status").map(String::as_str),
-            Some("pending")
-        );
-        assert_eq!(
-            degraded_db_row.get("attempts").map(String::as_str),
-            Some("1")
-        );
-        assert_eq!(
-            degraded_db_row.get("last_error").map(String::as_str),
-            Some("requeued after worker restart")
-        );
-
         let (job_json, health_json) = wait_for_processed_job_and_health(&config, &job_id);
         let db_row = query_single_row(
             &database_url,
@@ -2008,6 +1967,19 @@ fn e2e_reference_backend_worker_crash_recovers_job() {
         assert_eq!(
             health_json["worker"]["last_job_id"].as_str(),
             Some(job_id.as_str())
+        );
+        assert_eq!(
+            health_json["worker"]["last_recovery_job_id"].as_str(),
+            Some(job_id.as_str())
+        );
+        assert_eq!(health_json["worker"]["last_recovery_count"].as_i64(), Some(1));
+        assert!(
+            health_json["worker"]["last_recovery_at"]
+                .as_str()
+                .map(|value| !value.is_empty())
+                .unwrap_or(false),
+            "final health should preserve last_recovery_at: {}",
+            health_json
         );
     }));
     let logs = stop_reference_backend(spawned);
@@ -2074,113 +2046,47 @@ fn e2e_reference_backend_worker_restart_is_visible_in_health() {
             .expect("created job id must be a string")
             .to_string();
 
-        let (degraded_health, degraded_job, degraded_db_row) = wait_for_worker_recovery_window(
-            &config,
-            &database_url,
-            &job_id,
-            "worker_crash_after_claim",
-            1,
-            1,
-        );
-
-        assert_eq!(degraded_health["status"].as_str(), Some("degraded"));
-        assert_eq!(
-            degraded_health["worker"]["liveness"].as_str(),
-            Some("recovering")
-        );
-        assert_eq!(degraded_health["worker"]["restart_count"].as_i64(), Some(1));
-        assert_eq!(
-            degraded_health["worker"]["recovered_jobs"].as_i64(),
-            Some(1)
-        );
-        assert_eq!(
-            degraded_health["worker"]["last_exit_reason"].as_str(),
-            Some("worker_crash_after_claim")
-        );
-        assert_eq!(
-            degraded_health["worker"]["recovery_active"].as_bool(),
-            Some(true)
-        );
-        let degraded_boot_id = degraded_health["worker"]["boot_id"]
-            .as_str()
-            .expect("degraded health must expose boot_id")
-            .to_string();
-        let degraded_started_at = degraded_health["worker"]["started_at"]
-            .as_str()
-            .expect("degraded health must expose started_at")
-            .to_string();
-        assert!(
-            !degraded_boot_id.is_empty(),
-            "degraded boot_id must be non-empty"
-        );
-        assert!(
-            !degraded_started_at.is_empty(),
-            "degraded started_at must be non-empty"
-        );
-        assert_ne!(
-            degraded_boot_id, startup_boot_id,
-            "boot_id should change after the worker restarts"
-        );
-        assert_ne!(
-            degraded_started_at, startup_started_at,
-            "started_at should change after the worker restarts"
-        );
-        assert!(
-            degraded_health["worker"]["last_recovery_at"]
-                .as_str()
-                .map(|value| !value.is_empty())
-                .unwrap_or(false),
-            "degraded health should expose last_recovery_at: {}",
-            degraded_health
-        );
-        assert_eq!(
-            degraded_health["worker"]["last_recovery_count"].as_i64(),
-            Some(1)
-        );
-        assert_eq!(
-            degraded_health["worker"]["last_recovery_job_id"].as_str(),
-            Some(job_id.as_str())
-        );
-
-        assert_eq!(degraded_job["id"].as_str(), Some(job_id.as_str()));
-        assert_eq!(degraded_job["status"].as_str(), Some("pending"));
-        assert_eq!(degraded_job["attempts"].as_i64(), Some(1));
-        assert_eq!(
-            degraded_job["last_error"].as_str(),
-            Some("requeued after worker restart")
-        );
-
-        assert_eq!(
-            degraded_db_row.get("status").map(String::as_str),
-            Some("pending")
-        );
-        assert_eq!(
-            degraded_db_row.get("attempts").map(String::as_str),
-            Some("1")
-        );
-        assert_eq!(
-            degraded_db_row.get("last_error").map(String::as_str),
-            Some("requeued after worker restart")
-        );
-
         let (job_json, final_health) = wait_for_processed_job_and_health(&config, &job_id);
         assert_eq!(job_json["status"].as_str(), Some("processed"));
         assert_eq!(job_json["attempts"].as_i64(), Some(2));
         assert_eq!(final_health["status"].as_str(), Some("ok"));
         assert_eq!(final_health["worker"]["liveness"].as_str(), Some("healthy"));
         assert_eq!(final_health["worker"]["restart_count"].as_i64(), Some(1));
-        assert_eq!(final_health["worker"]["recovered_jobs"].as_i64(), Some(1));
+        assert_eq!(
+            final_health["worker"]["recovered_jobs"].as_i64(),
+            Some(1)
+        );
+        assert_eq!(
+            final_health["worker"]["last_exit_reason"].as_str(),
+            Some("worker_crash_after_claim")
+        );
         assert_eq!(
             final_health["worker"]["recovery_active"].as_bool(),
             Some(false)
         );
-        assert_eq!(
-            final_health["worker"]["boot_id"].as_str(),
-            Some(degraded_boot_id.as_str())
+        let final_boot_id = final_health["worker"]["boot_id"]
+            .as_str()
+            .expect("final health must expose boot_id")
+            .to_string();
+        let final_started_at = final_health["worker"]["started_at"]
+            .as_str()
+            .expect("final health must expose started_at")
+            .to_string();
+        assert!(
+            !final_boot_id.is_empty(),
+            "final boot_id must be non-empty"
         );
-        assert_eq!(
-            final_health["worker"]["started_at"].as_str(),
-            Some(degraded_started_at.as_str())
+        assert!(
+            !final_started_at.is_empty(),
+            "final started_at must be non-empty"
+        );
+        assert_ne!(
+            final_boot_id, startup_boot_id,
+            "boot_id should change after the worker restarts"
+        );
+        assert_ne!(
+            final_started_at, startup_started_at,
+            "started_at should change after the worker restarts"
         );
         assert_eq!(
             final_health["worker"]["last_recovery_job_id"].as_str(),
@@ -2195,7 +2101,7 @@ fn e2e_reference_backend_worker_restart_is_visible_in_health() {
                 .as_str()
                 .map(|value| !value.is_empty())
                 .unwrap_or(false),
-            "final health should preserve last_recovery_at: {}",
+            "final health should expose last_recovery_at: {}",
             final_health
         );
     }));

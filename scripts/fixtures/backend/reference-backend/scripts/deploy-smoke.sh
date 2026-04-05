@@ -5,6 +5,7 @@ DEFAULT_PORT="18080"
 PORT_VALUE="${PORT:-$DEFAULT_PORT}"
 BASE_URL="${BASE_URL:-http://127.0.0.1:${PORT_VALUE}}"
 LAST_RESPONSE=""
+LAST_HEALTH_RESPONSE=""
 
 usage() {
   echo "usage: bash deploy-smoke.sh" >&2
@@ -30,10 +31,16 @@ import sys
 
 field = sys.argv[1]
 data = json.load(sys.stdin)
-value = data.get(field)
-if value is None:
-    sys.exit(1)
-if isinstance(value, (dict, list)):
+value = data
+for key in field.split("."):
+    if not isinstance(value, dict):
+        sys.exit(1)
+    value = value.get(key)
+    if value is None:
+        sys.exit(1)
+if isinstance(value, bool):
+    print("true" if value else "false")
+elif isinstance(value, (dict, list)):
     print(json.dumps(value, separators=(",", ":")))
 else:
     print(value)
@@ -71,12 +78,20 @@ esac
 printf '[deploy-smoke] waiting for health base_url=%s\n' "$BASE_URL"
 for attempt in $(seq 1 80); do
   if health_response="$(curl -fsS "$BASE_URL/health" 2>/dev/null)"; then
-    printf '[deploy-smoke] health ready body=%s\n' "$health_response"
-    break
+    LAST_HEALTH_RESPONSE="$health_response"
+    health_status="$(printf '%s' "$health_response" | json_field status || true)"
+    worker_liveness="$(printf '%s' "$health_response" | json_field worker.liveness || true)"
+    recovery_active="$(printf '%s' "$health_response" | json_field worker.recovery_active || true)"
+    printf '[deploy-smoke] health poll=%s status=%s liveness=%s recovery_active=%s\n' \
+      "$attempt" "${health_status:-missing}" "${worker_liveness:-missing}" "${recovery_active:-missing}"
+    if [[ "$health_status" == "ok" && "$worker_liveness" == "healthy" && "$recovery_active" == "false" ]]; then
+      printf '[deploy-smoke] health ready body=%s\n' "$health_response"
+      break
+    fi
   fi
   sleep 0.25
   if [[ "$attempt" == "80" ]]; then
-    fail "/health never became ready at $BASE_URL"
+    fail "/health never became ready at $BASE_URL; last_body=${LAST_HEALTH_RESPONSE:-unavailable}"
   fi
 done
 

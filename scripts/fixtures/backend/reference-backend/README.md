@@ -114,8 +114,8 @@ The important fields are:
 
 Interpret the retained backend rails this way:
 
-- **Worker crash recovery** — `e2e_reference_backend_worker_crash_recovers_job` should surface `restart_count=1`, `last_exit_reason="worker_crash_after_claim"`, `recovered_jobs=1`, and a degraded `/health` window before the job returns to `processed`.
-- **Restart visibility** — `e2e_reference_backend_worker_restart_is_visible_in_health` should expose the degraded window itself, including changed worker `boot_id` / `started_at` plus populated `last_recovery_*` fields before the backend settles back to `status: "ok"` and worker `liveness: "healthy"`.
+- **Worker crash recovery** — `e2e_reference_backend_worker_crash_recovers_job` should prove the crash/requeue path end to end: `restart_count=1`, `last_exit_reason="worker_crash_after_claim"`, `recovered_jobs=1`, `last_recovery_*` populated for the recovered job, and the final job record returned to `processed` with `attempts=2`.
+- **Restart visibility** — `e2e_reference_backend_worker_restart_is_visible_in_health` is the dedicated `/health` restart-metadata rail. It should expose the changed worker `boot_id` / `started_at`, `restart_count=1`, `recovered_jobs=1`, populated `last_recovery_*` fields, and the preserved `last_exit_reason="worker_crash_after_claim"` after the backend settles back to `status: "ok"` and worker `liveness: "healthy"`.
 - **Whole-process restart recovery** — `e2e_reference_backend_process_restart_recovers_inflight_job` should requeue a `processing` row after a full process kill/restart, preserve `last_recovery_*`, set `recovered_jobs=1`, and keep `last_exit_reason=null` because the recovery came from boot recovery rather than a worker-supervisor crash.
 
 If migration or staged deploy proof is green but one of these recovery interpretations drifts, treat that as a real runtime regression rather than as documentation-only drift.

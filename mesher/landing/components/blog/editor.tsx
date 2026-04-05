@@ -8,6 +8,7 @@ import Underline from '@tiptap/extension-underline'
 import TextAlign from '@tiptap/extension-text-align'
 import Placeholder from '@tiptap/extension-placeholder'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import MarkdownIt from 'markdown-it'
 import { createLowlight, all } from 'lowlight'
 import { useCallback, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -20,6 +21,35 @@ import {
 } from 'lucide-react'
 
 const lowlight = createLowlight(all)
+const markdown = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+})
+
+function normalizeClipboardText(text: string): string {
+  return text.replace(/\r\n?/g, '\n')
+}
+
+function looksLikeMarkdown(text: string): boolean {
+  const normalized = normalizeClipboardText(text).trim()
+  if (!normalized) return false
+
+  return [
+    /^#{1,6}\s+/m,
+    /^\s*[-*+]\s+/m,
+    /^\s*\d+\.\s+/m,
+    /^\s*>\s+/m,
+    /^\s*```[\s\S]*```\s*$/m,
+    /`[^`]+`/,
+    /\*\*[^*\n]+\*\*/,
+    /__[^_\n]+__/,
+    /\[[^\]]+\]\([^\)]+\)/,
+    /!\[[^\]]*\]\([^\)]+\)/,
+    /^\s*(---|\*\*\*|___)\s*$/m,
+    /^\s*\|.+\|\s*$/m,
+  ].some((pattern) => pattern.test(normalized))
+}
 
 // ── Toolbar button ──────────────────────────────────────────────────────────
 function ToolbarBtn({
@@ -143,6 +173,23 @@ export function RichEditor({
     editorProps: {
       attributes: {
         class: 'outline-none',
+      },
+      handlePaste(view, event) {
+        const clipboard = event.clipboardData
+        const plainText = clipboard?.getData('text/plain') ?? ''
+        const htmlText = clipboard?.getData('text/html') ?? ''
+
+        if (!editor || !plainText.trim()) return false
+        if (htmlText.trim()) return false
+        if (editor.isActive('codeBlock') || editor.isActive('code')) return false
+        if (!looksLikeMarkdown(plainText)) return false
+
+        const renderedHtml = markdown.render(normalizeClipboardText(plainText).trim())
+        if (!renderedHtml.trim()) return false
+
+        event.preventDefault()
+        editor.commands.insertContent(renderedHtml)
+        return true
       },
     },
     onUpdate({ editor }) {

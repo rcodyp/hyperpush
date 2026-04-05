@@ -288,7 +288,12 @@ fn hold_after_claim_ticks(worker_state, remaining_ms :: Int, step_ms :: Int) do
 end
 
 fn pause_after_recovery_ms(poll_ms :: Int) -> Int do
-  recovery_reclaim_grace_ms(poll_ms) + (poll_ms * 8)
+  let scaled_pause_ms = recovery_reclaim_grace_ms(poll_ms) + (poll_ms * 16)
+  if scaled_pause_ms < 2500 do
+    2500
+  else
+    scaled_pause_ms
+  end
 end
 
 fn pause_after_recovery(worker_state, recovered_jobs :: Int) do
