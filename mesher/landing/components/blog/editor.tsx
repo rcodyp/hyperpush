@@ -56,14 +56,14 @@ function clipboardHtmlHasSemanticFormatting(html: string): boolean {
   if (!normalized || typeof window === 'undefined') return false
 
   const doc = new DOMParser().parseFromString(normalized, 'text/html')
-  const semanticSelectors = [
-    'p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'ul', 'ol', 'li', 'blockquote', 'a', 'img',
+  const meaningfulSelectors = [
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li', 'blockquote', 'a[href]', 'img',
     'table', 'thead', 'tbody', 'tr', 'th', 'td',
-    'strong', 'b', 'em', 'i', 'hr',
+    'strong', 'b', 'em', 'i', 'hr', 'code',
   ]
 
-  return semanticSelectors.some((selector) => doc.body.querySelector(selector) !== null)
+  return meaningfulSelectors.some((selector) => doc.body.querySelector(selector) !== null)
 }
 
 // ── Toolbar button ──────────────────────────────────────────────────────────
