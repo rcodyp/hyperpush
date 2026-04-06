@@ -249,9 +249,12 @@ run_expect_success() {
 
   begin_phase "$phase"
   echo "==> ${cmd[*]}"
-  if ! run_command "$timeout_secs" "$log_path" "${cmd[@]}"; then
+  if run_command "$timeout_secs" "$log_path" "${cmd[@]}"; then
+    :
+  else
+    local exit_code=$?
     record_phase "$phase" failed
-    fail_phase "$phase" "expected success within ${timeout_secs}s" "$log_path" "$artifact_hint"
+    fail_phase "$phase" "$(failure_reason_for_exit "$exit_code" "$timeout_secs")" "$log_path" "$artifact_hint"
   fi
   if [[ "$require_tests" == "yes" ]]; then
     assert_test_filter_ran "$phase" "$log_path" "$label"
@@ -271,9 +274,12 @@ run_expect_success_with_database_url() {
 
   begin_phase "$phase"
   echo "==> DATABASE_URL=<redacted> ${cmd[*]}"
-  if ! run_command_with_database_url "$timeout_secs" "$log_path" "${cmd[@]}"; then
+  if run_command_with_database_url "$timeout_secs" "$log_path" "${cmd[@]}"; then
+    :
+  else
+    local exit_code=$?
     record_phase "$phase" failed
-    fail_phase "$phase" "expected success within ${timeout_secs}s" "$log_path" "$artifact_hint"
+    fail_phase "$phase" "$(failure_reason_for_exit "$exit_code" "$timeout_secs")" "$log_path" "$artifact_hint"
   fi
   if [[ "$require_tests" == "yes" ]]; then
     assert_test_filter_ran "$phase" "$log_path" "$label"
