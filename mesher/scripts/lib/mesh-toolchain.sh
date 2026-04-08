@@ -160,7 +160,13 @@ mesher_resolve_toolchain() {
   MESHER_MESHC_BIN="$candidate"
   export MESHER_MESHC_SOURCE
   export MESHER_MESHC_BIN
-  mesher_toolchain_log "resolved meshc source=${MESHER_MESHC_SOURCE} path=${MESHER_MESHC_BIN} package_root=${MESHER_PACKAGE_DIR}"
+
+  if [[ -z "${CARGO_TARGET_DIR:-}" && -n "$source_root" && "$source_name" != 'PATH' ]]; then
+    CARGO_TARGET_DIR="$source_root/target"
+    export CARGO_TARGET_DIR
+  fi
+
+  mesher_toolchain_log "resolved meshc source=${MESHER_MESHC_SOURCE} path=${MESHER_MESHC_BIN} package_root=${MESHER_PACKAGE_DIR} cargo_target_dir=${CARGO_TARGET_DIR:-<unset>}"
 }
 
 mesher_run_meshc() {
