@@ -58,9 +58,9 @@ jobs:
         shell: bash
         run: echo "LLVM_SYS_211_PREFIX=$HOME/llvm" >> "$GITHUB_ENV"
 
-      - name: Build meshc from sibling toolchain repo
+      - name: Build meshc and mesh-rt from sibling toolchain repo
         working-directory: mesh-lang
-        run: cargo build -p meshc
+        run: cargo build -p meshc -p mesh-rt
 
       - name: Install PostgreSQL client
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
